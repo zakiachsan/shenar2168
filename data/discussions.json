@@ -1,0 +1,117 @@
+{
+  "discussions": [
+    {
+      "id": 1778985448902,
+      "productId": 29,
+      "question": "Apakah bonekanya bisa dicuci?",
+      "askedBy": "Budi Santoso",
+      "askedAt": "2026-05-17T02:37:28.902Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448904,
+      "productId": 29,
+      "question": "Berapa lama pengiriman ke Jakarta?",
+      "askedBy": "Ani Wijaya",
+      "askedAt": "2026-05-17T02:37:28.904Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448905,
+      "productId": 28,
+      "question": "Wanginya tahan berapa lama ya?",
+      "askedBy": "Dedi Kurniawan",
+      "askedAt": "2026-05-17T02:37:28.905Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448906,
+      "productId": 28,
+      "question": "Apakah ini original?",
+      "askedBy": "Siti Rahayu",
+      "askedAt": "2026-05-17T02:37:28.906Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448907,
+      "productId": 27,
+      "question": "Bisa tahan air nggak?",
+      "askedBy": "Rudi Hartono",
+      "askedAt": "2026-05-17T02:37:28.907Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448908,
+      "productId": 27,
+      "question": "Ada garansi nggak kak?",
+      "askedBy": "Maya Sari",
+      "askedAt": "2026-05-17T02:37:28.908Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448909,
+      "productId": 26,
+      "question": "Cocok nggak ya buat ukuran wajah besar?",
+      "askedBy": "Andi Pratama",
+      "askedAt": "2026-05-17T02:37:28.909Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448912,
+      "productId": 26,
+      "question": "Lensa nya bisa diganti nggak?",
+      "askedBy": "Dewi Lestari",
+      "askedAt": "2026-05-17T02:37:28.909Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448910,
+      "productId": 25,
+      "question": "Bahan nya adem nggak kak?",
+      "askedBy": "Agus Setiawan",
+      "askedAt": "2026-05-17T02:37:28.910Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778985448911,
+      "productId": 25,
+      "question": "Ready warna hitam nggak?",
+      "askedBy": "Lina Marlina",
+      "askedAt": "2026-05-17T02:37:28.911Z",
+      "status": "pending"
+    },
+    {
+      "id": 1778988487192,
+      "productId": 29,
+      "question": "Apakah bonekanya bisa dicuci?",
+      "askedBy": "Budi Santoso",
+      "askedAt": "2026-05-17T03:28:07.192Z",
+      "status": "answered",
+      "answer": "Bisa dicuci dengan tangan menggunakan sabun lembut.",
+      "answeredBy": "Admin",
+      "answeredAt": "2026-05-17T03:28:07.194Z"
+    },
+    {
+      "id": 1778988487196,
+      "productId": 28,
+      "question": "Wanginya tahan berapa lama ya?",
+      "askedBy": "Dedi Kurniawan",
+      "askedAt": "2026-05-17T03:28:07.196Z",
+      "status": "answered",
+      "answer": "Wanginya bisa tahan 6-8 jam tergantung aktivitas.",
+      "answeredBy": "Admin",
+      "answeredAt": "2026-05-17T03:28:07.196Z"
+    },
+    {
+      "id": 1778988487197,
+      "productId": 27,
+      "question": "Bisa tahan air nggak?",
+      "askedBy": "Rudi Hartono",
+      "askedAt": "2026-05-17T03:28:07.197Z",
+      "status": "answered",
+      "answer": "Tahan air ringan, tapi tidak untuk berenang.",
+      "answeredBy": "Admin",
+      "answeredAt": "2026-05-17T03:28:07.197Z"
+    }
+  ]
+}

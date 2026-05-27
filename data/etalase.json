@@ -1,0 +1,68 @@
+[
+  {
+    "id": "flash-sale",
+    "title": "Flash Sale",
+    "type": "flash_sale",
+    "enabled": true,
+    "sortOrder": 1,
+    "icon": "Zap",
+    "isFlashSale": true,
+    "flashSaleEndTime": "2026-05-25T23:59:59.000Z",
+    "products": [
+      { "productId": 12, "flashSaleStock": 100, "flashSaleSold": 73 },
+      { "productId": 14, "flashSaleStock": 80, "flashSaleSold": 55 },
+      { "productId": 22, "flashSaleStock": 120, "flashSaleSold": 98 },
+      { "productId": 24, "flashSaleStock": 60, "flashSaleSold": 41 },
+      { "productId": 32, "flashSaleStock": 50, "flashSaleSold": 37 },
+      { "productId": 42, "flashSaleStock": 200, "flashSaleSold": 156 },
+      { "productId": 50, "flashSaleStock": 90, "flashSaleSold": 62 },
+      { "productId": 64, "flashSaleStock": 75, "flashSaleSold": 48 }
+    ]
+  },
+  {
+    "id": "discount",
+    "title": "Banyak Diskon",
+    "type": "discount",
+    "enabled": true,
+    "sortOrder": 2,
+    "icon": "Tag",
+    "isFlashSale": false,
+    "products": [
+      { "productId": 16 },
+      { "productId": 20 },
+      { "productId": 26 },
+      { "productId": 36 },
+      { "productId": 46 },
+      { "productId": 56 },
+      { "productId": 66 },
+      { "productId": 76 },
+      { "productId": 86 },
+      { "productId": 96 },
+      { "productId": 106 },
+      { "productId": 116 }
+    ]
+  },
+  {
+    "id": "best-sellers",
+    "title": "Produk Terlaris",
+    "type": "best_sellers",
+    "enabled": true,
+    "sortOrder": 3,
+    "icon": "TrendingUp",
+    "isFlashSale": false,
+    "products": [
+      { "productId": 18 },
+      { "productId": 28 },
+      { "productId": 38 },
+      { "productId": 48 },
+      { "productId": 58 },
+      { "productId": 68 },
+      { "productId": 78 },
+      { "productId": 88 },
+      { "productId": 98 },
+      { "productId": 108 },
+      { "productId": 118 },
+      { "productId": 128 }
+    ]
+  }
+]

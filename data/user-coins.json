@@ -1,0 +1,15 @@
+{
+  "85694662592": {
+    "balance": 1140,
+    "transactions": [
+      {
+        "id": "1fcb12a8-8ba3-4171-96a7-a6ad77af298b",
+        "type": "earn",
+        "amount": 1140,
+        "description": "Dapatkan 1% cashback dari setiap pembelian",
+        "date": "2026-05-18T22:43:01.289Z",
+        "orderId": "465"
+      }
+    ]
+  }
+}

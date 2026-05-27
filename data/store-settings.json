@@ -1,0 +1,32 @@
+{
+  "storeName": "Shenar2168",
+  "storeLogo": "",
+  "storeDescription": "Belanja Online Terlengkap & Terpercaya",
+  "contactPhone": "",
+  "contactEmail": "",
+  "contactWhatsApp": "",
+  "storeAddress": "",
+  "seo": {
+    "metaTitle": "Shenar2168 - Belanja Online Terlengkap & Terpercaya",
+    "metaDescription": "Temukan berbagai produk berkualitas dengan harga terbaik. Gratis Ongkir, Voucher Cashback, dan Promo Menarik setiap hari.",
+    "faviconUrl": ""
+  },
+  "payment": {
+    "midtransClientKey": "",
+    "midtransEnvironment": "sandbox",
+    "enableCOD": true
+  },
+  "shipping": {
+    "enableFreeShipping": false,
+    "freeShippingMinOrder": 0,
+    "defaultShippingCity": ""
+  },
+  "points": {
+    "enabled": true,
+    "type": "percent",
+    "value": 1,
+    "minOrder": 0,
+    "maxPoints": 0,
+    "caption": "Dapatkan 1% cashback dari setiap pembelian"
+  }
+}
