@@ -4,7 +4,7 @@ import { getEtalaseById } from '@/lib/etalase';
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const section = getEtalaseById(id);
+    const section = await getEtalaseById(id);
     if (!section) {
       return NextResponse.json({ error: 'Etalase tidak ditemukan' }, { status: 404 });
     }

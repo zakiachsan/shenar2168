@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get('productId');
-    const discussions = getDiscussions(productId ? Number(productId) : undefined);
+    const discussions = await getDiscussions(productId ? Number(productId) : undefined);
     return NextResponse.json({ discussions });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nama penanya diperlukan' }, { status: 400 });
     }
 
-    const discussion = addDiscussion(productId, question, askedBy);
+    const discussion = await addDiscussion(productId, question, askedBy);
     return NextResponse.json({ discussion }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Nama penjawab diperlukan' }, { status: 400 });
     }
 
-    const discussion = answerDiscussion(Number(id), answer, answeredBy);
+    const discussion = await answerDiscussion(Number(id), answer, answeredBy);
     if (!discussion) {
       return NextResponse.json({ error: 'Diskusi tidak ditemukan' }, { status: 404 });
     }
@@ -81,7 +81,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'ID diskusi diperlukan' }, { status: 400 });
     }
 
-    const success = deleteDiscussion(Number(id));
+    const success = await deleteDiscussion(Number(id));
     if (!success) {
       return NextResponse.json({ error: 'Diskusi tidak ditemukan' }, { status: 404 });
     }

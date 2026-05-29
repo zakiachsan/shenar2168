@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = getStoreSettings();
+  const settings = await getStoreSettings();
   return {
     title: settings.seo.metaTitle || settings.storeName,
     description: settings.seo.metaDescription || settings.storeDescription,

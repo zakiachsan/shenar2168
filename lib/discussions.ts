@@ -1,7 +1,5 @@
-import fs from 'fs';
-import path from 'path';
-
-const DISCUSSIONS_PATH = path.join(process.cwd(), 'data', 'discussions.json');
+import pool from './db';
+import mysql from 'mysql2';
 
 export interface Discussion {
   id: number;
@@ -15,81 +13,74 @@ export interface Discussion {
   status: 'pending' | 'answered';
 }
 
-interface DiscussionsData {
-  discussions: Discussion[];
+function mapRow(row: any): Discussion {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    question: row.question,
+    askedBy: row.asked_by,
+    askedAt: row.asked_at,
+    answer: row.answer,
+    answeredBy: row.answered_by,
+    answeredAt: row.answered_at,
+    status: row.status,
+  };
 }
 
-function readDiscussions(): DiscussionsData {
+export async function getDiscussions(productId?: number): Promise<Discussion[]> {
+  const connection = await pool.getConnection();
   try {
-    if (!fs.existsSync(DISCUSSIONS_PATH)) {
-      return { discussions: [] };
+    let query = 'SELECT * FROM discussions';
+    const params: any[] = [];
+    if (productId !== undefined) {
+      query += ' WHERE product_id = ?';
+      params.push(productId);
     }
-    const data = fs.readFileSync(DISCUSSIONS_PATH, 'utf-8');
-    const parsed = JSON.parse(data);
-    return { discussions: Array.isArray(parsed.discussions) ? parsed.discussions : [] };
-  } catch {
-    return { discussions: [] };
+    query += ' ORDER BY asked_at DESC';
+    const [rows] = await connection.execute(query, params);
+    return (rows as any[]).map(mapRow);
+  } finally {
+    connection.release();
   }
 }
 
-function writeDiscussions(data: DiscussionsData): void {
-  const dir = path.dirname(DISCUSSIONS_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+export async function addDiscussion(productId: number, question: string, askedBy: string): Promise<Discussion> {
+  const connection = await pool.getConnection();
+  try {
+    const [result] = await connection.execute(
+      'INSERT INTO discussions (product_id, question, asked_by, asked_at, status) VALUES (?, ?, ?, NOW(), "pending")',
+      [productId, question.trim(), askedBy.trim()]
+    );
+    const insertId = (result as mysql.ResultSetHeader).insertId;
+    const [rows] = await connection.execute('SELECT * FROM discussions WHERE id = ?', [insertId]);
+    return mapRow((rows as any[])[0]);
+  } finally {
+    connection.release();
   }
-  fs.writeFileSync(DISCUSSIONS_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-export function getDiscussions(productId?: number): Discussion[] {
-  const data = readDiscussions();
-  if (productId !== undefined) {
-    return data.discussions
-      .filter((d) => d.productId === productId)
-      .sort((a, b) => new Date(b.askedAt).getTime() - new Date(a.askedAt).getTime());
+export async function answerDiscussion(id: number, answer: string, answeredBy: string): Promise<Discussion | null> {
+  const connection = await pool.getConnection();
+  try {
+    await connection.execute(
+      'UPDATE discussions SET answer = ?, answered_by = ?, answered_at = NOW(), status = "answered" WHERE id = ?',
+      [answer.trim(), answeredBy.trim(), id]
+    );
+    const [rows] = await connection.execute('SELECT * FROM discussions WHERE id = ?', [id]);
+    const results = rows as any[];
+    if (results.length === 0) return null;
+    return mapRow(results[0]);
+  } finally {
+    connection.release();
   }
-  return data.discussions.sort((a, b) => new Date(b.askedAt).getTime() - new Date(a.askedAt).getTime());
 }
 
-function getNextId(data: DiscussionsData): number {
-  if (data.discussions.length === 0) return 1;
-  return Math.max(...data.discussions.map((d) => d.id)) + 1;
-}
-
-export function addDiscussion(productId: number, question: string, askedBy: string): Discussion {
-  const data = readDiscussions();
-  const newDiscussion: Discussion = {
-    id: getNextId(data),
-    productId,
-    question: question.trim(),
-    askedBy: askedBy.trim(),
-    askedAt: new Date().toISOString(),
-    status: 'pending',
-  };
-  data.discussions.push(newDiscussion);
-  writeDiscussions(data);
-  return newDiscussion;
-}
-
-export function answerDiscussion(id: number, answer: string, answeredBy: string): Discussion | null {
-  const data = readDiscussions();
-  const index = data.discussions.findIndex((d) => d.id === id);
-  if (index === -1) return null;
-  data.discussions[index] = {
-    ...data.discussions[index],
-    answer: answer.trim(),
-    answeredBy: answeredBy.trim(),
-    answeredAt: new Date().toISOString(),
-    status: 'answered',
-  };
-  writeDiscussions(data);
-  return data.discussions[index];
-}
-
-export function deleteDiscussion(id: number): boolean {
-  const data = readDiscussions();
-  const initialLength = data.discussions.length;
-  data.discussions = data.discussions.filter((d) => d.id !== id);
-  if (data.discussions.length === initialLength) return false;
-  writeDiscussions(data);
-  return true;
+export async function deleteDiscussion(id: number): Promise<boolean> {
+  const connection = await pool.getConnection();
+  try {
+    const [result] = await connection.execute('DELETE FROM discussions WHERE id = ?', [id]);
+    return (result as mysql.ResultSetHeader).affectedRows > 0;
+  } finally {
+    connection.release();
+  }
 }

@@ -5,7 +5,7 @@ import { getStoreSettings, saveStoreSettings, StoreSettings } from '@/lib/store-
 export async function GET() {
   try {
     await requireAdmin();
-    const settings = getStoreSettings();
+    const settings = await getStoreSettings();
     return NextResponse.json(settings);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
     const body = await req.json();
-    const current = getStoreSettings();
+    const current = await getStoreSettings();
 
     const updated: StoreSettings = {
       storeName: body.storeName ?? current.storeName,
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    saveStoreSettings(updated);
+    await saveStoreSettings(updated);
     return NextResponse.json(updated);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {

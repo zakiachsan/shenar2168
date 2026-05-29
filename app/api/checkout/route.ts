@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
     // Earn coins based on store points settings
     if (body.billing?.phone) {
       try {
-        const settings = getStoreSettings();
+        const settings = await getStoreSettings();
         const pts = settings.points;
         let coinsEarned = 0;
         const orderTotal = parseFloat(finalOrder.total) || 0;

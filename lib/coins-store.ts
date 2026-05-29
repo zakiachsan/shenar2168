@@ -1,8 +1,5 @@
-import { readFile, writeFile } from 'fs/promises';
+import pool from './db';
 import { randomUUID } from 'crypto';
-import { join } from 'path';
-
-const COINS_FILE = join(process.cwd(), 'data', 'user-coins.json');
 
 export interface CoinTransaction {
   id: string;
@@ -13,33 +10,40 @@ export interface CoinTransaction {
   orderId?: string;
 }
 
-interface UserCoins {
+export interface UserCoins {
   balance: number;
   transactions: CoinTransaction[];
 }
 
-type CoinsStore = Record<string, UserCoins>;
-
-async function readStore(): Promise<CoinsStore> {
-  try {
-    const raw = await readFile(COINS_FILE, 'utf-8');
-    return JSON.parse(raw) as CoinsStore;
-  } catch {
-    return {};
-  }
-}
-
-async function writeStore(store: CoinsStore): Promise<void> {
-  await writeFile(COINS_FILE, JSON.stringify(store, null, 2), 'utf-8');
+function mapTransaction(row: any): CoinTransaction {
+  return {
+    id: row.id,
+    type: row.type,
+    amount: row.amount,
+    description: row.description,
+    date: row.date,
+    orderId: row.order_id,
+  };
 }
 
 export async function getUserCoins(phone: string): Promise<UserCoins> {
-  const store = await readStore();
-  const user = store[phone];
-  if (!user) {
-    return { balance: 0, transactions: [] };
+  const connection = await pool.getConnection();
+  try {
+    const [userRows] = await connection.execute('SELECT * FROM user_coins WHERE phone = ?', [phone]);
+    const users = userRows as any[];
+    const balance = users.length > 0 ? users[0].balance : 0;
+
+    const [txRows] = await connection.execute(
+      'SELECT * FROM coin_transactions WHERE phone = ? ORDER BY date DESC',
+      [phone]
+    );
+    return {
+      balance,
+      transactions: (txRows as any[]).map(mapTransaction),
+    };
+  } finally {
+    connection.release();
   }
-  return user;
 }
 
 export async function earnCoins(
@@ -48,20 +52,28 @@ export async function earnCoins(
   description: string,
   orderId?: string
 ): Promise<void> {
-  const store = await readStore();
-  if (!store[phone]) {
-    store[phone] = { balance: 0, transactions: [] };
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await connection.execute(
+      `INSERT INTO user_coins (phone, balance) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance)`,
+      [phone, amount]
+    );
+
+    await connection.execute(
+      'INSERT INTO coin_transactions (id, phone, type, amount, description, date, order_id) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
+      [randomUUID(), phone, 'earn', amount, description, orderId || null]
+    );
+
+    await connection.commit();
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
   }
-  store[phone].balance += amount;
-  store[phone].transactions.push({
-    id: randomUUID(),
-    type: 'earn',
-    amount,
-    description,
-    date: new Date().toISOString(),
-    orderId,
-  });
-  await writeStore(store);
 }
 
 export async function spendCoins(
@@ -69,17 +81,26 @@ export async function spendCoins(
   amount: number,
   description: string
 ): Promise<void> {
-  const store = await readStore();
-  if (!store[phone]) {
-    store[phone] = { balance: 0, transactions: [] };
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await connection.execute(
+      `INSERT INTO user_coins (phone, balance) VALUES (?, 0)
+       ON DUPLICATE KEY UPDATE balance = GREATEST(0, balance - ?)`,
+      [phone, amount]
+    );
+
+    await connection.execute(
+      'INSERT INTO coin_transactions (id, phone, type, amount, description, date, order_id) VALUES (?, ?, ?, ?, ?, NOW(), NULL)',
+      [randomUUID(), phone, 'spend', amount, description]
+    );
+
+    await connection.commit();
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
   }
-  store[phone].balance = Math.max(0, store[phone].balance - amount);
-  store[phone].transactions.push({
-    id: randomUUID(),
-    type: 'spend',
-    amount,
-    description,
-    date: new Date().toISOString(),
-  });
-  await writeStore(store);
 }

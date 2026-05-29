@@ -5,7 +5,7 @@ import { getEtalase, saveEtalase, EtalaseSection } from '@/lib/etalase';
 export async function GET() {
   try {
     await requireAdmin();
-    const sections = getEtalase();
+    const sections = await getEtalase();
     return NextResponse.json(sections);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         : [],
     }));
 
-    saveEtalase(sections);
+    await saveEtalase(sections);
     return NextResponse.json(sections);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {

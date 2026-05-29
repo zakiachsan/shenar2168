@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-
-const ETALASE_PATH = path.join(process.cwd(), 'data', 'etalase.json');
+import pool from './db';
 
 export interface EtalaseProduct {
   productId: number;
@@ -23,36 +20,6 @@ export interface EtalaseSection {
   products: EtalaseProduct[];
 }
 
-// Migrate old format (productIds array) to new format (products array)
-function migrateSection(s: any): EtalaseSection {
-  const products: EtalaseProduct[] = [];
-  if (Array.isArray(s.products)) {
-    s.products.forEach((p: any) => {
-      if (typeof p === 'number') {
-        products.push({ productId: p });
-      } else if (p && typeof p.productId === 'number') {
-        products.push(p);
-      }
-    });
-  } else if (Array.isArray(s.productIds)) {
-    s.productIds.forEach((id: number) => products.push({ productId: id }));
-  }
-
-  return {
-    id: String(s.id || `${s.type || 'custom'}-${Date.now()}`),
-    title: String(s.title || 'Etalase'),
-    type: String(s.type || 'custom'),
-    enabled: Boolean(s.enabled ?? true),
-    sortOrder: Number(s.sortOrder ?? 0),
-    bannerImage: s.bannerImage ? String(s.bannerImage) : undefined,
-    bannerLink: s.bannerLink ? String(s.bannerLink) : undefined,
-    icon: String(s.icon || getDefaultIcon(s.type)),
-    isFlashSale: Boolean(s.isFlashSale ?? s.type === 'flash_sale'),
-    flashSaleEndTime: s.flashSaleEndTime ? String(s.flashSaleEndTime) : undefined,
-    products,
-  };
-}
-
 function getDefaultIcon(type: string): string {
   switch (type) {
     case 'flash_sale': return 'Zap';
@@ -62,85 +29,103 @@ function getDefaultIcon(type: string): string {
   }
 }
 
-const defaultEtalase: EtalaseSection[] = [
-  {
-    id: 'flash-sale',
-    title: 'Flash Sale',
-    type: 'flash_sale',
-    enabled: true,
-    sortOrder: 1,
-    icon: 'Zap',
-    isFlashSale: true,
-    flashSaleEndTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    products: [
-      { productId: 1, flashSaleStock: 100, flashSaleSold: 50 },
-      { productId: 2, flashSaleStock: 80, flashSaleSold: 40 },
-      { productId: 3, flashSaleStock: 120, flashSaleSold: 72 },
-      { productId: 4, flashSaleStock: 60, flashSaleSold: 30 },
-    ],
-  },
-  {
-    id: 'discount',
-    title: 'Dengan Diskon',
-    type: 'discount',
-    enabled: true,
-    sortOrder: 2,
-    icon: 'Tag',
-    isFlashSale: false,
-    products: [
-      { productId: 102 },
-      { productId: 103 },
-      { productId: 104 },
-      { productId: 105 },
-    ],
-  },
-  {
-    id: 'best-sellers',
-    title: 'Produk Terlaris',
-    type: 'best_sellers',
-    enabled: true,
-    sortOrder: 3,
-    icon: 'TrendingUp',
-    isFlashSale: false,
-    products: [
-      { productId: 101 },
-      { productId: 106 },
-      { productId: 107 },
-      { productId: 108 },
-    ],
-  },
-];
-
-export function getEtalase(): EtalaseSection[] {
+async function getProductsForSection(sectionId: string): Promise<EtalaseProduct[]> {
+  const connection = await pool.getConnection();
   try {
-    if (!fs.existsSync(ETALASE_PATH)) {
-      return defaultEtalase;
-    }
-    const data = fs.readFileSync(ETALASE_PATH, 'utf-8');
-    const parsed = JSON.parse(data);
-    if (Array.isArray(parsed)) {
-      return parsed.map(migrateSection);
-    }
-    return defaultEtalase;
-  } catch {
-    return defaultEtalase;
+    const [rows] = await connection.execute(
+      'SELECT product_id, flash_sale_stock, flash_sale_sold FROM etalase_products WHERE section_id = ?',
+      [sectionId]
+    );
+    return (rows as any[]).map((r) => ({
+      productId: r.product_id,
+      flashSaleStock: r.flash_sale_stock ?? undefined,
+      flashSaleSold: r.flash_sale_sold ?? undefined,
+    }));
+  } finally {
+    connection.release();
   }
 }
 
-export function getEnabledEtalase(): EtalaseSection[] {
-  return getEtalase()
-    .filter((s) => s.enabled)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-}
-
-export function getEtalaseById(id: string): EtalaseSection | undefined {
-  return getEtalase().find((s) => s.id === id);
-}
-
-export function saveEtalase(sections: EtalaseSection[]): void {
-  const dir = path.dirname(ETALASE_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+export async function getEtalase(): Promise<EtalaseSection[]> {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.execute('SELECT * FROM etalase_sections ORDER BY sort_order');
+    const sections = rows as any[];
+    const result: EtalaseSection[] = [];
+    for (const s of sections) {
+      const products = await getProductsForSection(s.id);
+      result.push({
+        id: s.id,
+        title: s.title,
+        type: s.type,
+        enabled: Boolean(s.enabled),
+        sortOrder: s.sort_order,
+        bannerImage: s.banner_image || undefined,
+        bannerLink: s.banner_link || undefined,
+        icon: s.icon || getDefaultIcon(s.type),
+        isFlashSale: Boolean(s.is_flash_sale),
+        flashSaleEndTime: s.flash_sale_end_time ? new Date(s.flash_sale_end_time).toISOString() : undefined,
+        products,
+      });
+    }
+    return result;
+  } finally {
+    connection.release();
   }
-  fs.writeFileSync(ETALASE_PATH, JSON.stringify(sections, null, 2), 'utf-8');
+}
+
+export async function getEnabledEtalase(): Promise<EtalaseSection[]> {
+  const all = await getEtalase();
+  return all.filter((s) => s.enabled).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export async function getEtalaseById(id: string): Promise<EtalaseSection | undefined> {
+  const all = await getEtalase();
+  return all.find((s) => s.id === id);
+}
+
+export async function saveEtalase(sections: EtalaseSection[]): Promise<void> {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Delete all existing products first
+    await connection.execute('DELETE FROM etalase_products');
+    // Delete all existing sections
+    await connection.execute('DELETE FROM etalase_sections');
+
+    for (const s of sections) {
+      await connection.execute(
+        `INSERT INTO etalase_sections (id, title, type, enabled, sort_order, banner_image, banner_link, icon, is_flash_sale, flash_sale_end_time)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          s.id,
+          s.title,
+          s.type,
+          s.enabled ? 1 : 0,
+          s.sortOrder,
+          s.bannerImage || null,
+          s.bannerLink || null,
+          s.icon || getDefaultIcon(s.type),
+          s.isFlashSale ? 1 : 0,
+          s.flashSaleEndTime ? new Date(s.flashSaleEndTime) : null,
+        ]
+      );
+
+      for (const p of s.products) {
+        await connection.execute(
+          `INSERT INTO etalase_products (section_id, product_id, flash_sale_stock, flash_sale_sold)
+           VALUES (?, ?, ?, ?)`,
+          [s.id, p.productId, p.flashSaleStock ?? null, p.flashSaleSold ?? null]
+        );
+      }
+    }
+
+    await connection.commit();
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
 }
