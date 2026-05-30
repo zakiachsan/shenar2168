@@ -11,7 +11,7 @@ export default function ProductGrid() {
       {/* Section Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-shopee-orange font-medium text-base md:text-lg uppercase tracking-wide">
-          Rekomendasi Untukmu
+          Rekomendasi Untukmu [AUTO-DEPLOY TEST]
         </h2>
       </div>
 
