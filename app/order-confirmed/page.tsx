@@ -75,15 +75,21 @@ function OrderConfirmedContent() {
   };
 
   useEffect(() => {
-    if (!orderId) {
-      setLoading(false);
-      setError("ID pesanan tidak ditemukan");
-      return;
-    }
-
     async function fetchOrder() {
       try {
-        const res = await fetch(`/api/wc/orders/${orderId}`);
+        let res;
+        if (orderCode) {
+          // New secure flow: fetch by unguessable code
+          res = await fetch(`/api/orders/${orderCode}`);
+        } else if (orderId) {
+          // Legacy fallback (blocked for new orders)
+          res = await fetch(`/api/wc/orders/${orderId}`);
+        } else {
+          setLoading(false);
+          setError("ID pesanan tidak ditemukan");
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setOrder(data);
@@ -98,7 +104,7 @@ function OrderConfirmedContent() {
     }
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, orderCode]);
 
   // Effective status: use URL params if they indicate payment success, otherwise use WC order status
   const effectiveStatus = isPaidFromUrl ? "processing" : (order?.status || "pending");
