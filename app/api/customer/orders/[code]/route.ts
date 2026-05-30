@@ -17,10 +17,11 @@ export async function GET(
     const normalized = normalizePhone(phone);
 
     // Verify ownership
-    const [rows] = await db.execute(
-      'SELECT woo_order_id FROM order_codes WHERE code = ? AND (phone = ? OR phone = CONCAT("+", ?))',
-      [code, normalized, normalized]
+    const [allRows] = await db.execute(
+      'SELECT woo_order_id, phone FROM order_codes WHERE code = ?',
+      [code]
     );
+    const rows = (allRows as any[]).filter((r) => normalizePhone(r.phone) === normalized);
 
     const records = rows as any[];
     if (!records.length) {

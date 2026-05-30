@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
     }
 
     const normalized = normalizePhone(phone);
-    const [rows] = await db.execute(
-      'SELECT code, woo_order_id, created_at FROM order_codes WHERE phone = ? OR phone = CONCAT("+", ?) ORDER BY created_at DESC',
-      [normalized, normalized]
+    const [allRows] = await db.execute(
+      'SELECT code, woo_order_id, created_at, phone FROM order_codes ORDER BY created_at DESC'
     );
+    const rows = (allRows as any[]).filter((r) => normalizePhone(r.phone) === normalized);
 
     return NextResponse.json({ orders: rows });
   } catch (e: any) {
