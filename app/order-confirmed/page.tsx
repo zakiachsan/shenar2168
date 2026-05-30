@@ -37,6 +37,7 @@ interface OrderData {
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
+  const orderCode = searchParams.get("code");
   // Read Midtrans redirect params
   const transactionStatus = searchParams.get("transaction_status");
   const statusCode = searchParams.get("status_code");
@@ -47,7 +48,6 @@ function OrderConfirmedContent() {
                          (transactionStatus === "capture" && statusCode === "200");
 
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [orderCode, setOrderCode] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -95,15 +95,6 @@ function OrderConfirmedContent() {
       } finally {
         setLoading(false);
       }
-    }
-
-    // Try to get orderCode from localStorage
-    try {
-      const stored = JSON.parse(localStorage.getItem("shenar2168-orders") || "[]");
-      const match = stored.find((o: any) => String(o.id) === orderId);
-      if (match?.orderCode) setOrderCode(match.orderCode);
-    } catch {
-      // ignore
     }
 
     fetchOrder();
@@ -285,7 +276,7 @@ function OrderConfirmedContent() {
 
               <div className="flex items-center justify-center gap-3">
                 <Link
-                  href="/profile/orders"
+                  href={orderCode ? `/profile/orders/${orderCode}` : "/profile/orders"}
                   className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-shopee-orange text-shopee-orange rounded-sm text-sm hover:bg-shopee-orange-light transition-colors"
                 >
                   <Package className="w-4 h-4" />

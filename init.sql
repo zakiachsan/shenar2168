@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS coin_transactions (
   FOREIGN KEY (phone) REFERENCES user_coins(phone) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS order_codes (
+  code VARCHAR(20) PRIMARY KEY,
+  woo_order_id INT NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_phone (phone),
+  INDEX idx_woo_order_id (woo_order_id)
+);
+
 -- Insert default store settings
 INSERT INTO store_settings (id) VALUES (1)
 ON DUPLICATE KEY UPDATE id = id;

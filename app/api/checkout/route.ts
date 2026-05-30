@@ -5,12 +5,24 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import https from 'https';
+import { randomBytes } from 'crypto';
 import { earnCoins } from '@/lib/coins-store';
 import { getStoreSettings } from '@/lib/store-settings';
+import db from '@/lib/db';
 
 const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
 const CS = process.env.WC_CONSUMER_SECRET || 'cs_Uu641i6QalcTuvSnZ0LZbH3CJhW8IaagIbH4Hi0i';
+
+function generateOrderCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'SH';
+  const bytes = randomBytes(6);
+  for (let i = 0; i < 6; i++) {
+    result += chars[bytes[i] % chars.length];
+  }
+  return result;
+}
 
 function wcRequest(
   method: string,
@@ -153,6 +165,37 @@ export async function POST(req: NextRequest) {
 
     const order = createResult.data;
 
+    // 1b. Generate unique order code and save to WooCommerce meta + local DB
+    const orderCode = generateOrderCode();
+    await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
+      meta_data: [
+        { key: '_order_code', value: orderCode },
+        { key: '_customer_phone', value: body.billing.phone },
+      ],
+    });
+
+    // Save mapping to local MySQL
+    try {
+      await db.execute(
+        'INSERT INTO order_codes (code, woo_order_id, phone) VALUES (?, ?, ?)',
+        [orderCode, order.id, body.billing.phone]
+      );
+    } catch (dbErr: any) {
+      // If code collision, regenerate once
+      if (dbErr.code === 'ER_DUP_ENTRY') {
+        const fallbackCode = generateOrderCode();
+        await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
+          meta_data: [{ key: '_order_code', value: fallbackCode }],
+        });
+        await db.execute(
+          'INSERT INTO order_codes (code, woo_order_id, phone) VALUES (?, ?, ?)',
+          [fallbackCode, order.id, body.billing.phone]
+        );
+      } else {
+        console.error('Failed to save order code:', dbErr);
+      }
+    }
+
     // 2. Auto-advance order to processing (payment gateway integration pending)
     const updateResult = await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
       status: 'processing',
@@ -209,6 +252,7 @@ export async function POST(req: NextRequest) {
       success: true,
       order: {
         id: finalOrder.id,
+        orderCode,
         order_key: finalOrder.order_key,
         total: finalOrder.total,
         status: finalOrder.status,

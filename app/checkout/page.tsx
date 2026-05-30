@@ -353,46 +353,19 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Gagal membuat pesanan");
       }
 
-      // Success - save order to localStorage, remove checked-out items, then redirect
-      const orderCode = `RG${Math.floor(10000 + Math.random() * 90000)}`;
-      const orderRecord = {
-        id: String(data.order.id),
-        orderCode,
-        status: "pending" as const,
-        items: checkoutItems.map((item) => ({
-          productId: item.productId,
-          name: item.name,
-          image: item.image,
-          price: item.price,
-          originalPrice: item.originalPrice || item.price,
-          quantity: item.quantity,
-          variationId: item.variationId,
-        })),
-        subtotal,
-        originalSubtotal,
-        productDiscount,
-        total: total,
-        date: new Date().toISOString(),
-        shipping: selectedShipping,
-        shippingCost: shipping,
-        shippingCourier: selectedRate
-          ? `${selectedRate.courier_code.toUpperCase()} ${courierServiceLabels[selectedRate.courier_service_name] || selectedRate.courier_service_name}`
-          : undefined,
-        voucherDiscount: voucherDiscount,
-        couponCode: appliedCoupon?.code || undefined,
-        trackingId: data.shipping?.tracking_id,
-        waybillId: data.shipping?.waybill_id,
-        biteshipStatus: data.shipping?.status,
-      };
-      const existingOrders = JSON.parse(localStorage.getItem("shenar2168-orders") || "[]");
-      existingOrders.unshift(orderRecord);
-      localStorage.setItem("shenar2168-orders", JSON.stringify(existingOrders));
+      // Success - remove checked-out items, then redirect
+      const orderCode = data.order?.orderCode;
 
       checkoutItems.forEach((item) => {
         removeItem(item.productId, item.variationId);
       });
       localStorage.removeItem("shenar2168-checkout-selected");
-      if (data.midtrans_redirect_url) { window.location.href = data.midtrans_redirect_url; } else { window.location.href = `/order-confirmed?id=${data.order.id}`; }
+
+      if (data.midtrans_redirect_url) {
+        window.location.href = data.midtrans_redirect_url;
+      } else {
+        window.location.href = `/order-confirmed?id=${data.order.id}&code=${orderCode || ""}`;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {

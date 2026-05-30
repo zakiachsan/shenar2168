@@ -64,6 +64,11 @@ async function handler(req: NextRequest) {
   const p = new URL(req.url).pathname.replace('/api/wc', '');
   if (!p) return NextResponse.json({ error: 'no path' }, { status: 400 });
 
+  // Block access to order endpoints from public proxy
+  if (p.startsWith('/orders')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const params: Record<string, string> = {};
   new URL(req.url).searchParams.forEach((v, k) => {
     params[k] = v;
