@@ -19,6 +19,7 @@ interface Order {
   billing: { first_name: string; last_name: string; email: string };
   payment_method_title: string;
   line_items: OrderItem[];
+  _order_code?: string | null;
 }
 
 const STATUS_TABS = [
@@ -167,6 +168,7 @@ function OrdersContent() {
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Pesanan</th>
+                <th className="px-5 py-3.5">Kode</th>
                 <th className="px-5 py-3.5">Pelanggan</th>
                 <th className="px-5 py-3.5">Total</th>
                 <th className="px-5 py-3.5">Status</th>
@@ -178,7 +180,7 @@ function OrdersContent() {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
+                  <td colSpan={8} className="px-5 py-12 text-center">
                     <div className="inline-flex items-center gap-2 text-sm text-gray-400">
                       <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full" />
                       Memuat pesanan...
@@ -187,7 +189,7 @@ function OrdersContent() {
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
+                  <td colSpan={8} className="px-5 py-12 text-center">
                     <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm text-gray-400">Belum ada pesanan</p>
                   </td>
@@ -204,6 +206,15 @@ function OrdersContent() {
                         #{order.number || order.id}
                       </p>
                       <p className="text-xs text-gray-400">{order.line_items?.length || 0} item</p>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {order._order_code ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+                          {order._order_code}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="text-sm font-medium text-gray-900">

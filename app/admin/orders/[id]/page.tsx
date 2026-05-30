@@ -27,6 +27,7 @@ interface OrderDetail {
   payment_method_title: string;
   transaction_id: string;
   customer_note: string;
+  _order_code?: string | null;
   billing: {
     first_name: string;
     last_name: string;
@@ -222,6 +223,13 @@ export default function OrderDetailPage() {
                 {STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
+            {order._order_code && (
+              <p className="text-sm font-medium mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+                  {order._order_code}
+                </span>
+              </p>
+            )}
             <p className="text-sm text-gray-500 mt-1">
               Dibuat: {formatDate(order.date_created)}
             </p>

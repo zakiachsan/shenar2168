@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { adminGetOrders, adminGetOrder, adminUpdateOrderStatus } from '@/lib/admin-api';
+import db from '@/lib/db';
+
+function getOrderCodeFromMeta(meta: any[]): string | null {
+  const found = meta?.find((m: any) => m.key === '_order_code');
+  return found?.value || null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,7 +20,10 @@ export async function GET(req: NextRequest) {
       if (result.status >= 400) {
         return NextResponse.json({ error: result.data.message || 'Pesanan tidak ditemukan' }, { status: result.status });
       }
-      return NextResponse.json(result.data);
+      // Enrich with order code from meta_data
+      const order = result.data;
+      order._order_code = getOrderCodeFromMeta(order.meta_data) || null;
+      return NextResponse.json(order);
     }
 
     // List orders
@@ -28,7 +37,25 @@ export async function GET(req: NextRequest) {
     if (result.status >= 400) {
       return NextResponse.json({ error: result.data.message || 'Gagal mengambil pesanan' }, { status: result.status });
     }
-    return NextResponse.json(result.data);
+
+    const orders = Array.isArray(result.data) ? result.data : [];
+
+    // Enrich with order codes from local DB
+    if (orders.length > 0) {
+      const orderIds = orders.map((o: any) => o.id);
+      const [rows] = await db.execute(
+        'SELECT woo_order_id, code FROM order_codes WHERE woo_order_id IN (?)',
+        [orderIds]
+      );
+      const codeMap = new Map<number, string>();
+      (rows as any[]).forEach((r) => codeMap.set(r.woo_order_id, r.code));
+
+      orders.forEach((order: any) => {
+        order._order_code = codeMap.get(order.id) || getOrderCodeFromMeta(order.meta_data) || null;
+      });
+    }
+
+    return NextResponse.json(orders);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
