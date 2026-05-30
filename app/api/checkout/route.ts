@@ -9,6 +9,7 @@ import { randomBytes } from 'crypto';
 import { earnCoins } from '@/lib/coins-store';
 import { getStoreSettings } from '@/lib/store-settings';
 import db from '@/lib/db';
+import { normalizePhone } from '@/lib/phone';
 
 const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
@@ -178,7 +179,7 @@ export async function POST(req: NextRequest) {
     try {
       await db.execute(
         'INSERT INTO order_codes (code, woo_order_id, phone) VALUES (?, ?, ?)',
-        [orderCode, order.id, body.billing.phone]
+        [orderCode, order.id, normalizePhone(body.billing.phone)]
       );
     } catch (dbErr: any) {
       // If code collision, regenerate once

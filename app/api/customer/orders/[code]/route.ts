@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { normalizePhone } from '@/lib/phone';
 
 export async function GET(
   req: NextRequest,
@@ -13,10 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const normalized = normalizePhone(phone);
+
     // Verify ownership
     const [rows] = await db.execute(
-      'SELECT woo_order_id FROM order_codes WHERE code = ? AND phone = ?',
-      [code, phone]
+      'SELECT woo_order_id FROM order_codes WHERE code = ? AND REPLACE(phone, "+", "") = ?',
+      [code, normalized]
     );
 
     const records = rows as any[];

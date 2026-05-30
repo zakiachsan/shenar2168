@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { normalizePhone } from '@/lib/phone';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,9 +9,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const normalized = normalizePhone(phone);
     const [rows] = await db.execute(
-      'SELECT code, woo_order_id, created_at FROM order_codes WHERE phone = ? ORDER BY created_at DESC',
-      [phone]
+      'SELECT code, woo_order_id, created_at FROM order_codes WHERE REPLACE(phone, "+", "") = ? ORDER BY created_at DESC',
+      [normalized]
     );
 
     return NextResponse.json({ orders: rows });
