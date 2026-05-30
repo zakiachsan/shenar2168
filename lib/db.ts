@@ -11,4 +11,22 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+// Auto-migrate: ensure order_codes table exists
+(async () => {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS order_codes (
+        code VARCHAR(20) PRIMARY KEY,
+        woo_order_id INT NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_phone (phone),
+        INDEX idx_woo_order_id (woo_order_id)
+      )
+    `);
+  } catch (e) {
+    console.error('DB auto-migrate error:', e);
+  }
+})();
+
 export default pool;
