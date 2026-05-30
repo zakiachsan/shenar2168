@@ -18,8 +18,8 @@ export async function GET(
 
     // Verify ownership
     const [rows] = await db.execute(
-      'SELECT woo_order_id FROM order_codes WHERE code = ? AND REPLACE(phone, "+", "") = ?',
-      [code, normalized]
+      'SELECT woo_order_id FROM order_codes WHERE code = ? AND (phone = ? OR phone = CONCAT("+", ?))',
+      [code, normalized, normalized]
     );
 
     const records = rows as any[];

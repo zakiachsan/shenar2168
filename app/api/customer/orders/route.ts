@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
 
     const normalized = normalizePhone(phone);
     const [rows] = await db.execute(
-      'SELECT code, woo_order_id, created_at FROM order_codes WHERE REPLACE(phone, "+", "") = ? ORDER BY created_at DESC',
-      [normalized]
+      'SELECT code, woo_order_id, created_at FROM order_codes WHERE phone = ? OR phone = CONCAT("+", ?) ORDER BY created_at DESC',
+      [normalized, normalized]
     );
 
     return NextResponse.json({ orders: rows });
