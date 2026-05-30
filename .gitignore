@@ -52,3 +52,6 @@ next-env.d.ts
 # cache
 UsersUser.npm-cache/
 .playwright-mcp/
+
+# deploy keys
+.deploy_keys/
