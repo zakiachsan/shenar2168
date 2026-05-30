@@ -378,7 +378,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 p-0 lg:p-4">
               {/* Images */}
               <div className="lg:w-[450px] flex-shrink-0">
-                <div className="aspect-square bg-shopee-gray relative">
+                <div className="aspect-[4/3] lg:aspect-square bg-shopee-gray relative">
                   <img
                     src={images[selectedImage] || fallbackImg}
                     alt={product.name}
@@ -473,6 +473,13 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
 
               {/* Info */}
               <div className="flex-1 px-3 lg:px-0 py-3 lg:py-0">
+                {/* Category */}
+                {product.categories && product.categories.length > 0 && (
+                  <p className="text-[11px] text-shopee-text-secondary mb-1">
+                    Kategori: <span className="text-shopee-orange">{product.categories.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')}</span>
+                  </p>
+                )}
+
                 <div className="flex items-start gap-2">
                   {product.badge && (
                     <span className="bg-shopee-green text-white text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0 mt-0.5">
@@ -482,7 +489,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   <h1 className="text-base lg:text-xl text-shopee-text leading-snug">{product.name}</h1>
                 </div>
 
-                <div className="flex items-center gap-3 mt-2 text-sm">
+                <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
                   <div className="flex items-center gap-1">
                     <span className="text-shopee-orange underline">{product.rating}</span>
                     <div className="flex">
@@ -500,6 +507,25 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   </div>
                   <span className="text-shopee-border">|</span>
                   <span className="text-shopee-text-secondary">{product.sold} Terjual</span>
+                  <button
+                    onClick={() => {
+                      if (!product) return;
+                      const now = toggleFavorite({
+                        id: product.id,
+                        name: product.name,
+                        price: effectivePrice,
+                        image: product.image,
+                      });
+                      setFavorited(now);
+                    }}
+                    className={`flex items-center gap-0.5 text-xs transition-colors ${
+                      favorited ? "text-red-500" : "text-shopee-text-secondary hover:text-red-500"
+                    }`}
+                    aria-label={favorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${favorited ? "fill-red-500" : ""}`} />
+                    {favorited ? "Disukai" : "Suka"}
+                  </button>
                 </div>
 
                 {/* Price */}
@@ -681,19 +707,19 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   />
                 </div>
 
-                {/* Guarantees */}
-                <div className="hidden lg:grid grid-cols-3 gap-3 mt-6 p-3 border border-shopee-border rounded-sm">
-                  <div className="flex items-center gap-2 text-xs text-shopee-text-secondary">
-                    <ShieldCheck className="w-4 h-4 text-shopee-green" />
-                    100% Ori
+                {/* Guarantees — mobile & desktop */}
+                <div className="grid grid-cols-3 gap-3 mt-4 p-3 border border-shopee-border rounded-sm">
+                  <div className="flex items-center gap-1.5 text-[11px] text-shopee-text-secondary">
+                    <ShieldCheck className="w-3.5 h-3.5 text-shopee-green flex-shrink-0" />
+                    <span>100% Ori</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-shopee-text-secondary">
-                    <Truck className="w-4 h-4 text-shopee-green" />
-                    Pengiriman Cepat
+                  <div className="flex items-center gap-1.5 text-[11px] text-shopee-text-secondary">
+                    <Truck className="w-3.5 h-3.5 text-shopee-green flex-shrink-0" />
+                    <span>Pengiriman Cepat</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-shopee-text-secondary">
-                    <Clock className="w-4 h-4 text-shopee-green" />
-                    15 Hari Retur
+                  <div className="flex items-center gap-1.5 text-[11px] text-shopee-text-secondary">
+                    <Clock className="w-3.5 h-3.5 text-shopee-green flex-shrink-0" />
+                    <span>15 Hari Retur</span>
                   </div>
                 </div>
               </div>
