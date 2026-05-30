@@ -1,0 +1,24 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: Pengguna (6285694662592)
+    - button "Keluar" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+      - text: Keluar
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - img [ref=e14]
+      - heading "Shenar2168 Admin" [level=1] [ref=e16]
+      - paragraph [ref=e17]: Masuk untuk mengelola toko
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]: Username
+        - textbox "Masukkan username" [active] [ref=e22]
+      - generic [ref=e23]:
+        - generic [ref=e24]: Password
+        - generic [ref=e25]:
+          - textbox "Masukkan password" [ref=e26]
+          - button [ref=e27]:
+            - img [ref=e28]
+      - button "Masuk" [ref=e31]
+    - paragraph [ref=e32]: Panel Admin Shenar2168 — E-commerce App
+  - alert [ref=e33]

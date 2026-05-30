@@ -1,34 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, Heart } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
 import { NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
-
-interface FavoriteItem {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-}
-
-const initialFavorites: FavoriteItem[] = [
-  { id: 1, name: "Kaos Polos Katun Premium", price: 45000, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop" },
-  { id: 2, name: "Hoodie Oversize Pria", price: 125000, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200&h=200&fit=crop" },
-  { id: 3, name: "Smart Watch Series 7", price: 149000, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=200&fit=crop" },
-];
+import { getFavorites, removeFavorite, FavoriteItem } from "@/lib/favorites";
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<FavoriteItem[]>(initialFavorites);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [mounted, setMounted] = useState(false);
 
-  const removeFavorite = (e: React.MouseEvent, id: number) => {
+  useEffect(() => {
+    setMounted(true);
+    setFavorites(getFavorites());
+
+    const handler = () => setFavorites(getFavorites());
+    window.addEventListener("favorites-changed", handler);
+    return () => window.removeEventListener("favorites-changed", handler);
+  }, []);
+
+  const handleRemove = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) => prev.filter((item) => item.id !== id));
+    removeFavorite(id);
+    setFavorites(getFavorites());
   };
+
+  if (!mounted) {
+    return (
+      <>
+        <Header />
+        <main className="flex-1 bg-shopee-gray pb-20 lg:pb-8 min-h-screen" />
+        <BottomNav />
+      </>
+    );
+  }
 
   return (
     <>
@@ -74,7 +83,7 @@ export default function FavoritesPage() {
                   </Link>
                   {/* Like button */}
                   <button
-                    onClick={(e) => removeFavorite(e, item.id)}
+                    onClick={(e) => handleRemove(e, item.id)}
                     className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
                     aria-label="Hapus dari favorit"
                   >

@@ -17,6 +17,7 @@ import {
   MessageCircle,
   User,
   Send,
+  Check,
 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
@@ -25,6 +26,7 @@ import AddToCartButton from "@/app/components/product/AddToCartButton";
 import BuyNowButton from "@/app/components/product/BuyNowButton";
 import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stripHtml, toSlug } from "@/lib/data";
 import { getProductVariations, WCVariation } from "@/lib/woocommerce";
+import { isFavorite, toggleFavorite, FavoriteItem } from "@/lib/favorites";
 
 function mapWCProductToLocal(wcProduct: any): Product {
   const image = wcProduct.images?.[0]?.src || "";
@@ -68,6 +70,8 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   const [coupons, setCoupons] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Variant pricing state
   const [wcProductRaw, setWcProductRaw] = useState<any>(null);
@@ -151,6 +155,12 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   );
   const sizes = sizeAttr?.options || [];
   const colors = colorAttr?.options || [];
+
+  useEffect(() => {
+    if (product) {
+      setFavorited(isFavorite(product.id));
+    }
+  }, [product?.id]);
 
   useEffect(() => {
     if (initialProduct) {
@@ -399,11 +409,63 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                 <div className="hidden lg:flex items-center justify-between mt-4 px-1">
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-shopee-text-secondary">Bagikan:</span>
-                    <button className="flex items-center gap-1 text-xs text-shopee-text hover:text-shopee-orange">
-                      <Heart className="w-4 h-4" /> Favorit
+                    <button
+                      onClick={() => {
+                        if (!product) return;
+                        const now = toggleFavorite({
+                          id: product.id,
+                          name: product.name,
+                          price: effectivePrice,
+                          image: product.image,
+                        });
+                        setFavorited(now);
+                      }}
+                      className={`flex items-center gap-1 text-xs transition-colors ${
+                        favorited ? "text-red-500 hover:text-red-600" : "text-shopee-text hover:text-shopee-orange"
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${favorited ? "fill-red-500" : ""}`} /> {favorited ? "Favorit" : "Favorit"}
                     </button>
-                    <button className="flex items-center gap-1 text-xs text-shopee-text hover:text-shopee-orange">
-                      <Share2 className="w-4 h-4" /> Share
+                    <button
+                      onClick={async () => {
+                        const url = window.location.href;
+                        const shareData = {
+                          title: product?.name || "Shenar2168",
+                          text: `Lihat ${product?.name} di Shenar2168`,
+                          url,
+                        };
+                        try {
+                          if (navigator.share) {
+                            await navigator.share(shareData);
+                          } else if (navigator.clipboard) {
+                            await navigator.clipboard.writeText(url);
+                            setShareCopied(true);
+                            setTimeout(() => setShareCopied(false), 2000);
+                          } else {
+                            const textarea = document.createElement("textarea");
+                            textarea.value = url;
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(textarea);
+                            setShareCopied(true);
+                            setTimeout(() => setShareCopied(false), 2000);
+                          }
+                        } catch {
+                          // user cancelled share
+                        }
+                      }}
+                      className="flex items-center gap-1 text-xs text-shopee-text hover:text-shopee-orange transition-colors"
+                    >
+                      {shareCopied ? (
+                        <>
+                          <Check className="w-4 h-4 text-green-500" /> Tersalin
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-4 h-4" /> Share
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
