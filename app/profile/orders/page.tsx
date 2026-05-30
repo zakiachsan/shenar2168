@@ -35,8 +35,10 @@ export default function OrdersPage() {
 
     async function fetchOrders() {
       try {
+        const phone = user?.phone;
+        if (!phone) return;
         const res = await fetch("/api/customer/orders", {
-          headers: { "x-user-phone": user.phone },
+          headers: { "x-user-phone": phone },
         });
         if (res.ok) {
           const data = await res.json();

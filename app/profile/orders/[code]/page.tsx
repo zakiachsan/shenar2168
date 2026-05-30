@@ -75,8 +75,10 @@ export default function OrderDetailPage() {
 
     async function fetchOrder() {
       try {
+        const phone = user?.phone;
+        if (!phone) return;
         const res = await fetch(`/api/customer/orders/${code}`, {
-          headers: { "x-user-phone": user.phone },
+          headers: { "x-user-phone": phone },
         });
         if (res.ok) {
           const data = await res.json();
@@ -235,7 +237,7 @@ export default function OrderDetailPage() {
             <div className="bg-white lg:rounded-sm p-4 space-y-2">
               <h3 className="text-sm font-medium text-shopee-text">Informasi Pengiriman</h3>
               <p className="text-sm text-shopee-text">{order.shipping.first_name} {order.shipping.last_name}</p>
-              <p className="text-sm text-shopee-text-secondary">{order.shipping.phone || order.billing.phone}</p>
+              <p className="text-sm text-shopee-text-secondary">{order.billing.phone}</p>
               <p className="text-sm text-shopee-text-secondary">{order.shipping.address_1}, {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</p>
               {order.customer_note && <p className="text-xs text-shopee-text-secondary mt-1">Catatan: {order.customer_note}</p>}
             </div>
