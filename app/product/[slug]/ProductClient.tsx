@@ -357,55 +357,49 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
       <Header />
       <main className="flex-1 bg-shopee-gray pb-28 lg:pb-0">
         <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-0 lg:py-4">
-          {/* Breadcrumb */}
-          <div className="hidden lg:flex items-center gap-1 text-xs text-shopee-text-secondary mb-3 px-1">
-            <Link href="/" className="hover:text-shopee-orange">Beranda</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="hover:text-shopee-orange cursor-pointer">{product.categories?.[0] ? (product.categories[0].charAt(0).toUpperCase() + product.categories[0].slice(1)).replace(/-/g, " ") : "Semua Kategori"}</span>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-shopee-text line-clamp-1 max-w-[300px]">{product.name}</span>
-          </div>
-
-          {/* Mobile back */}
-          <div className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white sticky top-0 z-40 border-b border-shopee-border">
-            <Link href="/" className="p-1">
-              <ChevronLeft className="w-5 h-5 text-shopee-text" />
-            </Link>
-            <span className="text-sm text-shopee-text line-clamp-1">{product.name}</span>
-          </div>
-
           <div className="bg-white rounded-sm">
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 p-0 lg:p-4">
               {/* Images */}
               <div className="lg:w-[450px] flex-shrink-0">
-                <div className="aspect-[4/3] lg:aspect-square bg-shopee-gray relative">
-                  <img
-                    src={images[selectedImage] || fallbackImg}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = NO_IMAGE_PLACEHOLDER;
-                    }}
-                  />
-                  {product.discount && (
-                    <div className="absolute top-3 left-3 bg-shopee-orange text-white text-xs font-bold px-2 py-1 rounded-sm">
-                      {product.discount}% OFF
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2 mt-3 overflow-x-auto px-3 lg:px-0 pb-2 scrollbar-hide">
+                {/* Horizontal scrolling image carousel */}
+                <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth">
                   {images.map((img, idx) => (
-                    <button
+                    <div
                       key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`w-16 h-16 flex-shrink-0 border-2 rounded-sm overflow-hidden ${
-                        selectedImage === idx ? "border-shopee-orange" : "border-transparent"
-                      }`}
+                      className="snap-start flex-shrink-0 w-full aspect-[4/3] lg:aspect-square bg-shopee-gray relative"
                     >
-                      <img src={img || fallbackImg} alt="" className="w-full h-full object-cover" />
-                    </button>
+                      <img
+                        src={img || fallbackImg}
+                        alt={`${product.name} - ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = NO_IMAGE_PLACEHOLDER;
+                        }}
+                      />
+                      {idx === 0 && product.discount && (
+                        <div className="absolute top-3 left-3 bg-shopee-orange text-white text-xs font-bold px-2 py-1 rounded-sm">
+                          {product.discount}% OFF
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
+
+                {/* Image pagination dots */}
+                {images.length > 1 && (
+                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                    {images.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          selectedImage === idx ? "bg-shopee-orange" : "bg-shopee-border"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Desktop: share/fav row */}
                 <div className="hidden lg:flex items-center justify-between mt-4 px-1">
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-shopee-text-secondary">Bagikan:</span>
@@ -473,22 +467,81 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
 
               {/* Info */}
               <div className="flex-1 px-3 lg:px-0 py-3 lg:py-0">
-                {/* Category */}
-                {product.categories && product.categories.length > 0 && (
-                  <p className="text-[11px] text-shopee-text-secondary mb-1">
-                    Kategori: <span className="text-shopee-orange">{product.categories.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')}</span>
-                  </p>
-                )}
-
-                <div className="flex items-start gap-2">
-                  {product.badge && (
-                    <span className="bg-shopee-green text-white text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0 mt-0.5">
-                      {product.badge}
-                    </span>
-                  )}
-                  <h1 className="text-base lg:text-xl text-shopee-text leading-snug">{product.name}</h1>
+                {/* Price row — price left, sold + like right */}
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl lg:text-3xl text-shopee-orange font-medium">
+                        {formatPrice(effectivePrice)}
+                      </span>
+                      {effectiveOriginalPrice > effectivePrice && (
+                        <span className="text-sm text-shopee-text-secondary line-through">
+                          {formatPrice(effectiveOriginalPrice)}
+                        </span>
+                      )}
+                    </div>
+                    {effectiveOriginalPrice > effectivePrice && (
+                      <span className="inline-flex self-start bg-shopee-orange text-white text-xs px-1.5 py-0.5 rounded-sm mt-1">
+                        {Math.round((1 - effectivePrice / effectiveOriginalPrice) * 100)}% OFF
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-xs text-shopee-text-secondary">
+                    <span>{product.sold} Terjual</span>
+                    <button
+                      onClick={() => {
+                        if (!product) return;
+                        const now = toggleFavorite({
+                          id: product.id,
+                          name: product.name,
+                          price: effectivePrice,
+                          image: product.image,
+                        });
+                        setFavorited(now);
+                      }}
+                      className={`flex items-center gap-0.5 transition-colors ${
+                        favorited ? "text-red-500" : "text-shopee-text-secondary hover:text-red-500"
+                      }`}
+                      aria-label={favorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${favorited ? "fill-red-500" : ""}`} />
+                      {favorited ? "Disukai" : "Suka"}
+                    </button>
+                  </div>
                 </div>
 
+                {/* Coupons */}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {coupons.slice(0, 2).map((c) => (
+                    <span
+                      key={c.id}
+                      className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm"
+                    >
+                      {c.discount_type === 'percent'
+                        ? `${c.amount}% OFF`
+                        : `Diskon ${formatPrice(c.amount)}`}
+                    </span>
+                  ))}
+                  {coupons.length === 0 && (
+                    <span className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm">
+                      Diskon Menarik
+                    </span>
+                  )}
+                </div>
+
+                {/* Product name */}
+                <div className="mt-3">
+                  <div className="flex items-start gap-2">
+                    {product.badge && (
+                      <span className="bg-shopee-green text-white text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0 mt-0.5">
+                        {product.badge}
+                      </span>
+                    )}
+                    <h1 className="text-base lg:text-xl text-shopee-text leading-snug">{product.name}</h1>
+                  </div>
+                </div>
+
+                {/* Rating */}
                 <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
                   <div className="flex items-center gap-1">
                     <span className="text-shopee-orange underline">{product.rating}</span>
@@ -504,71 +557,6 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                         />
                       ))}
                     </div>
-                  </div>
-                  <span className="text-shopee-border">|</span>
-                  <span className="text-shopee-text-secondary">{product.sold} Terjual</span>
-                  <button
-                    onClick={() => {
-                      if (!product) return;
-                      const now = toggleFavorite({
-                        id: product.id,
-                        name: product.name,
-                        price: effectivePrice,
-                        image: product.image,
-                      });
-                      setFavorited(now);
-                    }}
-                    className={`flex items-center gap-0.5 text-xs transition-colors ${
-                      favorited ? "text-red-500" : "text-shopee-text-secondary hover:text-red-500"
-                    }`}
-                    aria-label={favorited ? "Hapus dari favorit" : "Tambah ke favorit"}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${favorited ? "fill-red-500" : ""}`} />
-                    {favorited ? "Disukai" : "Suka"}
-                  </button>
-                </div>
-
-                {/* Price */}
-                <div className="mt-3 bg-shopee-gray/50 p-3 rounded-sm">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-2xl lg:text-3xl text-shopee-orange font-medium">
-                      {formatPrice(effectivePrice)}
-                    </span>
-                    {effectiveOriginalPrice > effectivePrice && (
-                      <span className="text-sm text-shopee-text-secondary line-through">
-                        {formatPrice(effectiveOriginalPrice)}
-                      </span>
-                    )}
-                    {effectiveOriginalPrice > effectivePrice && (
-                      <span className="bg-shopee-orange text-white text-xs px-1.5 py-0.5 rounded-sm">
-                        {Math.round((1 - effectivePrice / effectiveOriginalPrice) * 100)}% OFF
-                      </span>
-                    )}
-                  </div>
-                  {isVariable && matchedVariation && (
-                    <p className="text-xs text-shopee-text-secondary mt-1">
-                      Varian: {matchedVariation.attributes.map((a) => `${a.name}: ${a.option}`).join(', ')}
-                      {effectiveStock !== null && effectiveStock !== undefined && (
-                        <span className="ml-2">&middot; Stok: {effectiveStock}</span>
-                      )}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {coupons.slice(0, 2).map((c) => (
-                      <span
-                        key={c.id}
-                        className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm"
-                      >
-                        {c.discount_type === 'percent'
-                          ? `${c.amount}% OFF`
-                          : `Diskon ${formatPrice(c.amount)}`}
-                      </span>
-                    ))}
-                    {coupons.length === 0 && (
-                      <span className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm">
-                        Diskon Menarik
-                      </span>
-                    )}
                   </div>
                 </div>
 
@@ -722,6 +710,15 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     <span>15 Hari Retur</span>
                   </div>
                 </div>
+
+                {isVariable && matchedVariation && (
+                  <p className="text-xs text-shopee-text-secondary mt-2">
+                    Varian: {matchedVariation.attributes.map((a) => `${a.name}: ${a.option}`).join(', ')}
+                    {effectiveStock !== null && effectiveStock !== undefined && (
+                      <span className="ml-2">&middot; Stok: {effectiveStock}</span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
 
