@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Hanya file gambar (JPG, PNG, WEBP, GIF) yang diizinkan' }, { status: 400 });
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    // Validate file size (max 1MB)
+    const maxSize = 1 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'Ukuran file maksimal 5MB' }, { status: 400 });
+      return NextResponse.json({ error: 'Ukuran file maksimal 1MB' }, { status: 400 });
     }
 
     // Read file buffer

@@ -2,29 +2,38 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { banners } from "@/lib/data";
+import { Banner } from "@/lib/data";
 
 export default function HeroBanner() {
   const [current, setCurrent] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
     setIsClient(true);
+    fetch("/api/banners")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setBanners(data);
+      })
+      .catch(() => {});
   }, []);
 
   const next = useCallback(() => {
     setCurrent((prev) => (prev + 1) % banners.length);
-  }, []);
+  }, [banners.length]);
 
   const prev = () => {
     setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || banners.length === 0) return;
     const timer = setInterval(next, 5000);
     return () => clearInterval(timer);
-  }, [next, isClient]);
+  }, [next, isClient, banners.length]);
+
+  if (banners.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden">

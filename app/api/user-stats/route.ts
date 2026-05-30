@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserCoins } from '@/lib/coins-store';
 
-const WC_URL = process.env.WC_URL || 'https://43.157.230.126:8080';
+const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
 const CS = process.env.WC_CONSUMER_SECRET || 'cs_Uu641i6QalcTuvSnZ0LZbH3CJhW8IaagIbH4Hi0i';
 

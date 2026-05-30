@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { products, formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { products, formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 const brands = [
   { id: 1, name: "Nike", logo: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop" },
@@ -64,7 +64,7 @@ export default function Shenar2168Mall() {
               {mallProducts.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/product/${product.id}`}
+                  href={`/product/${product.id}-${toSlug(product.name)}`}
                   className="bg-white border border-shopee-border/50 rounded-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer group block"
                 >
                   <div className="relative aspect-square bg-shopee-gray">

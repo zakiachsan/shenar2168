@@ -323,7 +323,7 @@ export default function AdminReviewsPage() {
                   {detailReview.product_name || `Produk #${detailReview.product_id}`}
                 </p>
                 <a
-                  href={detailReview.product_permalink || `/product/${detailReview.product_id}`}
+                  href={detailReview.product_permalink || `/product/${detailReview.product_id}-${(detailReview.product_name || `produk-${detailReview.product_id}`).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-blue-600 hover:underline"

@@ -1,14 +1,14 @@
 /**
  * Admin WooCommerce API Client
  * Uses HTTPS + Basic Auth (consumer_key/secret as username/password)
- * WC_URL must point to the WooCommerce site (e.g. https://tokonline.biz.id)
+ * WC_URL must point to the WooCommerce site (e.g. https://api.shenar2168.com)
  */
 
 import https from 'https';
 
-const WC_BASE = process.env.WC_URL || 'https://tokonline.biz.id';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_0037912ea33eab6d8c692d89a3e05da1848220e4';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_7a3e75a2f15707384215b3c87872ed881494024a';
+const WC_BASE = process.env.WC_URL || 'https://api.shenar2168.com';
+const CK = process.env.WC_CONSUMER_KEY || 'ck_cbbba87a85f994c1e110954ba19927a15a98fb73';
+const CS = process.env.WC_CONSUMER_SECRET || 'cs_d000173a6e2798193efafcd341e5c7cc5e58cc2e';
 
 export interface WCResponse {
   status: number;

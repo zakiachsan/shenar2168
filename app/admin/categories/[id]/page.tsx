@@ -291,7 +291,7 @@ export default function AdminCategoryDetailPage() {
                           Edit
                         </button>
                         <Link
-                          href={`/product/${product.id}`}
+                          href={`/product/${product.id}-${product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
                           target="_blank"
                           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                           title="Lihat di toko"

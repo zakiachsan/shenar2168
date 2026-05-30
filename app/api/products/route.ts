@@ -4,17 +4,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductImageUrl } from '@/lib/data';
 
-const WC_URL = process.env.WC_URL || 'https://tokonline.biz.id';
+const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || 'ck_0037912ea33eab6d8c692d89a3e05da1848220e4';
 const CS = process.env.WC_CONSUMER_SECRET || 'cs_7a3e75a2f15707384215b3c87872ed881494024a';
 
 const BASIC_AUTH = 'Basic ' + Buffer.from(CK + ':' + CS).toString('base64');
 
-const SITE_URL = 'https://tokonline.biz.id';
+const SITE_URL = 'https://api.shenar2168.com';
 
 function fixImageUrl(url?: string | null): string | null {
   if (!url) return null;
-  // Rewrite http://43.157.230.126:8080/wp-content/ -> https://tokonline.biz.id/wp-content/
+  // Rewrite relative/wp-content URLs -> https://api.shenar2168.com/wp-content/
   return url.replace(/https?:\/\/[\d.]+:\d+\/wp-content\//, `${SITE_URL}/wp-content/`);
 }
 

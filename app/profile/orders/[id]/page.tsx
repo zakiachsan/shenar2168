@@ -8,7 +8,7 @@ import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
 import ReviewForm from "@/app/components/reviews/ReviewForm";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 interface OrderItem {
   productId: number;
@@ -292,7 +292,7 @@ export default function OrderDetailPage() {
                     <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/product/${item.productId}`} className="text-sm text-shopee-text line-clamp-2 hover:text-shopee-orange">
+                    <Link href={`/product/${item.productId}-${toSlug(item.name)}`} className="text-sm text-shopee-text line-clamp-2 hover:text-shopee-orange">
                       {item.name}
                     </Link>
                     {item.variationId && <p className="text-xs text-blue-600 mt-0.5">Varian #{item.variationId}</p>}

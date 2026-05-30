@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, Zap } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
-import { flashSaleProducts, formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { flashSaleProducts, formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 function CountdownTimer() {
   const [time, setTime] = useState({ h: 2, m: 15, s: 45 });
@@ -73,7 +73,7 @@ export default function FlashSalePage() {
             {flashSaleProducts.map((product, idx) => (
               <Link
                 key={product.id}
-                href={`/product/${product.id}`}
+                href={`/product/${product.id}-${toSlug(product.name)}`}
                 className="bg-white rounded-sm border border-shopee-border/50 hover:shadow-md transition-all duration-200 cursor-pointer group block overflow-hidden"
               >
                 <div className="relative aspect-square overflow-hidden bg-shopee-gray">

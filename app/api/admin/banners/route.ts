@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import { banners } from '@/lib/data';
+import { loadBanners, saveBanners } from '@/lib/banners-store';
 
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
+    const banners = loadBanners();
     return NextResponse.json(banners);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Judul banner harus diisi' }, { status: 400 });
     }
 
+    const banners = loadBanners();
     const newId = banners.length > 0 ? Math.max(...banners.map((b) => b.id)) + 1 : 1;
     const banner = {
       id: newId,
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
     };
 
     banners.push(banner);
+    saveBanners(banners);
     return NextResponse.json(banner, { status: 201 });
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
@@ -54,6 +57,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'ID banner diperlukan' }, { status: 400 });
     }
 
+    const banners = loadBanners();
     const index = banners.findIndex((b) => b.id === Number(body.id));
     if (index === -1) {
       return NextResponse.json({ error: 'Banner tidak ditemukan' }, { status: 404 });
@@ -68,6 +72,7 @@ export async function PUT(req: NextRequest) {
     };
 
     banners[index] = updated;
+    saveBanners(banners);
     return NextResponse.json(updated);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
@@ -86,12 +91,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'ID banner diperlukan' }, { status: 400 });
     }
 
+    const banners = loadBanners();
     const index = banners.findIndex((b) => b.id === Number(id));
     if (index === -1) {
       return NextResponse.json({ error: 'Banner tidak ditemukan' }, { status: 404 });
     }
 
     banners.splice(index, 1);
+    saveBanners(banners);
     return NextResponse.json({ success: true });
   } catch (e: any) {
     if (e.message === 'Unauthorized') {

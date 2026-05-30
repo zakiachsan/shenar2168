@@ -13,7 +13,7 @@ const MIDTRANS_API_URL = IS_SANDBOX
   ? 'https://app.sandbox.midtrans.com/snap/v1/transactions'
   : 'https://app.midtrans.com/snap/v1/transactions';
 
-const WC_URL = process.env.WC_URL || 'https://tokonline.biz.id';
+const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || '';
 const CS = process.env.WC_CONSUMER_SECRET || '';
 
@@ -77,9 +77,9 @@ export async function POST(req: NextRequest) {
         phone: phone || '',
       },
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tokonline.biz.id'}/order-confirmed?id=${orderId}&payment=done`,
-        error: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tokonline.biz.id'}/profile/orders/${orderId}?payment=error`,
-        pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://tokonline.biz.id'}/profile/orders/${orderId}?payment=pending`,
+        finish: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}/order-confirmed?id=${orderId}&payment=done`,
+        error: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}/profile/orders/${orderId}?payment=error`,
+        pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}/profile/orders/${orderId}?payment=pending`,
       },
     };
 

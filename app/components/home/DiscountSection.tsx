@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { Tag, ChevronRight } from "lucide-react";
 import { useProducts } from "@/lib/use-products";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 function DiscountCard({ product }: { product: { id: number; name: string; price: number; originalPrice: number; image: string; discount?: number } }) {
   return (
     <Link
-      href={`/product/${product.id}`}
+      href={`/product/${product.id}-${toSlug(product.name)}`}
       className="flex-shrink-0 w-[140px] md:w-[190px] bg-white rounded-sm border border-shopee-border/50 hover:shadow-md transition-all cursor-pointer group block"
     >
       <div className="relative aspect-square overflow-hidden bg-shopee-gray">

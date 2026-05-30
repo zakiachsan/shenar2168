@@ -23,7 +23,7 @@ import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
 import AddToCartButton from "@/app/components/product/AddToCartButton";
 import BuyNowButton from "@/app/components/product/BuyNowButton";
-import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stripHtml } from "@/lib/data";
+import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stripHtml, toSlug } from "@/lib/data";
 import { getProductVariations, WCVariation } from "@/lib/woocommerce";
 
 function mapWCProductToLocal(wcProduct: any): Product {
@@ -35,8 +35,8 @@ function mapWCProductToLocal(wcProduct: any): Product {
     originalPrice: parseInt(wcProduct.regular_price || "0"),
     image,
     images: wcProduct.images?.map((img: any) => img.src) || [],
-    rating: parseFloat(wcProduct.average_rating || "0") || 4.5,
-    sold: `${wcProduct.total_sales || 0} Terjual`,
+    rating: parseFloat(wcProduct.average_rating || "0") || 5.0,
+    sold: `${wcProduct.total_sales || 0}`,
     location: "Jakarta",
     discount: wcProduct.on_sale && wcProduct.regular_price > wcProduct.sale_price
       ? Math.round((1 - parseInt(wcProduct.sale_price) / parseInt(wcProduct.regular_price)) * 100)
@@ -478,7 +478,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     ))}
                     {coupons.length === 0 && (
                       <span className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm">
-                        Gratis Ongkir
+                        Diskon Menarik
                       </span>
                     )}
                   </div>
@@ -627,7 +627,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   </div>
                   <div className="flex items-center gap-2 text-xs text-shopee-text-secondary">
                     <Truck className="w-4 h-4 text-shopee-green" />
-                    Gratis Ongkir
+                    Pengiriman Cepat
                   </div>
                   <div className="flex items-center gap-2 text-xs text-shopee-text-secondary">
                     <Clock className="w-4 h-4 text-shopee-green" />
@@ -946,7 +946,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     : relatedProducts.map((p) => (
                         <Link
                           key={p.id}
-                          href={`/product/${p.id}`}
+                          href={`/product/${p.id}-${toSlug(p.name)}`}
                           className="snap-start flex-shrink-0 w-[140px] sm:w-[160px] lg:w-[180px] block"
                         >
                           <div className="border border-shopee-border/50 rounded-sm overflow-hidden hover:shadow-md hover:border-shopee-orange/30 transition-all bg-white">

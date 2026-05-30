@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import ProductCard from "@/app/components/shared/ProductCard";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 interface EtalaseProductConfig {
   productId: number;
@@ -144,7 +144,7 @@ function FlashSaleCard({
 
   return (
     <Link
-      href={`/product/${product.id}`}
+      href={`/product/${product.id}-${toSlug(product.name)}`}
       className="flex-shrink-0 w-[130px] sm:w-[150px] md:w-[180px] bg-white rounded-sm border border-shopee-border/50 hover:shadow-md transition-all duration-200 cursor-pointer group block"
     >
       <div className="relative aspect-square overflow-hidden bg-shopee-gray">

@@ -8,6 +8,30 @@ import {
   adminBatchVariations,
 } from '@/lib/admin-api';
 
+function getBaseUrl(req: NextRequest): string {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'shenar2168.com';
+  const proto = req.headers.get('x-forwarded-proto') || 'https';
+  return `${proto}://${host}`;
+}
+
+function normalizeImageUrl(src: string, baseUrl: string): string {
+  if (typeof src !== 'string') return src;
+  return src.startsWith('/') ? `${baseUrl}${src}` : src;
+}
+
+function normalizeImages(images: any[] | undefined, baseUrl: string): any[] | undefined {
+  if (!images || !Array.isArray(images)) return images;
+  return images.map((img: any) => {
+    if (typeof img === 'string') {
+      return { src: normalizeImageUrl(img, baseUrl) };
+    }
+    if (img && typeof img.src === 'string') {
+      return { ...img, src: normalizeImageUrl(img.src, baseUrl) };
+    }
+    return img;
+  });
+}
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
@@ -72,8 +96,10 @@ export async function POST(req: NextRequest) {
       payload.categories = body.categories.map((id: number) => ({ id }));
     }
 
+    const baseUrl = getBaseUrl(req);
+
     if (body.images && Array.isArray(body.images) && body.images.length > 0) {
-      payload.images = body.images.map((src: string) => ({ src }));
+      payload.images = normalizeImages(body.images, baseUrl);
     }
 
     if (body.attributes && Array.isArray(body.attributes)) {
@@ -112,7 +138,7 @@ export async function POST(req: NextRequest) {
               option: a.option || '',
             }))
           : [],
-        image: v.image ? { src: v.image } : undefined,
+        image: v.image ? { src: normalizeImageUrl(v.image, baseUrl) } : undefined,
       }));
 
       await adminBatchVariations(productId, { create: variationsToCreate });
@@ -162,10 +188,10 @@ export async function PUT(req: NextRequest) {
       payload.categories = body.categories.map((id: number) => ({ id }));
     }
 
+    const baseUrl = getBaseUrl(req);
+
     if (body.images && Array.isArray(body.images)) {
-      payload.images = body.images.map((img: any) =>
-        typeof img === 'string' ? { src: img } : img
-      );
+      payload.images = normalizeImages(body.images, baseUrl);
     }
 
     if (body.attributes && Array.isArray(body.attributes)) {
@@ -207,7 +233,7 @@ export async function PUT(req: NextRequest) {
             : [],
         };
         if (v.sale_price) variationData.sale_price = String(v.sale_price);
-        if (v.image) variationData.image = { src: v.image };
+        if (v.image) variationData.image = { src: normalizeImageUrl(v.image, baseUrl) };
 
         if (v.id && v.id > 0 && !v._deleted) {
           toUpdate.push({ id: v.id, ...variationData });

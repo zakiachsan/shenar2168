@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Zap, ChevronRight } from "lucide-react";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 import { useProducts, ProductData } from "@/lib/use-products";
 import type { Product } from "@/lib/data";
 
@@ -42,7 +42,7 @@ function FlashSaleCard({ product, index }: { product: ProductData; index: number
 
   return (
     <Link
-      href={`/product/${product.id}`}
+      href={`/product/${product.id}-${toSlug(product.name)}`}
       className="flex-shrink-0 w-[130px] sm:w-[150px] md:w-[180px] bg-white rounded-sm border border-shopee-border/50 hover:shadow-md transition-all duration-200 cursor-pointer group block"
     >
       {/* Image */}

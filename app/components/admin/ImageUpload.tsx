@@ -71,7 +71,7 @@ export default function ImageUpload({
           <img
             src={value}
             alt="Preview"
-            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+            className="w-full h-32 object-contain bg-gray-100 rounded-lg border border-gray-200"
           />
           <button
             type="button"
@@ -94,6 +94,7 @@ export default function ImageUpload({
             <>
               <ImagePlus className="w-6 h-6 text-gray-400 mb-1" />
               <span className="text-xs text-gray-500">Klik untuk upload</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">Rekomendasi: 800×800px</span>
             </>
           )}
         </button>
@@ -108,7 +109,7 @@ export default function ImageUpload({
       />
 
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-      <p className="text-xs text-gray-400 mt-1">Format: JPG, PNG, WEBP, GIF. Maks 5MB.</p>
+      <p className="text-xs text-gray-400 mt-1">Format: JPG, PNG, WEBP, GIF. Maks 1MB.</p>
     </div>
   );
 }

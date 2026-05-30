@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 interface ProductCardProps {
   product: {
     id: number;
@@ -24,7 +24,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   return (
     <Link
-      href={`/product/${product.id}`}
+      href={`/product/${product.id}-${toSlug(product.name)}`}
       className="block bg-white border border-transparent hover:border-shopee-orange hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group rounded-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
       tabIndex={0}
     >

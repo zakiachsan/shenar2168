@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, Tag, Star, MapPin } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 interface DealProduct {
   id: number;
@@ -115,7 +115,7 @@ export default function DealsPage() {
               {products.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/product/${product.id}`}
+                  href={`/product/${product.id}-${toSlug(product.name)}`}
                   className="bg-white rounded-sm border border-shopee-border/50 hover:shadow-md transition-all duration-200 cursor-pointer group block overflow-hidden"
                 >
                   <div className="relative aspect-square overflow-hidden bg-shopee-gray">

@@ -10,7 +10,7 @@ import https from 'https';
 import crypto from 'crypto';
 
 const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || 'YOUR_MIDTRANS_SERVER_KEY';
-const WC_URL = process.env.WC_URL || 'https://tokonline.biz.id';
+const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
 const CK = process.env.WC_CONSUMER_KEY || '';
 const CS = process.env.WC_CONSUMER_SECRET || '';
 

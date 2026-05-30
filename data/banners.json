@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "image": "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop",
+    "alt": "Promo Gratis Ongkir",
+    "link": "",
+    "active": false
+  },
+  {
+    "id": 2,
+    "image": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=400&fit=crop",
+    "alt": "Flash Sale Harian",
+    "link": "",
+    "active": true
+  },
+  {
+    "id": 3,
+    "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&h=400&fit=crop",
+    "alt": "Fashion Sale",
+    "link": "",
+    "active": true
+  }
+]

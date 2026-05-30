@@ -6,7 +6,7 @@ import { ChevronLeft, Heart } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
-import { NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 interface FavoriteItem {
   id: number;
@@ -63,7 +63,7 @@ export default function FavoritesPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {favorites.map((item) => (
                 <div key={item.id} className="relative group">
-                  <Link href={`/product/${item.id}`} className="block bg-white lg:rounded-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <Link href={`/product/${item.id}-${toSlug(item.name)}`} className="block bg-white lg:rounded-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="aspect-square bg-shopee-gray relative">
                       <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
                     </div>

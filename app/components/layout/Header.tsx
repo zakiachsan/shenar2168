@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 const categories = [
   { name: "Elektronik", href: "/category/elektronik" },
@@ -146,7 +146,7 @@ export default function Header() {
                     {searchResults.map((p) => (
                       <Link
                         key={p.id}
-                        href={`/product/${p.id}`}
+                        href={`/product/${p.id}-${toSlug(p.name)}`}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => setSearchFocused(false)}
                         className="flex items-center gap-3 px-2 py-2 hover:bg-shopee-orange-light rounded cursor-pointer"
@@ -263,7 +263,7 @@ export default function Header() {
                   {searchResults.map((p) => (
                     <Link
                       key={p.id}
-                      href={`/product/${p.id}`}
+                      href={`/product/${p.id}-${toSlug(p.name)}`}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setSearchFocused(false)}
                       className="flex items-center gap-3 px-2 py-2 hover:bg-shopee-orange-light rounded cursor-pointer"
