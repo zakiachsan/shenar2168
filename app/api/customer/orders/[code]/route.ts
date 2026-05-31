@@ -49,6 +49,9 @@ export async function GET(
       code,
       status: order.status,
       total: order.total,
+      subtotal: order.subtotal,
+      shipping_total: order.shipping_total,
+      discount_total: order.discount_total,
       date_created: order.date_created,
       billing: {
         first_name: order.billing?.first_name,
@@ -74,6 +77,9 @@ export async function GET(
         price: item.price,
         total: item.total,
       })),
+      coupon_lines: order.coupon_lines?.map((c: any) => ({ code: c.code, discount: c.discount })),
+      shipping_lines: order.shipping_lines?.map((s: any) => ({ method_title: s.method_title, total: s.total })),
+      payment_method: order.payment_method,
       payment_method_title: order.payment_method_title,
       customer_note: order.customer_note,
       meta_data: order.meta_data?.filter((m: any) =>

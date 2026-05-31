@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2 } from "lucide-react";
+import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2, MapPin, CreditCard, User, MessageSquare } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
@@ -23,6 +23,9 @@ interface CustomerOrder {
   code: string;
   status: string;
   total: string;
+  subtotal: string;
+  shipping_total: string;
+  discount_total: string;
   date_created: string;
   billing: {
     first_name: string;
@@ -42,8 +45,12 @@ interface CustomerOrder {
     postcode: string;
   };
   line_items: OrderItem[];
+  coupon_lines?: Array<{ code: string; discount: string }>;
+  shipping_lines?: Array<{ method_title: string; total: string }>;
+  payment_method: string;
   payment_method_title: string;
   customer_note: string;
+  meta_data?: Array<{ key: string; value: string }>;
 }
 
 const statusSteps = [
@@ -218,29 +225,111 @@ export default function OrderDetailPage() {
 
             {/* Summary */}
             <div className="bg-white lg:rounded-sm p-4 space-y-2">
-              <h3 className="text-sm font-medium text-shopee-text">Ringkasan Pembayaran</h3>
+              <h3 className="text-sm font-medium text-shopee-text flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-shopee-text-secondary" />
+                Ringkasan Pembayaran
+              </h3>
               <div className="flex justify-between text-sm">
-                <span className="text-shopee-text-secondary">Total Harga ({order.line_items.length} barang)</span>
-                <span className="text-shopee-text">{formatPrice(Number(order.total))}</span>
+                <span className="text-shopee-text-secondary">Subtotal Produk</span>
+                <span className="text-shopee-text">{formatPrice(Number(order.subtotal || order.total))}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-shopee-text-secondary">Total Pembayaran</span>
+              {order.shipping_total && parseFloat(order.shipping_total) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-shopee-text-secondary">Ongkos Kirim</span>
+                  <span className="text-shopee-text">{formatPrice(Number(order.shipping_total))}</span>
+                </div>
+              )}
+              {order.coupon_lines && order.coupon_lines.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-shopee-text-secondary">Voucher ({order.coupon_lines.map(c => c.code).join(', ')})</span>
+                  <span className="text-green-600">-{formatPrice(Number(order.discount_total || 0))}</span>
+                </div>
+              )}
+              {!order.coupon_lines?.length && order.discount_total && parseFloat(order.discount_total) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-shopee-text-secondary">Diskon</span>
+                  <span className="text-green-600">-{formatPrice(Number(order.discount_total))}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm pt-2 border-t border-shopee-border">
+                <span className="text-shopee-text font-medium">Total Pembayaran</span>
                 <span className="text-lg font-medium text-shopee-orange">{formatPrice(Number(order.total))}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-shopee-text-secondary">Metode</span>
-                <span className="text-shopee-text">{order.payment_method_title || "Transfer / COD"}</span>
+                <span className="text-shopee-text-secondary">Metode Pembayaran</span>
+                <span className="text-shopee-text">
+                  {order.payment_method === 'cod' ? 'Bayar di Tempat (COD)' :
+                   order.payment_method === 'bacs' ? 'Transfer Bank' :
+                   order.payment_method_title || 'Transfer / COD'}
+                </span>
               </div>
             </div>
 
             {/* Shipping */}
             <div className="bg-white lg:rounded-sm p-4 space-y-2">
-              <h3 className="text-sm font-medium text-shopee-text">Informasi Pengiriman</h3>
-              <p className="text-sm text-shopee-text">{order.shipping.first_name} {order.shipping.last_name}</p>
-              <p className="text-sm text-shopee-text-secondary">{order.billing.phone}</p>
-              <p className="text-sm text-shopee-text-secondary">{order.shipping.address_1}, {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</p>
-              {order.customer_note && <p className="text-xs text-shopee-text-secondary mt-1">Catatan: {order.customer_note}</p>}
+              <h3 className="text-sm font-medium text-shopee-text flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-shopee-text-secondary" />
+                Informasi Pengiriman
+              </h3>
+              <div className="flex items-start gap-2">
+                <User className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-shopee-text">{order.shipping.first_name} {order.shipping.last_name}</p>
+                  <p className="text-sm text-shopee-text-secondary">{order.billing.phone}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-shopee-text-secondary">{order.shipping.address_1}, {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</p>
+              </div>
+              {order.shipping_lines && order.shipping_lines.length > 0 && (
+                <div className="pt-2 border-t border-shopee-border space-y-1">
+                  {order.shipping_lines.map((sl, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-shopee-text-secondary">{sl.method_title}</span>
+                      <span className="text-shopee-text">{formatPrice(Number(sl.total))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(() => {
+                const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
+                const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
+                const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
+                if (!trackingId && !waybillId && !courier) return null;
+                return (
+                  <div className="pt-2 border-t border-shopee-border space-y-1">
+                    <p className="text-xs font-medium text-shopee-text">Informasi Ekspedisi</p>
+                    {courier && <p className="text-xs text-shopee-text-secondary">Kurir: {courier.replace('|', ' ').toUpperCase()}</p>}
+                    {waybillId && <p className="text-xs text-shopee-text-secondary">No. Resi: <span className="font-mono">{waybillId}</span></p>}
+                    {trackingId && <p className="text-xs text-shopee-text-secondary">Tracking ID: <span className="font-mono">{trackingId}</span></p>}
+                  </div>
+                );
+              })()}
+              {order.customer_note && (
+                <div className="pt-2 border-t border-shopee-border flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-shopee-text-secondary">Catatan: {order.customer_note}</p>
+                </div>
+              )}
             </div>
+
+            {/* Review section — only show if completed */}
+            {order.status === 'completed' && (
+              <div className="bg-white lg:rounded-sm p-4">
+                <h3 className="text-sm font-medium text-shopee-text mb-3">Beri Ulasan</h3>
+                <p className="text-xs text-shopee-text-secondary mb-3">
+                  Pesanan sudah selesai. Bagikan pengalamanmu dengan produk ini.
+                </p>
+                <Link
+                  href={`/profile/orders/${order.code}/review`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-shopee-orange text-white text-sm rounded-sm hover:bg-[#d35400] transition-colors"
+                >
+                  <Star className="w-4 h-4" />
+                  Tulis Ulasan
+                </Link>
+              </div>
+            )}
           </div>
         </AuthGuard>
       </main>
