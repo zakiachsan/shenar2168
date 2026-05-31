@@ -990,18 +990,17 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
         </div>
 
         {/* Lainnya dari Toko Ini */}
-        {(relatedLoading || relatedProducts.length > 0) && (
-          <div className="mt-3 lg:mt-4">
-            <div className="bg-white lg:rounded-sm p-3 lg:p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-sm font-medium text-shopee-text">Lainnya dari Toko Ini</h2>
-                  <p className="text-[11px] text-shopee-text-secondary">Shenar2168 Official Store</p>
-                </div>
-                <Link href="/shop" className="text-xs text-shopee-orange hover:underline flex items-center gap-0.5">
-                  Lihat Semua <ChevronRight className="w-3 h-3" />
-                </Link>
+        <div className="mt-3 lg:mt-4">
+          <div className="bg-white lg:rounded-sm p-3 lg:p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-sm font-medium text-shopee-text">Lainnya dari Toko Ini</h2>
+                <p className="text-[11px] text-shopee-text-secondary">Shenar2168 Official Store</p>
               </div>
+              <a href="https://ragamguna.com/shop" target="_blank" rel="noopener noreferrer" className="text-xs text-shopee-orange hover:underline flex items-center gap-0.5">
+                Lihat Semua <ChevronRight className="w-3 h-3" />
+              </a>
+            </div>
 
               <div className="relative group">
                 {/* Carousel track */}
@@ -1058,7 +1057,6 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
               </div>
             </div>
           </div>
-        )}
       </main>
 
       {/* Mobile Sticky Actions */}
