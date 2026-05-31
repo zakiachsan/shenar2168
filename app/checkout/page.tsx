@@ -93,12 +93,78 @@ export default function CheckoutPage() {
 
   const { user, openLogin, closeLogin, loginOpen } = useAuth();
 
-  // Auto-resume checkout after login
+  // Helper: get / save user addresses to localStorage
+  const getUserAddresses = (): any[] => {
+    if (!user?.phone || typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(`shenar2168-addresses-${user.phone}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveUserAddress = (addr: AddressData & { lat?: number; lng?: number }) => {
+    if (!user?.phone || typeof window === "undefined") return;
+    const existing = getUserAddresses();
+    const newItem = {
+      id: existing.length > 0 ? Math.max(...existing.map((a: any) => a.id)) + 1 : 1,
+      name: addr.name,
+      phone: addr.phone,
+      fullAddress: addr.fullAddress,
+      note: addr.note || "",
+      postalCode: addr.postalCode || "",
+      lat: addr.lat,
+      lng: addr.lng,
+      isDefault: existing.length === 0,
+    };
+    const updated = [...existing, newItem];
+    localStorage.setItem(`shenar2168-addresses-${user.phone}`, JSON.stringify(updated));
+  };
+
+  // Auto-fill address from user's saved addresses when logged in
+  useEffect(() => {
+    if (!user || address) return;
+    const saved = getUserAddresses();
+    const defaultAddr = saved.find((a: any) => a.isDefault) || saved[0];
+    if (defaultAddr) {
+      const loaded: AddressData = {
+        name: defaultAddr.name,
+        phone: defaultAddr.phone,
+        fullAddress: defaultAddr.fullAddress,
+        note: defaultAddr.note || "",
+        postalCode: defaultAddr.postalCode || "",
+      };
+      setAddress(loaded);
+      setFormName(loaded.name);
+      setFormPhone(loaded.phone);
+      setFormAddress(loaded.fullAddress);
+      setFormNote(loaded.note);
+      setFormPostalCode(loaded.postalCode);
+      if (defaultAddr.lat != null && defaultAddr.lng != null) {
+        setMapLatLng({ lat: defaultAddr.lat, lng: defaultAddr.lng });
+      }
+      if (loaded.postalCode) setMapPostalCode(loaded.postalCode);
+      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(loaded));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Auto-resume checkout after login + save checkout address to user account
   useEffect(() => {
     if (user && pendingCheckout && address && checkoutItems.length > 0) {
+      // Save checkout address to user addresses if not already saved
+      const saved = getUserAddresses();
+      const alreadyExists = saved.some(
+        (a: any) => a.fullAddress === address.fullAddress && a.phone === address.phone
+      );
+      if (!alreadyExists) {
+        saveUserAddress({ ...address, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
+      }
       setPendingCheckout(false);
       handleCheckout();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Load address + latlng from localStorage on mount
@@ -380,13 +446,23 @@ export default function CheckoutPage() {
       alert("Harap isi nama, nomor telepon, dan alamat.");
       return;
     }
-    const newAddress = { name: formName, phone: formPhone, fullAddress: formAddress, note: formNote, postalCode: formPostalCode || mapPostalCode };
+    const newAddress: AddressData = { name: formName, phone: formPhone, fullAddress: formAddress, note: formNote, postalCode: formPostalCode || mapPostalCode };
     setAddress(newAddress);
     setIsEditingAddress(false);
     if (typeof window !== "undefined") {
       localStorage.setItem("shenar2168-checkout-address", JSON.stringify(newAddress));
       if (mapLatLng) {
         localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify(mapLatLng));
+      }
+      // Also save to user's address book if logged in
+      if (user?.phone) {
+        const saved = getUserAddresses();
+        const alreadyExists = saved.some(
+          (a: any) => a.fullAddress === newAddress.fullAddress && a.phone === newAddress.phone
+        );
+        if (!alreadyExists) {
+          saveUserAddress({ ...newAddress, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
+        }
       }
     }
   };

@@ -117,7 +117,7 @@ export default function ProfilePage() {
               </div>
               {user && (
                 <Link
-                  href="#"
+                  href="/profile/edit"
                   className="text-white text-xs border border-white/40 px-3 py-1 rounded-sm hover:bg-white/10 transition-colors"
                 >
                   Edit
