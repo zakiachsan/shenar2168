@@ -690,7 +690,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                 </div>
 
                 {/* Guarantees — mobile & desktop */}
-                <div className="grid grid-cols-3 gap-3 mt-4 p-3 border border-shopee-border rounded-sm">
+                <div className="flex items-center justify-between mt-4 p-3 border border-shopee-border rounded-sm">
                   <div className="flex items-center gap-1.5 text-[11px] text-shopee-text-secondary">
                     <ShieldCheck className="w-3.5 h-3.5 text-shopee-green flex-shrink-0" />
                     <span>100% Ori</span>
