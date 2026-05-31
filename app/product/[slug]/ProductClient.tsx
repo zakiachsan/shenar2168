@@ -496,12 +496,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                             : `Diskon ${formatPrice(c.amount)}`}
                         </span>
                       ))}
-                      {coupons.length === 0 && !effectiveOriginalPrice && (
-                        <span className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm">
-                          Diskon Menarik
-                        </span>
-                      )}
-                      {coupons.length === 0 && effectiveOriginalPrice <= effectivePrice && (
+                      {coupons.length === 0 && (
                         <span className="bg-shopee-orange-light text-shopee-orange text-[11px] px-2 py-0.5 rounded-sm">
                           Diskon Menarik
                         </span>
