@@ -6,11 +6,8 @@ import { useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   Search,
-  Star,
   Package,
-  Users,
   SlidersHorizontal,
-  Store,
 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
@@ -137,44 +134,6 @@ export default function ShopPageContent() {
         </div>
 
         <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-0 lg:py-4 space-y-3">
-          {/* Shop Header */}
-          <div className="bg-white lg:rounded-sm overflow-hidden">
-            <div className="px-3 lg:px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-shopee-orange flex items-center justify-center flex-shrink-0">
-                  <Store className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-sm font-medium text-shopee-text truncate">Shenar2168 Official Store</h1>
-                  <p className="text-[11px] text-shopee-text-secondary flex items-center gap-1 mt-0.5">
-                    <span className="text-shopee-green">Aktif 5 menit lalu</span>
-                    <span>·</span>
-                    <span>Jakarta</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex items-center gap-4 flex-wrap mt-3">
-                <div className="flex items-center gap-1 text-xs text-shopee-text-secondary">
-                  <Star className="w-3.5 h-3.5 text-shopee-yellow fill-shopee-yellow" />
-                  <span className="text-shopee-text font-medium">{avgRating.toFixed(1)}</span>
-                  <span>Penilaian</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-shopee-text-secondary">
-                  <Users className="w-3.5 h-3.5" />
-                  <span className="text-shopee-text font-medium">1.2rb</span>
-                  <span>Pengikut</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-shopee-text-secondary">
-                  <Package className="w-3.5 h-3.5" />
-                  <span className="text-shopee-text font-medium">{products.length}</span>
-                  <span>Produk</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Search + Filter Bar */}
           <div className="bg-white lg:rounded-sm px-3 lg:px-4 py-3 space-y-3">
             <div className="flex items-center gap-2">
