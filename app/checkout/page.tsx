@@ -429,6 +429,17 @@ export default function CheckoutPage() {
       });
       localStorage.removeItem("shenar2168-checkout-selected");
 
+      // Auto-save checkout address to user's address book
+      if (user?.phone && address) {
+        const saved = getUserAddresses();
+        const alreadyExists = saved.some(
+          (a: any) => a.fullAddress === address.fullAddress && a.phone === address.phone
+        );
+        if (!alreadyExists) {
+          saveUserAddress({ ...address, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
+        }
+      }
+
       if (data.midtrans_redirect_url) {
         window.location.href = data.midtrans_redirect_url;
       } else {
