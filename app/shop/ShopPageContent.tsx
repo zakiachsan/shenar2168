@@ -122,10 +122,7 @@ export default function ShopPageContent() {
     return list;
   }, [products, search, activeCategory, sortBy]);
 
-  const avgRating = useMemo(() => {
-    if (products.length === 0) return 0;
-    return products.reduce((s, p) => s + p.rating, 0) / products.length;
-  }, [products]);
+  const avgRating = 5;
 
   return (
     <>
