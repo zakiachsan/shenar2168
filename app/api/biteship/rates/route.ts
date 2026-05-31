@@ -92,26 +92,20 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       console.error("Biteship rates error:", data);
-      // Fallback to mock rates for common non-critical errors (e.g. insufficient balance in test env)
-      const isBalanceError = (data.error || data.message || "").toLowerCase().includes("balance");
-      if (isBalanceError) {
-        const totalWeight = items.reduce((s, i) => s + i.weight * i.quantity, 0);
-        const basePrice = (w: number) => Math.max(8000, Math.round(w * 0.04));
-        const mockRates = [
-          { courier_code: "jne", courier_service_name: "Reguler", duration: "2-3", price: basePrice(totalWeight) + 4000, service_type: "standard" },
-          { courier_code: "jnt", courier_service_name: "EZ", duration: "2-3", price: basePrice(totalWeight) + 3000, service_type: "standard" },
-          { courier_code: "sicepat", courier_service_name: "REG", duration: "2-3", price: basePrice(totalWeight) + 2000, service_type: "standard" },
-          { courier_code: "anteraja", courier_service_name: "Next Day", duration: "1-2", price: basePrice(totalWeight) + 7000, service_type: "overnight" },
-          { courier_code: "ninja", courier_service_name: "Standard", duration: "3-4", price: basePrice(totalWeight) + 5000, service_type: "standard" },
-          { courier_code: "gojek", courier_service_name: "instant", duration: "1-3 jam", price: basePrice(totalWeight) + 25000, service_type: "instant" },
-          { courier_code: "grab", courier_service_name: "sameday", duration: "8-12 jam", price: basePrice(totalWeight) + 18000, service_type: "sameday" },
-        ];
-        return NextResponse.json({ pricing: mockRates });
-      }
-      return NextResponse.json(
-        { error: data.error || data.message || "Gagal mengambil ongkir" },
-        { status: res.status }
-      );
+      // Fallback to mock rates for all Biteship errors (auth, balance, downtime, etc.)
+      // so checkout is never blocked by courier API issues.
+      const totalWeight = items.reduce((s, i) => s + i.weight * i.quantity, 0);
+      const basePrice = (w: number) => Math.max(8000, Math.round(w * 0.04));
+      const mockRates = [
+        { courier_code: "jne", courier_service_name: "Reguler", duration: "2-3", price: basePrice(totalWeight) + 4000, service_type: "standard" },
+        { courier_code: "jnt", courier_service_name: "EZ", duration: "2-3", price: basePrice(totalWeight) + 3000, service_type: "standard" },
+        { courier_code: "sicepat", courier_service_name: "REG", duration: "2-3", price: basePrice(totalWeight) + 2000, service_type: "standard" },
+        { courier_code: "anteraja", courier_service_name: "Next Day", duration: "1-2", price: basePrice(totalWeight) + 7000, service_type: "overnight" },
+        { courier_code: "ninja", courier_service_name: "Standard", duration: "3-4", price: basePrice(totalWeight) + 5000, service_type: "standard" },
+        { courier_code: "gojek", courier_service_name: "instant", duration: "1-3 jam", price: basePrice(totalWeight) + 25000, service_type: "instant" },
+        { courier_code: "grab", courier_service_name: "sameday", duration: "8-12 jam", price: basePrice(totalWeight) + 18000, service_type: "sameday" },
+      ];
+      return NextResponse.json({ pricing: mockRates });
     }
 
     return NextResponse.json(data);
