@@ -42,15 +42,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [username, setUsername] = useState('Admin');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.username) setUsername(data.username);
+      .then((res) => {
+        if (!res.ok) throw new Error('Unauthorized');
+        return res.json();
       })
-      .catch(() => {});
-  }, []);
+      .then((data) => {
+        if (data.username) {
+          setUsername(data.username);
+          setIsAuthenticated(true);
+        } else {
+          throw new Error('Unauthorized');
+        }
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+        if (pathname !== '/admin/login') {
+          router.replace('/admin/login');
+        }
+      })
+      .finally(() => setAuthChecked(true));
+  }, [pathname, router]);
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -65,6 +81,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Login page: render without sidebar
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render admin layout (redirect handled in effect)
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   return (
