@@ -20,7 +20,7 @@ const categories = [
   { name: "Makanan", href: "/category/makanan" },
 ];
 
-export default function Header() {
+export default function Header({ sticky = true }: { sticky?: boolean }) {
   const router = useRouter();
   const { getItemCount } = useCart();
   const [searchFocused, setSearchFocused] = useState(false);
@@ -76,7 +76,7 @@ export default function Header() {
   }, [searchValue]);
 
   return (
-    <header className="bg-white sticky top-0 z-50 shadow-sm">
+    <header className={`bg-white ${sticky ? 'sticky top-0' : ''} z-50 shadow-sm`}>
       {/* Desktop Header */}
       <div className="hidden lg:block">
         <div className="max-w-[1200px] mx-auto px-4 py-4 flex items-start gap-6">

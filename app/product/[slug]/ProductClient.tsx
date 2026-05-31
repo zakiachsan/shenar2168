@@ -316,7 +316,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   if (loading) {
     return (
       <>
-        <Header />
+        <Header sticky={false} />
         <main className="flex-1 bg-shopee-gray pb-36 lg:pb-8">
           <div className="max-w-[1200px] mx-auto px-4 py-16 flex items-center justify-center">
             <div className="text-center">
@@ -333,7 +333,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   if (notFound || !product) {
     return (
       <>
-        <Header />
+        <Header sticky={false} />
         <main className="flex-1 bg-shopee-gray pb-36 lg:pb-8">
           <div className="max-w-[1200px] mx-auto px-4 py-16 text-center">
             <p className="text-lg text-shopee-text-secondary mb-2">Produk tidak ditemukan</p>
@@ -354,7 +354,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
 
   return (
     <>
-      <Header />
+      <Header sticky={false} />
       <main className="flex-1 bg-shopee-gray pb-28 lg:pb-0">
         <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-0 lg:py-4">
           <div className="bg-white rounded-sm">
