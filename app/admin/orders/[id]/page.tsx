@@ -28,6 +28,8 @@ interface OrderDetail {
   transaction_id: string;
   customer_note: string;
   _order_code?: string | null;
+  meta_data?: Array<{ key: string; value: string }>;
+  coupon_lines?: Array<{ code: string; discount: string }>;
   billing: {
     first_name: string;
     last_name: string;
@@ -78,6 +80,7 @@ const STATUS_BADGES: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   processing: 'Diproses',
+  shipped: 'Dalam Pengiriman',
   'on-hold': 'Ditahan',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
@@ -87,12 +90,21 @@ const STATUS_LABELS: Record<string, string> = {
 
 const TRANSITIONS: Record<string, string[]> = {
   pending: ['processing', 'cancelled'],
-  processing: ['completed', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['completed', 'cancelled'],
   'on-hold': ['processing', 'cancelled'],
   completed: ['refunded'],
   cancelled: [],
   refunded: [],
   failed: ['pending', 'cancelled'],
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  processing: 'Proses Pesanan',
+  shipped: 'Siap Dikirim',
+  completed: 'Tandai Selesai',
+  cancelled: 'Batalkan Pesanan',
+  refunded: 'Proses Pengembalian',
 };
 
 function formatCurrency(amount: string): string {
@@ -283,7 +295,13 @@ export default function OrderDetailPage() {
                 <span className="text-gray-500">Ongkos Kirim</span>
                 <span className="text-gray-700">{formatCurrency(order.shipping_total || '0')}</span>
               </div>
-              {order.discount_total && parseFloat(order.discount_total) > 0 && (
+              {order.coupon_lines && order.coupon_lines.length > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Voucher ({order.coupon_lines.map(c => c.code).join(', ')})</span>
+                  <span className="text-green-600">-{formatCurrency(order.discount_total || '0')}</span>
+                </div>
+              )}
+              {!order.coupon_lines?.length && order.discount_total && parseFloat(order.discount_total) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Diskon</span>
                   <span className="text-green-600">-{formatCurrency(order.discount_total)}</span>
@@ -332,7 +350,7 @@ export default function OrderDetailPage() {
                         : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                     }`}
                   >
-                    {updating ? 'Memproses...' : `Tandai ${STATUS_LABELS[newStatus] || newStatus}`}
+                    {updating ? 'Memproses...' : (ACTION_LABELS[newStatus] || `Tandai ${STATUS_LABELS[newStatus] || newStatus}`)}
                   </button>
                 ))}
               </div>
@@ -389,6 +407,20 @@ export default function OrderDetailPage() {
                   ))}
                 </div>
               )}
+              {(() => {
+                const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
+                const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
+                const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
+                if (!trackingId && !waybillId && !courier) return null;
+                return (
+                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                    <p className="text-xs font-medium text-gray-700">Informasi Ekspedisi</p>
+                    {courier && <p className="text-xs text-gray-500">Kurir: {courier.replace('|', ' ').toUpperCase()}</p>}
+                    {waybillId && <p className="text-xs text-gray-500">No. Resi: {waybillId}</p>}
+                    {trackingId && <p className="text-xs text-gray-500">Tracking ID: {trackingId}</p>}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -400,6 +432,15 @@ export default function OrderDetailPage() {
             </h2>
             <div className="space-y-1.5 text-sm">
               <p className="text-gray-700">{order.payment_method_title || order.payment_method}</p>
+              {order.payment_method === 'bacs' && (
+                <p className="text-xs text-gray-500">Transfer Bank (BCA/BNI/BRI/Mandiri)</p>
+              )}
+              {order.payment_method === 'cod' && (
+                <p className="text-xs text-gray-500">Bayar di Tempat (COD)</p>
+              )}
+              {order.payment_method === 'midtrans' && (
+                <p className="text-xs text-gray-500">Transfer Bank / E-Wallet / QRIS</p>
+              )}
               {order.transaction_id && (
                 <p className="text-xs text-gray-400">
                   Transaksi: {order.transaction_id}

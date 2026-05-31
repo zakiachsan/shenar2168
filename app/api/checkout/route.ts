@@ -127,10 +127,26 @@ export async function POST(req: NextRequest) {
     if (!body.items?.length) return NextResponse.json({ error: 'Cart empty' }, { status: 400 });
     if (!body.billing?.first_name) return NextResponse.json({ error: 'Billing required' }, { status: 400 });
 
+    // Build coupon lines if provided
+    const couponLines = body.coupon_code
+      ? [{ code: body.coupon_code }]
+      : [];
+
+    // Build shipping lines if cost provided
+    const shippingLines = body.shipping_cost
+      ? [{
+          method_id: body.shipping_method || 'flat_rate',
+          method_title: body.shipping_courier
+            ? `${body.shipping_courier.toUpperCase()} - ${body.shipping_service || 'Reguler'}`
+            : 'Pengiriman',
+          total: String(body.shipping_cost),
+        }]
+      : [];
+
     // 1. Create order
-    const createResult = await wcRequest('POST', '/wp-json/wc/v3/orders', {
-      payment_method: 'midtrans',
-      payment_method_title: 'Transfer / COD',
+    const createPayload: any = {
+      payment_method: body.payment_method || 'midtrans',
+      payment_method_title: body.payment_method === 'cod' ? 'Bayar di Tempat (COD)' : 'Transfer / COD',
       set_paid: false,
       billing: {
         first_name: body.billing.first_name,
@@ -146,6 +162,7 @@ export async function POST(req: NextRequest) {
       shipping: {
         first_name: body.shipping?.first_name || body.billing.first_name,
         last_name: body.shipping?.last_name || '',
+        phone: body.billing.phone,
         address_1: body.shipping?.address_1 || body.billing.address_1,
         city: body.shipping?.city || body.billing.city,
         state: body.shipping?.state || '',
@@ -157,8 +174,12 @@ export async function POST(req: NextRequest) {
         quantity: i.quantity,
         variation_id: i.variationId || 0,
       })),
-      customer_note: body.customer_note || '',
-    });
+      coupon_lines: couponLines,
+      shipping_lines: shippingLines,
+      customer_note: body.customer_note || body.note || '',
+    };
+
+    const createResult = await wcRequest('POST', '/wp-json/wc/v3/orders', createPayload);
 
     if (createResult.status < 200 || createResult.status >= 300) {
       return NextResponse.json({ error: createResult.data.message || 'Order failed' }, { status: createResult.status });

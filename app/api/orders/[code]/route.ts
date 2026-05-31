@@ -39,9 +39,23 @@ export async function GET(
         last_name: order.billing?.last_name,
         phone: order.billing?.phone,
         address_1: order.billing?.address_1,
+        city: order.billing?.city,
+        state: order.billing?.state,
+        postcode: order.billing?.postcode,
+      },
+      shipping: {
+        first_name: order.shipping?.first_name,
+        last_name: order.shipping?.last_name,
+        address_1: order.shipping?.address_1,
+        city: order.shipping?.city,
+        state: order.shipping?.state,
+        postcode: order.shipping?.postcode,
       },
       payment_method: order.payment_method,
       payment_method_title: order.payment_method_title,
+      shipping_lines: order.shipping_lines,
+      coupon_lines: order.coupon_lines,
+      customer_note: order.customer_note,
       meta_data: order.meta_data?.filter((m: any) =>
         m.key.startsWith('_biteship') || m.key === '_order_code'
       ),

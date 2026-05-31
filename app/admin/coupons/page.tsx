@@ -161,7 +161,7 @@ export default function AdminCouponsPage() {
       let discount_type = 'fixed_cart';
       if (couponType === 'cart' && discountMode === 'percent') discount_type = 'percent';
       else if (couponType === 'product' && discountMode === 'fixed') discount_type = 'fixed_product';
-      else if (couponType === 'product' && discountMode === 'percent') discount_type = 'percent';
+      else if (couponType === 'product' && discountMode === 'percent') discount_type = 'percent_product';
 
       const payload: any = {
         code: code.toUpperCase().trim(),

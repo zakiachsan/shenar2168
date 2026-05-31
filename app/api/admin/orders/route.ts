@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Status pesanan diperlukan' }, { status: 400 });
     }
 
-    const validStatuses = ['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed'];
+    const validStatuses = ['pending', 'processing', 'shipped', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed'];
     if (!validStatuses.includes(body.status)) {
       return NextResponse.json({ error: 'Status tidak valid' }, { status: 400 });
     }
@@ -85,7 +85,10 @@ export async function PUT(req: NextRequest) {
     if (result.status >= 400) {
       return NextResponse.json({ error: result.data.message || 'Gagal mengupdate status pesanan' }, { status: result.status });
     }
-    return NextResponse.json(result.data);
+    // Enrich with order code so UI doesn't lose it after update
+    const order = result.data;
+    order._order_code = getOrderCodeFromMeta(order.meta_data) || null;
+    return NextResponse.json(order);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
