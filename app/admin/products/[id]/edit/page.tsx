@@ -229,6 +229,7 @@ export default function EditProductPage() {
         if (product && product.id) {
           setName(product.name || '');
           setUseVariant(product.type === 'variable');
+          if (product.type === 'variable') setImageUrls([]);
           setRegularPrice(product.regular_price || '');
           setSalePrice(product.sale_price || '');
           setSalePriceEnabled(!!product.sale_price);
