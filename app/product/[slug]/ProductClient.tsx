@@ -361,6 +361,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     );
   }
 
+              const fallbackImg = NO_IMAGE_PLACEHOLDER;
               const allVariantImages = variations.filter((v: any) => v.image?.src).map((v: any) => v.image.src);
               const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
               const matchedImage = matchedVariation?.image?.src || null;
@@ -368,7 +369,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                 ? [matchedImage]
                 : isVariable && allVariantImages.length > 0
                 ? [...new Set([...allVariantImages, ...productImages])]
-                : productImages;
+                : productImages.length > 0 ? productImages : [fallbackImg];
   const fallbackImg = NO_IMAGE_PLACEHOLDER;
 
   return (

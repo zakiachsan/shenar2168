@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { Trash2, Package, Upload, Loader2, X, ImagePlus } from 'lucide-react';
+import { NO_IMAGE_PLACEHOLDER } from '@/lib/data';
 import NumberInput from '@/app/components/ui/NumberInput';
 
 export interface FormVariation {
@@ -322,10 +323,10 @@ export default function VariationManager({ attributes, variations, onChange }: V
                     </div>
 
                     {/* Image Preview */}
-                    {v.image ? (
+                    {true ? (
                       <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                         <img
-                          src={v.image}
+                          src={v.image || NO_IMAGE_PLACEHOLDER}
                           alt={getVariationLabel(v)}
                           className="w-full h-full object-cover"
                         />
@@ -345,23 +346,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => fileInputRefs.current[idx]?.click()}
-                        disabled={uploadingIdx === idx}
-                        className="w-full aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center transition-colors disabled:opacity-50"
-                      >
-                        {uploadingIdx === idx ? (
-                          <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-1" />
-                        ) : (
-                          <>
-                            <ImagePlus className="w-8 h-8 text-gray-300 mb-1" />
-                            <span className="text-xs text-gray-400">Upload Gambar</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    ) : null}
 
                     {/* Hidden file input */}
                     <input
