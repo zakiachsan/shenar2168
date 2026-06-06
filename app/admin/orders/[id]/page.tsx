@@ -55,11 +55,14 @@ interface OrderDetail {
   line_items: {
     id: number;
     name: string;
+    image: { id: number; src: string; name: string; alt: string } | null;
+    variation_info: string;
     product_id: number;
     quantity: number;
     price: number;
     total: string;
     sku: string;
+    meta_data: { key: string; value: string }[];
   }[];
   shipping_lines: {
     method_title: string;
@@ -70,6 +73,7 @@ interface OrderDetail {
 const STATUS_BADGES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300',
   processing: 'bg-blue-100 text-blue-800 ring-1 ring-blue-300',
+  shipped: 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300',
   'on-hold': 'bg-orange-100 text-orange-800 ring-1 ring-orange-300',
   completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   cancelled: 'bg-red-100 text-red-800 ring-1 ring-red-300',
@@ -269,8 +273,19 @@ export default function OrderDetailPage() {
             <div className="divide-y divide-gray-100">
               {order.line_items.map((item) => (
                 <div key={item.id} className="p-5 flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                  <div className="flex items-center gap-3 flex-1">
+                    {item.image?.src && (
+                      <img
+                        src={item.image.src}
+                        alt={item.image.alt || item.name}
+                        className="w-12 h-12 rounded object-cover flex-shrink-0 border border-gray-200"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                      {item.variation_info && (
+                        <p className="text-xs text-orange-600 mt-0.5">{item.variation_info}</p>
+                      )}
                     <p className="text-xs text-gray-400 mt-0.5">
                       SKU: {item.sku || '-'} &middot; Qty: {item.quantity}
                     </p>

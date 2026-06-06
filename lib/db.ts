@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// Auto-migrate: ensure order_codes table exists
+// Auto-migrate: ensure tables exist
 (async () => {
   try {
     await pool.execute(`
@@ -26,6 +26,18 @@ const pool = mysql.createPool({
     `);
   } catch (e) {
     console.error('DB auto-migrate error:', e);
+  }
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS search_logs (
+        query VARCHAR(255) PRIMARY KEY,
+        search_count INT NOT NULL DEFAULT 1,
+        last_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (e) {
+    console.error('DB auto-migrate search_logs error:', e);
   }
 })();
 

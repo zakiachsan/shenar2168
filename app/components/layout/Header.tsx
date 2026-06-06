@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2, TrendingUp } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
@@ -28,12 +28,19 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const cartCount = getItemCount();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearch = (query?: string) => {
     const q = query || searchValue.trim();
     if (q) {
+      // Log the search query
+      fetch("/api/search/popular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      }).catch(() => {});
       router.push(`/search?q=${encodeURIComponent(q)}`);
       setSearchFocused(false);
       setSearchResults([]);
@@ -74,6 +81,18 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
       searchTimer.current = null;
     };
   }, [searchValue]);
+
+  // Fetch popular searches on mount
+  useEffect(() => {
+    fetch("/api/search/popular")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.searches && data.searches.length > 0) {
+          setPopularSearches(data.searches.map((s: any) => s.query));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header className={`bg-white ${sticky ? 'sticky top-0' : ''} z-50 shadow-sm`}>
@@ -123,7 +142,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
                 {!searchValue.trim() ? (
                   <div className="p-2">
                     <p className="text-xs text-shopee-text-secondary px-2 py-1">Pencarian Populer</p>
-                    {["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"].map((s) => (
+                    {(popularSearches.length > 0 ? popularSearches : ["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"]).map((s) => (
                       <button
                         key={s}
                         onMouseDown={(e) => e.preventDefault()}
@@ -187,11 +206,15 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
 
             {/* Quick Tags */}
             <div className="flex items-center gap-3 mt-1 text-xs text-[#757575]/80">
-              <Link href="/search?q=kaos+polos" className="hover:text-shopee-orange cursor-pointer">Kaos Polos</Link>
-              <Link href="/search?q=sepatu+sneakers" className="hover:text-shopee-orange cursor-pointer">Sepatu Sneakers</Link>
-              <Link href="/search?q=kemeja+pria" className="hover:text-shopee-orange cursor-pointer">Kemeja Pria</Link>
-              <Link href="/search?q=tas+ransel" className="hover:text-shopee-orange cursor-pointer">Tas Ransel</Link>
-              <Link href="/search?q=hoodie" className="hover:text-shopee-orange cursor-pointer">Hoodie</Link>
+              {(popularSearches.length > 0 ? popularSearches.slice(0, 5) : ["kaos polos", "sepatu sneakers", "kemeja pria", "tas ransel", "hoodie"]).map((s) => (
+                <Link
+                  key={s}
+                  href={`/search?q=${encodeURIComponent(s)}`}
+                  className="hover:text-shopee-orange cursor-pointer"
+                >
+                  {s}
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -240,7 +263,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
               {!searchValue.trim() ? (
                 <div className="p-2">
                   <p className="text-xs text-shopee-text-secondary px-2 py-1">Pencarian Populer</p>
-                  {["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"].map((s) => (
+                  {(popularSearches.length > 0 ? popularSearches : ["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"]).map((s) => (
                     <button
                       key={s}
                       onMouseDown={(e) => e.preventDefault()}

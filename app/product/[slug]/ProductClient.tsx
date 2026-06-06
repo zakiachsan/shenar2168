@@ -72,6 +72,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<{ storeLogo?: string; storeName?: string }>({});
 
   // Variant pricing state
   const [wcProductRaw, setWcProductRaw] = useState<any>(null);
@@ -167,6 +168,19 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
       setProduct(initialProduct);
       setLoading(false);
     }
+    // Load store settings for logo/name
+    async function loadStoreSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setStoreSettings({ storeLogo: data.storeLogo, storeName: data.storeName });
+        }
+      } catch (e) {
+        console.error('Failed to load store settings:', e);
+      }
+    }
+    loadStoreSettings();
     // Try WC API first, fall back to static data
     async function load() {
       try {
@@ -347,9 +361,13 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     );
   }
 
-              const images = product.images && product.images.length > 0
-                ? product.images
-                : [product.image];
+              const allVariantImages = variations.filter((v: any) => v.image).map((v: any) => v.image);
+              const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+              const images = isVariable && matchedVariation?.image
+                ? [matchedVariation.image]
+                : isVariable && allVariantImages.length > 0
+                ? [...new Set([...allVariantImages, ...productImages])]
+                : productImages;
   const fallbackImg = NO_IMAGE_PLACEHOLDER;
 
   return (
@@ -357,6 +375,21 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
       <Header sticky={false} />
       <main className="flex-1 bg-shopee-gray pb-28 lg:pb-0">
         <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-0 lg:py-4">
+          {/* Mobile back button */}
+          <div className="lg:hidden flex items-center gap-2 px-3 py-2">
+            <button onClick={() => window.history.back()} className="text-shopee-text-secondary hover:text-shopee-text">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm text-shopee-text-secondary truncate">{product.name}</span>
+          </div>
+          {/* Breadcrumbs - desktop */}
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-shopee-text-secondary mb-3 px-1">
+            <Link href="/" className="hover:text-shopee-orange">Beranda</Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link href="/shop" className="hover:text-shopee-orange">Toko</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-shopee-text truncate max-w-[300px]">{product.name}</span>
+          </div>
           <div className="bg-white rounded-sm">
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 p-0 lg:p-4">
               {/* Images */}
@@ -560,7 +593,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   {isVariable && variationAttributes.map((attr: { name: string; options: string[] }) => (
                     <div key={attr.name}>
                       <span className="text-sm text-shopee-text-secondary block mb-2">
-                        {attr.name}: {selectedAttributes[attr.name] || '-'}
+                        Varian: {selectedAttributes[attr.name] || '-'}
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {attr.options.map((opt: string) => (
@@ -721,10 +754,10 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-shopee-gray border border-shopee-border overflow-hidden">
-                    <img src={product.image || NO_IMAGE_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+                    <img src={storeSettings.storeLogo || product.image || NO_IMAGE_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-shopee-text">Shenar2168 Official Store</p>
+                    <p className="text-sm font-medium text-shopee-text">{storeSettings.storeName || 'Shenar2168 Official Store'}</p>
                     <p className="text-xs text-shopee-text-secondary">Aktif 5 menit lalu</p>
                   </div>
                 </div>
@@ -757,19 +790,11 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
               <div className="p-3 lg:p-6 min-h-[200px]">
                 {activeTab === "deskripsi" && (
                   <div className="space-y-3 text-sm text-shopee-text">
-                    <p>
-                      {product.name} dengan kualitas premium terbaik. Produk original dan bergaransi resmi.
-                    </p>
-                    <p>
-                      <strong>Spesifikasi:</strong>
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-shopee-text-secondary">
-                      <li>Material berkualitas tinggi</li>
-                      <li>Design modern dan ergonomis</li>
-                      <li>Tersedia dalam berbagai varian warna dan ukuran</li>
-                      <li>Garansi resmi 1 tahun</li>
-                      <li>Free packing bubble wrap + kardus</li>
-                    </ul>
+                    {product.description ? (
+                      <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                    ) : (
+                      <p>{product.name}</p>
+                    )}
                   </div>
                 )}
                 {activeTab === "ulasan" && (
@@ -995,11 +1020,11 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-sm font-medium text-shopee-text">Lainnya dari Toko Ini</h2>
-                <p className="text-[11px] text-shopee-text-secondary">Shenar2168 Official Store</p>
+                <p className="text-[11px] text-shopee-text-secondary">{storeSettings.storeName || 'Shenar2168 Official Store'}</p>
               </div>
-              <a href="https://ragamguna.com/shop" target="_blank" rel="noopener noreferrer" className="text-xs text-shopee-orange hover:underline flex items-center gap-0.5">
+              <Link href="/shop" className="text-xs text-shopee-orange hover:underline flex items-center gap-0.5">
                 Lihat Semua <ChevronRight className="w-3 h-3" />
-              </a>
+              </Link>
             </div>
 
               <div className="relative group">

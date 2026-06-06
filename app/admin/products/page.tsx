@@ -242,13 +242,18 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3.5">
                       {product.type === 'variable' ? (
                         <div className="space-y-0.5">
-                          <p className="text-sm font-medium text-gray-900">
-                            {product.variations && product.variations.length > 0
-                              ? `${product.variations.length} Varian`
-                              : 'Produk Variable'}
-                          </p>
+                          {product.sale_price && parseFloat(product.sale_price) > 0 ? (
+                            <>
+                              <p className="text-sm font-medium text-gray-900">{formatCurrency(product.sale_price)}</p>
+                              <p className="text-xs text-gray-400 line-through">{formatCurrency(product.regular_price)}</p>
+                            </>
+                          ) : (
+                            <p className="text-sm font-medium text-gray-900">
+                              {product.regular_price && parseFloat(product.regular_price) > 0 ? formatCurrency(product.regular_price) : 'Produk Variable'}
+                            </p>
+                          )}
                           <p className="text-xs text-gray-400">
-                            Harga per varian
+                            {product.variations && product.variations.length > 0 ? `${product.variations.length} Varian` : 'Harga per varian'}
                           </p>
                         </div>
                       ) : (

@@ -6,6 +6,7 @@ import {
   adminUpdateProduct,
   adminDeleteProduct,
   adminBatchVariations,
+  adminGetVariations,
 } from '@/lib/admin-api';
 
 function getBaseUrl(req: NextRequest): string {
@@ -47,7 +48,28 @@ export async function GET(req: NextRequest) {
     if (result.status >= 400) {
       return NextResponse.json({ error: result.data.message || 'Gagal mengambil produk' }, { status: result.status });
     }
-    return NextResponse.json(result.data);
+    // Enrich variable products with first variation price + image
+    const products = Array.isArray(result.data) ? result.data : [];
+    const enriched = await Promise.all(
+      products.map(async (p: any) => {
+        if (p.type === 'variable' && Array.isArray(p.variations) && p.variations.length > 0) {
+          try {
+            const varsResult = await adminGetVariations(p.id, { per_page: 1 });
+            if (varsResult.status === 200 && Array.isArray(varsResult.data) && varsResult.data.length > 0) {
+              const v = varsResult.data[0];
+              p.regular_price = String(v.regular_price || '0');
+              p.sale_price = v.sale_price && parseFloat(v.sale_price) > 0 ? String(v.sale_price) : '';
+              p.stock_quantity = v.stock_quantity != null ? Number(v.stock_quantity) : p.stock_quantity;
+              if (v.image && v.image.src) {
+                p.images = [{ src: normalizeImageUrl(v.image.src, getBaseUrl(req)) }];
+              }
+            }
+          } catch {}
+        }
+        return p;
+      })
+    );
+    return NextResponse.json(enriched);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

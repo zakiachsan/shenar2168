@@ -8,6 +8,24 @@ function getOrderCodeFromMeta(meta: any[]): string | null {
   return found?.value || null;
 }
 
+function getVariationInfoFromMeta(metaData: any[]): string {
+  if (!metaData || !Array.isArray(metaData)) return '';
+  const attrs = metaData.filter((m: any) =>
+    m.key && (m.key.startsWith('attribute_') || m.key.startsWith('pa_'))
+  );
+  if (attrs.length === 0) return '';
+  return attrs
+    .map((a: any) => {
+      const label = a.key
+        .replace(/^attribute_/, '')
+        .replace(/^pa_/, '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+      return `${label}: ${a.value}`;
+    })
+    .join(' | ');
+}
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
@@ -23,6 +41,13 @@ export async function GET(req: NextRequest) {
       // Enrich with order code from meta_data
       const order = result.data;
       order._order_code = getOrderCodeFromMeta(order.meta_data) || null;
+      // Add variation_info to line_items
+      if (order.line_items && Array.isArray(order.line_items)) {
+        order.line_items = order.line_items.map((item: any) => ({
+          ...item,
+          variation_info: getVariationInfoFromMeta(item.meta_data),
+        }));
+      }
       return NextResponse.json(order);
     }
 
@@ -88,6 +113,13 @@ export async function PUT(req: NextRequest) {
     // Enrich with order code so UI doesn't lose it after update
     const order = result.data;
     order._order_code = getOrderCodeFromMeta(order.meta_data) || null;
+    // Add variation_info to line_items
+    if (order.line_items && Array.isArray(order.line_items)) {
+      order.line_items = order.line_items.map((item: any) => ({
+        ...item,
+        variation_info: getVariationInfoFromMeta(item.meta_data),
+      }));
+    }
     return NextResponse.json(order);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {
