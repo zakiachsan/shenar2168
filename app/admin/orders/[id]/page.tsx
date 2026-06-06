@@ -471,8 +471,6 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
-    </div>
-
     {/* Confirmation Modal */}
     {confirmStatus && (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -556,7 +554,6 @@ export default function OrderDetailPage() {
         </div>
       </div>
     )}
-  </div>
   </>
 );
 }
