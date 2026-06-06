@@ -220,7 +220,6 @@ export default function OrderDetailPage() {
   const availableTransitions = TRANSITIONS[order.status] || [];
 
   return (
-    <>
     <div className="space-y-6 max-w-5xl">
       {/* Page Header */}
       <div className="flex items-center justify-between">
@@ -554,6 +553,6 @@ export default function OrderDetailPage() {
         </div>
       </div>
     )}
-  </>
+  </div>
 );
 }
