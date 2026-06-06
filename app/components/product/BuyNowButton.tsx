@@ -33,6 +33,7 @@ export default function BuyNowButton({
   stock,
   quantity = 1,
   variationId,
+  variantLabel,
   weight,
   height,
   length,

@@ -40,6 +40,7 @@ export default function AddToCartButton({
   stock,
   quantity = 1,
   variationId,
+  variantLabel,
   weight,
   height,
   length,
