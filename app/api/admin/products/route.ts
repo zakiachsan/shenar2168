@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
               option: a.option || '',
             }))
           : [],
-        image: v.image ? { src: normalizeImageUrl(v.image, baseUrl) } : undefined,
+        image: (() => { const s = typeof v.image === 'string' ? v.image : v.image?.src; return s ? { src: normalizeImageUrl(s, baseUrl) } : undefined; })(),
       }));
 
       await adminBatchVariations(productId, { create: variationsToCreate });
@@ -255,7 +255,9 @@ export async function PUT(req: NextRequest) {
             : [],
         };
         if (v.sale_price) variationData.sale_price = String(v.sale_price);
-        if (v.image) variationData.image = { src: normalizeImageUrl(v.image, baseUrl) };
+        // Handle image: could be string URL or { src: "url" } object
+        const imgSrc = typeof v.image === 'string' ? v.image : v.image?.src;
+        if (imgSrc) variationData.image = { src: normalizeImageUrl(imgSrc, baseUrl) };
 
         if (v.id && v.id > 0 && !v._deleted) {
           toUpdate.push({ id: v.id, ...variationData });
