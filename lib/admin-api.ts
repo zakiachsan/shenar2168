@@ -7,8 +7,8 @@
 import https from 'https';
 
 const WC_BASE = process.env.WC_URL || 'https://api.shenar2168.com';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_Uu641i6QalcTuvSnZ0LZbH3CJhW8IaagIbH4Hi0i';
+const CK = process.env.WC_CONSUMER_KEY || 'ck_3bb9651a765d8f556452b2bd291a499d2e19a7e7';
+const CS = process.env.WC_CONSUMER_SECRET || 'cs_1675e16a5610a557a662bbfc09af36c6bd5177f0';
 
 export interface WCResponse {
   status: number;
