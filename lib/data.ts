@@ -125,6 +125,7 @@ export interface Product {
   originalPrice: number;
   image: string;
   images?: string[];
+  description?: string;
   rating: number;
   sold: string;
   location: string;
@@ -133,6 +134,11 @@ export interface Product {
   badgeColor?: string;
   categories?: string[];
   attributes?: any[];
+  weight?: number;
+  height?: number;
+  length?: number;
+  width?: number;
+  type?: 'simple' | 'variable';
 }
 
 
