@@ -286,9 +286,10 @@ export default function OrderDetailPage() {
                       {item.variation_info && (
                         <p className="text-xs text-orange-600 mt-0.5">{item.variation_info}</p>
                       )}
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      SKU: {item.sku || '-'} &middot; Qty: {item.quantity}
-                    </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        SKU: {item.sku || '-'} &middot; Qty: {item.quantity}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-900">
