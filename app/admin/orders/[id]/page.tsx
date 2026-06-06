@@ -11,6 +11,9 @@ import {
   Package,
   Loader2,
   CheckCircle,
+  X,
+  AlertTriangle,
+  Truck,
 } from 'lucide-react';
 
 interface OrderDetail {
@@ -142,6 +145,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
+  const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrder();
@@ -356,7 +360,7 @@ export default function OrderDetailPage() {
                 {availableTransitions.map((newStatus) => (
                   <button
                     key={newStatus}
-                    onClick={() => updateStatus(newStatus)}
+                    onClick={() => setConfirmStatus(newStatus)}
                     disabled={updating}
                     className={`w-full px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                       newStatus === 'cancelled'
@@ -467,5 +471,90 @@ export default function OrderDetailPage() {
         </div>
       </div>
     </div>
-  );
+
+    {/* Confirmation Modal */}
+    {confirmStatus && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setConfirmStatus(null)}
+        />
+        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
+          <button
+            onClick={() => setConfirmStatus(null)}
+            className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+          <div className="flex items-center gap-3">
+            {confirmStatus === 'cancelled' ? (
+              <div className="p-2 rounded-full bg-red-100">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+            ) : confirmStatus === 'shipped' ? (
+              <div className="p-2 rounded-full bg-indigo-100">
+                <Truck className="w-5 h-5 text-indigo-600" />
+              </div>
+            ) : (
+              <div className="p-2 rounded-full bg-blue-100">
+                <CheckCircle className="w-5 h-5 text-blue-600" />
+              </div>
+            )}
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">
+                {confirmStatus === 'cancelled'
+                  ? 'Batalkan Pesanan?'
+                  : confirmStatus === 'shipped'
+                  ? 'Tandai Dikirim?'
+                  : confirmStatus === 'completed'
+                  ? 'Tandai Selesai?'
+                  : `Update ke "${STATUS_LABELS[confirmStatus] || confirmStatus}"?`}
+              </h3>
+            </div>
+          </div>
+          {confirmStatus === 'cancelled' ? (
+            <p className="text-sm text-red-600">
+              Pesanan yang dibatalkan tidak dapat dikembalikan ke status sebelumnya. Pastikan Anda yakin ingin membatalkan pesanan ini.
+            </p>
+          ) : confirmStatus === 'shipped' ? (
+            <p className="text-sm text-indigo-600">
+              Pastikan nomor resi dan informasi ekspedisi sudah benar sebelum mengubah status ke "Dalam Pengiriman".
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600">
+              Anda yakin ingin mengubah status pesanan ke <strong>{STATUS_LABELS[confirmStatus] || confirmStatus}</strong>?
+            </p>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setConfirmStatus(null)}
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => {
+                const status = confirmStatus;
+                setConfirmStatus(null);
+                updateStatus(status);
+              }}
+              disabled={updating}
+              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 ${
+                confirmStatus === 'cancelled'
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : confirmStatus === 'shipped'
+                  ? 'bg-indigo-600 hover:bg-indigo-700'
+                  : confirmStatus === 'completed'
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {updating ? 'Memproses...' : 'Konfirmasi'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }
