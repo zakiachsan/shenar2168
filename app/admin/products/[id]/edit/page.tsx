@@ -6,6 +6,7 @@ import { ArrowLeft, Save, ImagePlus, Loader2, Trash2, X, ArrowUp, ArrowDown, Plu
 import VariationManager, { FormVariation } from '../../components/VariationManager';
 import { MultiImageUpload } from '@/app/components/admin/ImageUpload';
 import NumberInput from '@/app/components/ui/NumberInput';
+import { stripHtml } from '@/lib/data';
 
 interface Category {
   id: number;
@@ -231,8 +232,8 @@ export default function EditProductPage() {
           setRegularPrice(product.regular_price || '');
           setSalePrice(product.sale_price || '');
           setSalePriceEnabled(!!product.sale_price);
-          setDescription(product.description || '');
-          setShortDescription(product.short_description || '');
+          setDescription(stripHtml(product.description || ''));
+          setShortDescription(stripHtml(product.short_description || ''));
           setSku(product.sku || '');
           setStockQuantity(String(product.stock_quantity ?? ''));
           setManageStock(product.manage_stock !== false);

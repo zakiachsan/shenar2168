@@ -264,7 +264,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
                       <div className="flex items-center gap-2">
                         {v.image ? (
                           <div className="relative">
-                            <img src={v.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-200" />
+                            <img src={v.image} alt="" className="w-16 h-16 rounded object-cover border border-gray-200" />
                             <button
                               type="button"
                               onClick={() => {
@@ -278,7 +278,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
                             </button>
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center border border-gray-200">
+                          <div className="w-16 h-16 rounded bg-gray-100 flex items-center justify-center border border-gray-200">
                             {uploadingIdx === idx ? (
                               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                             ) : (
