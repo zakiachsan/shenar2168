@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Trash2, Package, Upload, Loader2, X } from 'lucide-react';
+import { Trash2, Package, Upload, Loader2, X, ImagePlus } from 'lucide-react';
 import NumberInput from '@/app/components/ui/NumberInput';
 
 export interface FormVariation {
@@ -107,6 +107,10 @@ export default function VariationManager({ attributes, variations, onChange }: V
     onChange(next);
   };
 
+  const getVariationLabel = (v: FormVariation) => {
+    return v.attributes.map((a) => `${a.name}: ${a.option}`).join(' / ');
+  };
+
   if (variationAttrs.length === 0) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700">
@@ -199,9 +203,6 @@ export default function VariationManager({ attributes, variations, onChange }: V
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   SKU
                 </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Gambar
-                </th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Aksi
                 </th>
@@ -260,53 +261,6 @@ export default function VariationManager({ attributes, variations, onChange }: V
                         placeholder="SKU"
                       />
                     </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        {v.image ? (
-                          <div className="relative">
-                            <img src={v.image} alt="" className="w-16 h-16 rounded object-cover border border-gray-200" />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = [...variations];
-                                next[idx] = { ...next[idx], image: '' };
-                                onChange(next);
-                              }}
-                              className="absolute -top-1 -right-1 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600"
-                            >
-                              <X className="w-2 h-2" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded bg-gray-100 flex items-center justify-center border border-gray-200">
-                            {uploadingIdx === idx ? (
-                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                            ) : (
-                              <Package className="w-4 h-4 text-gray-300" />
-                            )}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRefs.current[idx]?.click()}
-                          disabled={uploadingIdx === idx}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium hover:bg-blue-100 transition-colors disabled:opacity-50"
-                        >
-                          <Upload className="w-3 h-3" />
-                          {v.image ? 'Ganti' : 'Upload'}
-                        </button>
-                        <input
-                          ref={(el) => { fileInputRefs.current[idx] = el; }}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/gif"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleVariationUpload(idx, file);
-                          }}
-                          className="hidden"
-                        />
-                      </div>
-                    </td>
                     <td className="px-4 py-2.5 text-right">
                       <button
                         type="button"
@@ -327,6 +281,104 @@ export default function VariationManager({ attributes, variations, onChange }: V
           <Package className="w-8 h-8 text-gray-300 mb-2" />
           <p className="text-sm text-gray-400">Belum ada varian</p>
           <p className="text-xs text-gray-400 mt-1">Tambahkan pilihan di atribut varian untuk membuat kombinasi</p>
+        </div>
+      )}
+
+      {/* Gambar Varian Section */}
+      {activeVariations.length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <ImagePlus className="w-4 h-4 text-gray-500" />
+              Gambar Varian
+            </h4>
+            <p className="text-xs text-gray-400 mt-0.5">Upload gambar untuk setiap varian. Gambar akan ditampilkan di halaman produk.</p>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {variations.map((v, idx) => {
+                if (v._deleted) return null;
+                return (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                    {/* Variant Label */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                        {getVariationLabel(v)}
+                      </span>
+                      {v.image && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = [...variations];
+                            next[idx] = { ...next[idx], image: '' };
+                            onChange(next);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Hapus gambar"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Image Preview */}
+                    {v.image ? (
+                      <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                        <img
+                          src={v.image}
+                          alt={getVariationLabel(v)}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRefs.current[idx]?.click()}
+                            disabled={uploadingIdx === idx}
+                            className="w-full px-3 py-1.5 bg-white/90 hover:bg-white text-gray-700 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            {uploadingIdx === idx ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Upload className="w-3 h-3" />
+                            )}
+                            Ganti
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.current[idx]?.click()}
+                        disabled={uploadingIdx === idx}
+                        className="w-full aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center transition-colors disabled:opacity-50"
+                      >
+                        {uploadingIdx === idx ? (
+                          <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-1" />
+                        ) : (
+                          <>
+                            <ImagePlus className="w-8 h-8 text-gray-300 mb-1" />
+                            <span className="text-xs text-gray-400">Upload Gambar</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Hidden file input */}
+                    <input
+                      ref={(el) => { fileInputRefs.current[idx] = el; }}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleVariationUpload(idx, file);
+                      }}
+                      className="hidden"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
