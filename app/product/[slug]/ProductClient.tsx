@@ -361,10 +361,11 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     );
   }
 
-              const allVariantImages = variations.filter((v: any) => v.image).map((v: any) => v.image);
+              const allVariantImages = variations.filter((v: any) => v.image?.src).map((v: any) => v.image.src);
               const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
-              const images = isVariable && matchedVariation?.image
-                ? [matchedVariation.image]
+              const matchedImage = matchedVariation?.image?.src || null;
+              const images = isVariable && matchedImage
+                ? [matchedImage]
                 : isVariable && allVariantImages.length > 0
                 ? [...new Set([...allVariantImages, ...productImages])]
                 : productImages;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Store, Search, CreditCard, Truck } from 'lucide-react';
+import ImageUpload from '@/app/components/admin/ImageUpload';
 import NumberInput from '@/app/components/ui/NumberInput';
 
 interface Settings {
@@ -140,13 +141,11 @@ export default function AdminSettingsPage() {
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Logo URL</label>
-            <input
-              type="text"
+            <ImageUpload
               value={settings.storeLogo}
-              onChange={(e) => updateField('storeLogo', e.target.value)}
-              placeholder="https://example.com/logo.png"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              onChange={(url) => updateField('storeLogo', url)}
+              folder="store"
+              label="Logo Toko"
             />
           </div>
           <div className="md:col-span-2">

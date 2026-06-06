@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, ImagePlus, Loader2, Trash2, X, ArrowUp, ArrowDown, Plus, Lock, LockOpen } from 'lucide-react';
 import VariationManager, { FormVariation } from '../../components/VariationManager';
@@ -199,6 +199,7 @@ export default function EditProductPage() {
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [variations, setVariations] = useState<FormVariation[]>([]);
   const [useVariant, setUseVariant] = useState(false);
+  const preservedVariationsRef = useRef<FormVariation[]>([]);
 
   // Computed: does this product have active variations?
   const hasVariations = useVariant && attributes.some(
@@ -260,8 +261,10 @@ export default function EditProductPage() {
               sale_price: v.sale_price || '',
               stock_quantity: v.stock_quantity !== undefined && v.stock_quantity !== null ? String(v.stock_quantity) : '',
               sku: v.sku || '',
+              image: v.image?.src || '',
             }));
           setVariations(loadedVariations);
+          preservedVariationsRef.current = loadedVariations;
         } else {
           setNotFound(true);
         }
@@ -515,14 +518,15 @@ export default function EditProductPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setUseVariant((prev) => !prev);
-                    if (useVariant) {
-                      // Turning off variants: keep variations in state but stop syncing
-                      setVariations([]);
-                    } else {
-                      // Turning on variants: sync from current attributes
-                      setVariations((prev) => syncVariations(attributes, prev));
-                    }
+                      setUseVariant((prev) => !prev);
+                      if (useVariant) {
+                        // Turning off variants: preserve variations for potential re-enable
+                        preservedVariationsRef.current = variations;
+                        setVariations([]);
+                      } else {
+                        // Turning on variants: restore preserved or sync from attributes
+                        setVariations((prev) => syncVariations(attributes, preservedVariationsRef.current.length > 0 ? preservedVariationsRef.current : prev));
+                      }
                   }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     useVariant ? 'bg-blue-600' : 'bg-gray-300'
