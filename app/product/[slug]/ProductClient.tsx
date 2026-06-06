@@ -370,7 +370,6 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                 : isVariable && allVariantImages.length > 0
                 ? [...new Set([...allVariantImages, ...productImages])]
                 : productImages.length > 0 ? productImages : [fallbackImg];
-  const fallbackImg = NO_IMAGE_PLACEHOLDER;
 
   return (
     <>
