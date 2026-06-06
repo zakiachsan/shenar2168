@@ -14,6 +14,8 @@ interface CartItem {
   quantity: number;
   sku?: string;
   stock?: number | null;
+  variationId?: number;
+  variantLabel?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest) {
     const lineItems = items.map((item: CartItem) => ({
       product_id: item.productId,
       quantity: item.quantity,
+      ...(item.variationId ? { variation_id: item.variationId } : {}),
     }));
 
     // If an existing orderId is provided, try to delete it first

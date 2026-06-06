@@ -15,6 +15,7 @@ interface BuyNowButtonProps {
   stock?: number | null;
   quantity?: number;
   variationId?: number;
+  variantLabel?: string;
   weight?: number;
   height?: number;
   length?: number;
@@ -55,6 +56,7 @@ export default function BuyNowButton({
       sku,
       stock,
       variationId,
+      variantLabel,
       weight,
       height,
       length,

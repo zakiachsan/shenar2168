@@ -130,8 +130,8 @@ export default function CartPage() {
                           {item.sku && (
                             <p className="text-xs text-shopee-text-secondary mt-0.5">SKU: {item.sku}</p>
                           )}
-                          {item.variationId && (
-                            <p className="text-xs text-blue-600 mt-0.5">Varian #{item.variationId}</p>
+                          {item.variantLabel && (
+                            <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
                           )}
                           <div className="flex items-end justify-between mt-2">
                             <div>

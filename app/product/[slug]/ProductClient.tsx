@@ -113,6 +113,13 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     }) || null;
   }, [variations, selectedAttributes]);
 
+  // Build human-readable variant label from selected attributes
+  const variantLabel = useMemo(() => {
+    const entries = Object.entries(selectedAttributes);
+    if (entries.length === 0) return '';
+    return entries.map(([k, v]) => `${k}: ${v}`).join(', ');
+  }, [selectedAttributes]);
+
   // Effective price
   const effectivePrice = matchedVariation
     ? parseInt(matchedVariation.sale_price || matchedVariation.price || "0") || parseInt(matchedVariation.regular_price || "0")
@@ -699,6 +706,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     stock={effectiveStock}
                     quantity={qty}
                     variationId={matchedVariation?.id}
+                    variantLabel={variantLabel || undefined}
                     weight={productWeight}
                     height={productHeight}
                     length={productLength}
@@ -715,6 +723,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     stock={effectiveStock}
                     quantity={qty}
                     variationId={matchedVariation?.id}
+                    variantLabel={variantLabel || undefined}
                     weight={productWeight}
                     height={productHeight}
                     length={productLength}
@@ -1097,6 +1106,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
           stock={effectiveStock}
           quantity={qty}
           variationId={matchedVariation?.id}
+          variantLabel={variantLabel || undefined}
           weight={productWeight}
           height={productHeight}
           length={productLength}
@@ -1114,6 +1124,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
           stock={effectiveStock}
           quantity={qty}
           variationId={matchedVariation?.id}
+          variantLabel={variantLabel || undefined}
           weight={productWeight}
           height={productHeight}
           length={productLength}

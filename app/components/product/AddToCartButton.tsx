@@ -21,6 +21,7 @@ interface AddToCartButtonProps {
   stock?: number | null;
   quantity?: number;
   variationId?: number;
+  variantLabel?: string;
   weight?: number;
   height?: number;
   length?: number;
@@ -62,6 +63,7 @@ export default function AddToCartButton({
       sku,
       stock,
       variationId,
+      variantLabel,
       weight,
       height,
       length,

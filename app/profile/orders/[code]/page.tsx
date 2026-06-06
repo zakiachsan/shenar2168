@@ -16,6 +16,10 @@ interface OrderItem {
   quantity: number;
   price: string;
   total: string;
+  image?: string | null;
+  variation_id?: number | null;
+  sku?: string | null;
+  attributes?: Array<{ key: string; value: string; label: string }>;
 }
 
 interface CustomerOrder {
@@ -210,10 +214,22 @@ export default function OrderDetailPage() {
               {order.line_items.map((item) => (
                 <div key={item.id} className="flex gap-3">
                   <div className="w-16 h-16 flex-shrink-0 bg-shopee-gray rounded-sm overflow-hidden">
-                    <img src={NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-shopee-text line-clamp-2">{item.name}</p>
+                    {item.sku && (
+                      <p className="text-[11px] text-shopee-text-secondary mt-0.5">SKU: {item.sku}</p>
+                    )}
+                    {item.attributes && item.attributes.length > 0 && (
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                        {item.attributes.map((attr, i) => (
+                          <span key={i} className="text-[11px] text-shopee-text-secondary">
+                            {attr.label}: <span className="text-shopee-text">{attr.value}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-sm font-medium text-shopee-text">{formatPrice(Number(item.price))}</span>
                       <span className="text-xs text-shopee-text-secondary">x{item.quantity}</span>

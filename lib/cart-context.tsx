@@ -19,6 +19,7 @@ export interface CartItem {
   sku?: string;
   stock?: number | null;
   variationId?: number;
+  variantLabel?: string;
   shopName?: string;
   weight?: number; // in grams
   height?: number; // in cm

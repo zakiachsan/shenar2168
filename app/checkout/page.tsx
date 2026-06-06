@@ -664,9 +664,11 @@ export default function CheckoutPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm text-shopee-text line-clamp-2">{item.name}</h4>
-                          {item.variationId && (
+                          {item.variantLabel ? (
+                            <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
+                          ) : item.variationId ? (
                             <p className="text-xs text-blue-600 mt-0.5">Varian #{item.variationId}</p>
-                          )}
+                          ) : null}
                           <div className="flex items-center justify-between mt-1">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm text-shopee-orange font-medium">{formatPrice(item.price)}</span>
