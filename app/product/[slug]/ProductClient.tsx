@@ -799,7 +799,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
               </div>
               <div className="p-3 lg:p-6 min-h-[200px]">
                 {activeTab === "deskripsi" && (
-                  <div className="space-y-3 text-sm text-shopee-text">
+                  <div className="space-y-3 text-sm text-shopee-text whitespace-pre-line">
                     {product.description ? (
                       <div dangerouslySetInnerHTML={{ __html: product.description }} />
                     ) : (

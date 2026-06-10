@@ -26,12 +26,14 @@ interface Category {
   description: string;
   count: number;
   image: { src: string } | null;
+  banner?: string | null;
   menu_order: number;
 }
 
 export default function AdminCategoriesPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [banners, setBanners] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -44,9 +46,11 @@ export default function AdminCategoriesPage() {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
+  const [banner, setBanner] = useState('');
 
   useEffect(() => {
     loadCategories();
+    loadBanners();
   }, []);
 
   const loadCategories = async () => {
@@ -56,7 +60,6 @@ export default function AdminCategoriesPage() {
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
-        // Sort by menu_order ascending
         list.sort((a: Category, b: Category) => {
           const oa = a.menu_order ?? 0;
           const ob = b.menu_order ?? 0;
@@ -69,6 +72,18 @@ export default function AdminCategoriesPage() {
       console.error('Failed to load categories:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBanners = async () => {
+    try {
+      const res = await fetch('/api/admin/category-banners');
+      if (res.ok) {
+        const data = await res.json();
+        setBanners(data);
+      }
+    } catch (err) {
+      console.error('Failed to load banners:', err);
     }
   };
 
@@ -122,6 +137,7 @@ export default function AdminCategoriesPage() {
     setSlug('');
     setDescription('');
     setImage('');
+    setBanner('');
     setError('');
     setShowModal(true);
   };
@@ -132,6 +148,7 @@ export default function AdminCategoriesPage() {
     setSlug(cat.slug);
     setDescription(cat.description || '');
     setImage(cat.image?.src || '');
+    setBanner(banners[cat.id] || '');
     setError('');
     setShowModal(true);
   };
@@ -183,8 +200,19 @@ export default function AdminCategoriesPage() {
         return;
       }
 
+      // Save banner to local DB
+      const catId = editing?.id || data.id;
+      if (catId) {
+        await fetch('/api/admin/category-banners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category_id: catId, banner }),
+        });
+      }
+
       closeModal();
       loadCategories();
+      loadBanners();
     } catch (err: any) {
       setError('Terjadi kesalahan: ' + err.message);
       setSaving(false);
@@ -198,6 +226,9 @@ export default function AdminCategoriesPage() {
       const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setCategories((prev) => prev.filter((c) => c.id !== id));
+        // Also delete banner
+        await fetch(`/api/admin/category-banners?category_id=${id}`, { method: 'DELETE' });
+        loadBanners();
       }
     } catch (err) {
       console.error('Delete failed:', err);
@@ -206,7 +237,6 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kategori</h1>
@@ -237,7 +267,6 @@ export default function AdminCategoriesPage() {
         </div>
       )}
 
-      {/* Categories Table */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="flex items-center gap-2 text-gray-400">
@@ -354,11 +383,10 @@ export default function AdminCategoriesPage() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/50" onClick={closeModal} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 {editing ? 'Edit Kategori' : 'Tambah Kategori'}
@@ -409,7 +437,16 @@ export default function AdminCategoriesPage() {
                 value={image}
                 onChange={setImage}
                 folder="categories"
-                label="Gambar Kategori"
+                label="Gambar Kategori (Icon)"
+                recommendedSize="200 x 200 px"
+              />
+
+              <ImageUpload
+                value={banner}
+                onChange={setBanner}
+                folder="categories"
+                label="Banner Kategori"
+                recommendedSize="1200 x 300 px"
               />
 
               <div className="flex gap-3 pt-2">

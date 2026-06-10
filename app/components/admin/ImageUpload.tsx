@@ -9,6 +9,7 @@ interface ImageUploadProps {
   folder?: string;
   label?: string;
   className?: string;
+  recommendedSize?: string;
 }
 
 export default function ImageUpload({
@@ -17,6 +18,7 @@ export default function ImageUpload({
   folder = 'general',
   label = 'Gambar',
   className = '',
+  recommendedSize = '800 x 800 px',
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -67,11 +69,11 @@ export default function ImageUpload({
       <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
 
       {value ? (
-        <div className="relative w-full max-w-[200px]">
+        <div className="relative w-full max-w-[320px]">
           <img
             src={value}
             alt="Preview"
-            className="w-full h-32 object-contain bg-gray-100 rounded-lg border border-gray-200"
+            className="w-full h-48 object-contain bg-gray-100 rounded-lg border border-gray-200"
           />
           <button
             type="button"
@@ -86,7 +88,7 @@ export default function ImageUpload({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="flex flex-col items-center justify-center w-full max-w-[200px] h-32 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50"
+          className="flex flex-col items-center justify-center w-full max-w-[320px] h-48 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50"
         >
           {uploading ? (
             <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
@@ -94,7 +96,6 @@ export default function ImageUpload({
             <>
               <ImagePlus className="w-6 h-6 text-gray-400 mb-1" />
               <span className="text-xs text-gray-500">Klik untuk upload</span>
-              <span className="text-[10px] text-gray-400 mt-0.5">Rekomendasi: 800×800px</span>
             </>
           )}
         </button>
@@ -109,7 +110,7 @@ export default function ImageUpload({
       />
 
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-      <p className="text-xs text-gray-400 mt-1">Format: JPG, PNG, WEBP, GIF. Maks 1MB.</p>
+      <p className="text-xs text-gray-400 mt-1">Format: JPG, PNG, WEBP, GIF. Maks 1MB. Rekomendasi: {recommendedSize}.</p>
     </div>
   );
 }
@@ -207,9 +208,9 @@ export function MultiImageUpload({
       <div className="space-y-3">
         {values.map((url, idx) => (
           <div key={idx} className="flex items-start gap-3">
-            <div className="w-16 h-16 rounded-lg border border-gray-200 flex-shrink-0 overflow-hidden bg-gray-50">
+            <div className="w-40 h-40 rounded-lg border border-gray-200 flex-shrink-0 overflow-hidden bg-gray-50">
               {url ? (
-                <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-contain bg-gray-100" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   {uploadingIndex === idx ? (
@@ -286,9 +287,7 @@ export function MultiImageUpload({
         Tambah Gambar
       </button>
 
-      <p className="text-xs text-gray-400 mt-2">Format: JPG, PNG, WEBP, GIF. Maks 5MB per gambar.</p>
+      <p className="text-xs text-gray-400 mt-2">Format: JPG, PNG, WEBP, GIF. Maks 1MB per gambar. Rekomendasi: 800 x 800 px.</p>
     </div>
   );
 }
-
-

@@ -94,23 +94,27 @@ function SectionBanner({
 }
 
 function FlashSaleCountdown({ endTime }: { endTime?: string }) {
-  const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
+  const [time, setTime] = useState({ h: 0, m: 0, s: 0, expired: false });
 
   useEffect(() => {
-    const calc = () => {
-      if (!endTime) return { h: 2, m: 0, s: 0 };
-      const diff = new Date(endTime).getTime() - Date.now();
-      if (diff <= 0) return { h: 0, m: 0, s: 0 };
+    if (!endTime) {
+      setTime({ h: 0, m: 0, s: 0, expired: true });
+      return;
+    }
+    function calc() {
+      const diff = new Date(endTime!).getTime() - Date.now();
+      if (diff <= 0) return { h: 0, m: 0, s: 0, expired: true };
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const s = Math.floor((diff % (1000 * 60)) / 1000);
-      return { h, m, s };
-    };
-
+      return { h, m, s, expired: false };
+    }
     setTime(calc());
     const timer = setInterval(() => setTime(calc()), 1000);
     return () => clearInterval(timer);
   }, [endTime]);
+
+  if (time.expired) return null;
 
   const pad = (n: number) => n.toString().padStart(2, "0");
 
@@ -213,6 +217,9 @@ export default function EtalaseSectionRenderer({ section }: { section: EtalaseSe
   const Icon = DynamicIcon;
 
   if (section.isFlashSale) {
+    const isExpired = section.flashSaleEndTime && new Date(section.flashSaleEndTime).getTime() <= Date.now();
+    if (isExpired) return null;
+
     return (
       <div className="max-w-[1200px] mx-auto px-2 md:px-4 mt-3 md:mt-4">
         <SectionBanner image={section.bannerImage} link={section.bannerLink} title={section.title} />

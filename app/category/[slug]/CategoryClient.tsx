@@ -26,6 +26,7 @@ interface WCCategory {
   slug: string;
   description: string;
   image: { src: string } | null;
+  banner?: string | null;
   count: number;
 }
 
@@ -63,6 +64,14 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
             setCategory(data[0]);
+            // Fetch banner from local DB
+            const bannerRes = await fetch("/api/category-banners");
+            if (bannerRes.ok) {
+              const banners = await bannerRes.json();
+              if (banners[data[0].id]) {
+                setCategory({ ...data[0], banner: banners[data[0].id] });
+              }
+            }
           }
         }
       } catch (err) {
@@ -136,7 +145,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
   const activeFiltersCount = [selectedPrice, selectedLocation, selectedRating].filter(Boolean).length;
 
   const displayName = decodeHtmlEntities(category?.name || '') || safeSlug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-  const bannerUrl = category?.image?.src || defaultBanner;
+  const bannerUrl = category?.banner || category?.image?.src || defaultBanner;
   const productCount = filteredProducts.length;
 
   return (

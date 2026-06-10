@@ -13,7 +13,29 @@ interface WCCategory {
   name: string;
   slug: string;
   count?: number;
-  image?: { src: string };
+  image?: { src: string } | null;
+}
+
+function getImageSrc(image: { src: string } | null | undefined): string | null {
+  if (!image) return null;
+  return image.src || null;
+}
+
+const FALLBACK_COLORS = [
+  "bg-blue-100 text-blue-600",
+  "bg-green-100 text-green-600",
+  "bg-indigo-100 text-indigo-600",
+  "bg-pink-100 text-pink-600",
+  "bg-rose-100 text-rose-600",
+  "bg-amber-100 text-amber-600",
+  "bg-teal-100 text-teal-600",
+  "bg-orange-100 text-orange-600",
+  "bg-cyan-100 text-cyan-600",
+  "bg-gray-100 text-gray-600",
+];
+
+function getFallbackColor(index: number): string {
+  return FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
 
 export default function CategoryListPage() {
@@ -42,7 +64,6 @@ export default function CategoryListPage() {
       <Header />
 
       <main className="pb-20 lg:pb-0">
-        {/* Page Header */}
         <div className="bg-white border-b border-shopee-border">
           <div className="max-w-[1200px] mx-auto px-4 py-4">
             <h1 className="text-lg font-medium text-shopee-text flex items-center gap-2">
@@ -63,29 +84,44 @@ export default function CategoryListPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
-                  className="bg-white rounded-sm border border-shopee-border p-4 flex flex-col items-center gap-3 hover:border-shopee-orange hover:shadow-sm transition-all group"
-                >
-                  <div className="w-16 h-16 rounded-full bg-shopee-orange-light/50 flex items-center justify-center group-hover:bg-shopee-orange-light transition-colors">
-                    <span className="text-xl font-bold text-shopee-orange">
-                      {cat.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-shopee-text line-clamp-1">{decodeHtmlEntities(cat.name)}</p>
-                    {cat.count !== undefined && (
-                      <p className="text-xs text-shopee-text-secondary mt-0.5">{cat.count} produk</p>
-                    )}
-                  </div>
-                  <div className="flex items-center text-shopee-orange text-xs font-medium mt-1">
-                    Lihat
-                    <ChevronRight className="w-3 h-3" />
-                  </div>
-                </Link>
-              ))}
+              {categories.map((cat, index) => {
+                const imgSrc = getImageSrc(cat.image);
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    className="bg-white rounded-sm border border-shopee-border p-4 flex flex-col items-center gap-3 hover:border-shopee-orange hover:shadow-sm transition-all group"
+                  >
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform ${
+                        imgSrc ? "bg-white" : `${getFallbackColor(index)}`
+                      }`}
+                    >
+                      {imgSrc ? (
+                        <img
+                          src={imgSrc}
+                          alt={cat.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xl font-bold">
+                          {cat.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-shopee-text line-clamp-1">{decodeHtmlEntities(cat.name)}</p>
+                      {cat.count !== undefined && (
+                        <p className="text-xs text-shopee-text-secondary mt-0.5">{cat.count} produk</p>
+                      )}
+                    </div>
+                    <div className="flex items-center text-shopee-orange text-xs font-medium mt-1">
+                      Lihat
+                      <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
