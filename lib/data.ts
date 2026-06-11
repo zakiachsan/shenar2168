@@ -71,7 +71,7 @@ export function getProductImageUrl(
   if (image && image.trim()) return image;
   if (seed !== undefined && seed !== null && seed !== '') {
     const keyword = name ? getFlickrKeyword(name, categories || []) : 'product';
-    return `https://loremflickr.com/${size}/${size}/${keyword}?lock=${seed}`;
+    return `https://placehold.co/${size}x${size}/f5f5f5/757575?text=No+Image`;
   }
   return `https://placehold.co/${size}x${size}/f5f5f5/757575?text=No+Image`;
 }
