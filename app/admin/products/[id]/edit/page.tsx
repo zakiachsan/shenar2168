@@ -231,7 +231,6 @@ export default function EditProductPage() {
         if (product && product.id) {
           setName(product.name || '');
           setUseVariant(product.type === 'variable');
-          if (product.type === 'variable') setImageUrls([]);
           setRegularPrice(product.regular_price || '');
           setSalePrice(product.sale_price || '');
           setSalePriceEnabled(!!product.sale_price);
@@ -641,21 +640,19 @@ export default function EditProductPage() {
               </div>
             )}
 
-            {/* Images - only when no variants */}
-            {!useVariant && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-                <h2 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-100">
-                  Gambar
-                </h2>
+            {/* Images */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4">
+              <h2 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-100">
+                Gambar
+              </h2>
 
-                <MultiImageUpload
-                  values={imageUrls}
-                  onChange={setImageUrls}
-                  folder="products"
-                  label="Gambar Produk"
-                />
-              </div>
-            )}
+              <MultiImageUpload
+                values={imageUrls}
+                onChange={setImageUrls}
+                folder="products"
+                label="Gambar Produk"
+              />
+            </div>
 
             {/* Attributes & Variants - only when useVariant is on */}
             {useVariant && (
