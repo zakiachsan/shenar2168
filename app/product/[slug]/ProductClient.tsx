@@ -108,6 +108,13 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     return entries.map(([k, v]) => `${k}: ${v}`).join(', ');
   }, [selectedAttributes]);
 
+  // When variant is selected, scroll to its image
+  useEffect(() => {
+    if (!matchedVariation?.image?.src) return;
+    const idx = images.indexOf(matchedVariation.image.src);
+    if (idx >= 0) setSelectedImage(idx);
+  }, [matchedVariation?.image?.src]);
+
   // Effective price
   const effectivePrice = matchedVariation
     ? parseInt(matchedVariation.sale_price || matchedVariation.price || "0") || parseInt(matchedVariation.regular_price || "0")
@@ -356,17 +363,16 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     );
   }
 
-              // Image logic: no variant selected -> non-variant images; variant selected -> variant image
+              // Image logic: show ALL images (non-variant + variant)
               const fallbackImg = NO_IMAGE_PLACEHOLDER;
               const nonVariantImages = product.images && product.images.length > 0
                 ? product.images
                 : product.image ? [product.image] : [];
-              const matchedImage = matchedVariation?.image?.src || null;
-              const images = isVariable && matchedImage
-                ? [matchedImage]
-                : nonVariantImages.length > 0
-                  ? nonVariantImages
-                  : [fallbackImg];
+              const allVariantImages = isVariable && variations.length > 0
+                ? variations.filter((v: any) => v.image?.src).map((v: any) => v.image.src)
+                : [];
+              const images = [...new Set([...nonVariantImages, ...allVariantImages])];
+              if (images.length === 0) images.push(fallbackImg);
 
   return (
     <>
