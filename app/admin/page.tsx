@@ -120,7 +120,7 @@ export default function AdminDashboard() {
       }
       if (ordersRes.ok) {
         const data = await ordersRes.json();
-        setRecentOrders(Array.isArray(data) ? data : []);
+        setRecentOrders(Array.isArray(data) ? data : (data.orders || []));
       }
     } catch (err) {
       console.error('Dashboard load error:', err);
@@ -202,11 +202,11 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Show empty skeleton to maintain layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 opacity-50">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 opacity-50">
           {summaryCards.map((card) => (
-            <div key={card.label} className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className={`w-10 h-10 rounded-lg ${card.bgLight}`} />
-              <div className="mt-4"><p className="text-2xl font-bold text-gray-300">—</p></div>
+            <div key={card.label} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-5">
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${card.bgLight}`} />
+              <div className="mt-2 sm:mt-4"><p className="text-lg sm:text-2xl font-bold text-gray-300">—</p></div>
             </div>
           ))}
         </div>
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Ringkasan aktivitas toko Shenar2168
+          Ringkasan aktivitas toko RagamGuna
         </p>
       </div>
 
@@ -245,26 +245,26 @@ export default function AdminDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {summaryCards.map((card) => {
           const Icon = card.icon;
           return (
             <button
               key={card.label}
               onClick={() => router.push(card.href)}
-              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow text-left"
+              className="bg-white rounded-xl border border-gray-200 p-3 sm:p-5 hover:shadow-md transition-shadow text-left"
             >
               <div className="flex items-start justify-between">
-                <div className={`p-2.5 rounded-lg ${card.bgLight}`}>
-                  <Icon className={`w-5 h-5 ${card.textColor}`} />
+                <div className={`p-1.5 sm:p-2.5 rounded-lg ${card.bgLight}`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${card.textColor}`} />
                 </div>
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-green-500 hidden sm:block" />
               </div>
-              <div className="mt-4">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="mt-2 sm:mt-4">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">
                   {card.isFormatted ? card.value : card.value.toLocaleString('id-ID')}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">{card.label}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">{card.label}</p>
               </div>
             </button>
           );
