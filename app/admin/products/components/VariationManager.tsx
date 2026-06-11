@@ -136,7 +136,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
       {activeVariations.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-4 space-y-3">
           <h4 className="text-sm font-medium text-gray-700">Set Massal</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Harga Regular</label>
               <NumberInput
@@ -181,102 +181,181 @@ export default function VariationManager({ attributes, variations, onChange }: V
         </div>
       )}
 
-      {/* Variations Table */}
+      {/* ===== DESKTOP: Table Layout (lg+) ===== */}
       {activeVariations.length > 0 ? (
-        <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                {variationAttrs.map((attr) => (
-                  <th key={attr.name} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    {attr.name}
+        <>
+          <div className="hidden lg:block overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  {variationAttrs.map((attr) => (
+                    <th key={attr.name} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      {attr.name}
+                    </th>
+                  ))}
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Harga Regular
                   </th>
-                ))}
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Harga Regular
-                </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Harga Diskon
-                </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Stok
-                </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  SKU
-                </th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {variations.map((v, idx) => {
-                if (v._deleted) return null;
-                return (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    {variationAttrs.map((attr) => {
-                      const match = v.attributes.find((a) => a.name === attr.name);
-                      return (
-                        <td key={attr.name} className="px-4 py-2.5 text-gray-700 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
-                            {match?.option || '-'}
-                          </span>
-                        </td>
-                      );
-                    })}
-                    <td className="px-4 py-2.5">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Harga Diskon
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Stok
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    SKU
+                  </th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {variations.map((v, idx) => {
+                  if (v._deleted) return null;
+                  return (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      {variationAttrs.map((attr) => {
+                        const match = v.attributes.find((a) => a.name === attr.name);
+                        return (
+                          <td key={attr.name} className="px-4 py-2.5 text-gray-700 whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
+                              {match?.option || '-'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-2.5">
+                        <NumberInput
+                          value={v.regular_price}
+                          onChange={(val) => updateVariation(idx, 'regular_price', val)}
+                          prefix="Rp"
+                          placeholder="0"
+                          min={0}
+                          className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <NumberInput
+                          value={v.sale_price}
+                          onChange={(val) => updateVariation(idx, 'sale_price', val)}
+                          prefix="Rp"
+                          placeholder="0"
+                          min={0}
+                          className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <NumberInput
+                          value={v.stock_quantity}
+                          onChange={(val) => updateVariation(idx, 'stock_quantity', val)}
+                          placeholder="0"
+                          min={0}
+                          className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="text"
+                          value={v.sku}
+                          onChange={(e) => updateVariation(idx, 'sku', e.target.value)}
+                          className="w-32 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="SKU"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => removeVariation(idx)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ===== MOBILE: Card Layout (below lg) ===== */}
+          <div className="lg:hidden space-y-3">
+            {variations.map((v, idx) => {
+              if (v._deleted) return null;
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  {/* Attribute tags */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-1.5">
+                      {v.attributes.map((a) => (
+                        <span
+                          key={a.name}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs font-medium text-gray-700"
+                        >
+                          <span className="text-gray-500">{a.name}:</span> {a.option}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeVariation(idx)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0 ml-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Price & Stock fields */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Harga Regular</label>
                       <NumberInput
                         value={v.regular_price}
                         onChange={(val) => updateVariation(idx, 'regular_price', val)}
                         prefix="Rp"
                         placeholder="0"
                         min={0}
-                        className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-4 py-2.5">
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Harga Diskon</label>
                       <NumberInput
                         value={v.sale_price}
                         onChange={(val) => updateVariation(idx, 'sale_price', val)}
                         prefix="Rp"
                         placeholder="0"
                         min={0}
-                        className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-4 py-2.5">
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Stok</label>
                       <NumberInput
                         value={v.stock_quantity}
                         onChange={(val) => updateVariation(idx, 'stock_quantity', val)}
                         placeholder="0"
                         min={0}
-                        className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-4 py-2.5">
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">SKU</label>
                       <input
                         type="text"
                         value={v.sku}
                         onChange={(e) => updateVariation(idx, 'sku', e.target.value)}
-                        className="w-32 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="SKU"
                       />
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => removeVariation(idx)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
           <Package className="w-8 h-8 text-gray-300 mb-2" />

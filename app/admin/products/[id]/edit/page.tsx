@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, ImagePlus, Loader2, Trash2, X, ArrowUp, ArrowDown, Plus, Lock, LockOpen } from 'lucide-react';
+import { stripHtml } from '@/lib/data';
 import VariationManager, { FormVariation } from '../../components/VariationManager';
 import { MultiImageUpload } from '@/app/components/admin/ImageUpload';
 import NumberInput from '@/app/components/ui/NumberInput';
-import { stripHtml } from '@/lib/data';
 
 interface Category {
   id: number;
@@ -28,35 +28,37 @@ function OptionRow({
   const [unlocked, setUnlocked] = useState(false);
 
   return (
-    <div className="flex items-center gap-2">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={!unlocked}
-        className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-          unlocked
-            ? 'border-gray-300 bg-white'
-            : 'border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed'
-        }`}
-        placeholder={`Pilihan ${index + 1}`}
-      />
-      <button
-        type="button"
-        onClick={() => setUnlocked(!unlocked)}
-        className={`p-2 rounded-lg transition-colors ${
-          unlocked
-            ? 'text-amber-600 hover:bg-amber-50 bg-amber-50'
-            : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
-        }`}
-        title={unlocked ? 'Kunci pilihan' : 'Buka kunci untuk edit'}
-      >
-        {unlocked ? <LockOpen className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-      </button>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={!unlocked}
+          className={`flex-1 min-w-0 px-2.5 sm:px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+            unlocked
+              ? 'border-gray-300 bg-white'
+              : 'border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed'
+          }`}
+          placeholder={`Pilihan ${index + 1}`}
+        />
+        <button
+          type="button"
+          onClick={() => setUnlocked(!unlocked)}
+          className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors ${
+            unlocked
+              ? 'text-amber-600 hover:bg-amber-50 bg-amber-50'
+              : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
+          }`}
+          title={unlocked ? 'Kunci pilihan' : 'Buka kunci untuk edit'}
+        >
+          {unlocked ? <LockOpen className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+        </button>
+      </div>
       <button
         type="button"
         onClick={onRemove}
-        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        className="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors self-end sm:self-auto"
         title="Hapus pilihan"
       >
         <X className="w-4 h-4" />
@@ -83,23 +85,23 @@ function AddOptionInput({ onAdd }: { onAdd: (value: string) => void }) {
   };
 
   return (
-    <div className="flex items-center gap-2 mt-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 mt-2">
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="flex-1 min-w-0 px-2.5 sm:px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         placeholder="Tambah pilihan baru..."
       />
       <button
         type="button"
         onClick={handleSubmit}
         disabled={!value.trim()}
-        className="inline-flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors disabled:opacity-50"
+        className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 sm:px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors disabled:opacity-50"
       >
         <Plus className="w-4 h-4" />
-        Tambah
+        <span className="hidden sm:inline">Tambah</span>
       </button>
     </div>
   );
@@ -220,7 +222,7 @@ export default function EditProductPage() {
 
       if (catRes.ok) {
         const data = await catRes.json();
-        setCategories(Array.isArray(data) ? data : []);
+        setCategories(Array.isArray(data) ? data : (data.categories || []));
       }
 
       if (prodRes.ok) {
@@ -238,7 +240,11 @@ export default function EditProductPage() {
           setSku(product.sku || '');
           setStockQuantity(String(product.stock_quantity ?? ''));
           setManageStock(product.manage_stock !== false);
-          setStatus(product.status || 'draft');
+          setStatus(
+            product.status === 'active' ? 'publish' :
+            product.status === 'archived' ? 'pending' :
+            product.status || 'draft'
+          );
           setFeatured(product.featured || false);
           setSelectedCategories((product.categories || []).map((c: any) => c.id));
           setImageUrls(product.images?.map((img: any) => img.src) || []);
@@ -263,7 +269,7 @@ export default function EditProductPage() {
               sale_price: v.sale_price || '',
               stock_quantity: v.stock_quantity !== undefined && v.stock_quantity !== null ? String(v.stock_quantity) : '',
               sku: v.sku || '',
-              image: v.image?.src || '',
+              image: v.image || '',
             }));
           setVariations(loadedVariations);
           preservedVariationsRef.current = loadedVariations;
@@ -462,7 +468,7 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl overflow-hidden">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -506,7 +512,30 @@ export default function EditProductPage() {
                   required
                 />
               </div>
-
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Deskripsi Singkat
+                </label>
+                <input
+                  type="text"
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Deskripsi singkat produk"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Deskripsi
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={5}
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                  placeholder="Deskripsi lengkap produk"
+                />
+              </div>
               {/* Variant Toggle */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div>
@@ -520,15 +549,20 @@ export default function EditProductPage() {
                 <button
                   type="button"
                   onClick={() => {
-                      setUseVariant((prev) => !prev);
-                      if (useVariant) {
-                        // Turning off variants: preserve variations for potential re-enable
+                    setUseVariant((prev) => {
+                      const next = !prev;
+                      if (!next) {
+                        // Turning OFF: preserve current variations
                         preservedVariationsRef.current = variations;
-                        setVariations([]);
                       } else {
-                        // Turning on variants: restore preserved or sync from attributes
-                        setVariations((prev) => syncVariations(attributes, preservedVariationsRef.current.length > 0 ? preservedVariationsRef.current : prev));
+                        // Turning ON: restore from preserved and sync
+                        const restored = preservedVariationsRef.current.length > 0
+                          ? preservedVariationsRef.current
+                          : [];
+                        setVariations(syncVariations(attributes, restored));
                       }
+                      return next;
+                    });
                   }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     useVariant ? 'bg-blue-600' : 'bg-gray-300'
@@ -541,7 +575,6 @@ export default function EditProductPage() {
                   />
                 </button>
               </div>
-
               {!useVariant && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -556,32 +589,6 @@ export default function EditProductPage() {
                   />
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Deskripsi Singkat
-                </label>
-                <input
-                  type="text"
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Deskripsi singkat produk"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Deskripsi
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={5}
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                  placeholder="Deskripsi lengkap produk"
-                />
-              </div>
             </div>
 
             {/* Pricing - only when no variants */}
@@ -652,12 +659,12 @@ export default function EditProductPage() {
 
             {/* Attributes & Variants - only when useVariant is on */}
             {useVariant && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-gray-100">
                 <h2 className="text-base font-semibold text-gray-900">
                   Atribut & Varian
                 </h2>
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded self-start">
                   Tambah pilihan untuk otomatis membuat varian
                 </span>
               </div>
@@ -667,59 +674,48 @@ export default function EditProductPage() {
                   <p className="text-sm text-gray-400">Belum ada atribut</p>
                 )}
                 {attributes.map((attr, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 space-y-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Nama Atribut
-                          </label>
-                          <input
-                            type="text"
-                            value={attr.name}
-                            onChange={(e) => updateAttribute(idx, 'name', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Contoh: Warna, Ukuran"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                            Pilihan
-                          </label>
-                          <div className="space-y-2">
-                            {attr.options.map((opt, optIdx) => (
-                              <OptionRow
-                                key={optIdx}
-                                value={opt}
-                                index={optIdx}
-                                onChange={(val) => updateOption(idx, optIdx, val)}
-                                onRemove={() => removeOption(idx, optIdx)}
-                              />
-                            ))}
-                            <AddOptionInput onAdd={(value) => addOption(idx, value)} />
-                          </div>
-                        </div>
-
-                        <label className="flex items-center gap-2 text-sm text-gray-700">
-                          <input
-                            type="checkbox"
-                            checked={attr.variation}
-                            onChange={(e) => updateAttribute(idx, 'variation', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600"
-                          />
-                          Digunakan untuk varian
+                  <div key={idx} className="border border-gray-200 rounded-lg p-3 sm:p-4 space-y-3">
+                    {/* Header: Nama Atribut + Hapus */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Nama Atribut
                         </label>
+                        <input
+                          type="text"
+                          value={attr.name}
+                          onChange={(e) => updateAttribute(idx, 'name', e.target.value)}
+                          className="w-full px-2.5 sm:px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Contoh: Warna, Ukuran"
+                        />
                       </div>
-
                       <button
                         type="button"
                         onClick={() => removeAttribute(idx)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="flex-shrink-0 mt-5 p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Hapus atribut"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                    </div>
+
+                    {/* Pilihan */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                        Pilihan
+                      </label>
+                      <div className="space-y-2">
+                        {attr.options.map((opt, optIdx) => (
+                          <OptionRow
+                            key={optIdx}
+                            value={opt}
+                            index={optIdx}
+                            onChange={(val) => updateOption(idx, optIdx, val)}
+                            onRemove={() => removeOption(idx, optIdx)}
+                          />
+                        ))}
+                        <AddOptionInput onAdd={(value) => addOption(idx, value)} />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -738,7 +734,7 @@ export default function EditProductPage() {
 
             {/* Variations */}
             {hasVariations && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4 overflow-hidden">
                 <h2 className="text-base font-semibold text-gray-900 pb-2 border-b border-gray-100">
                   Varian Produk
                 </h2>
@@ -781,7 +777,6 @@ export default function EditProductPage() {
                 )}
               </div>
             )}
-
             {/* Categories */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
               <h2 className="text-sm font-semibold text-gray-900">Kategori</h2>
@@ -806,7 +801,6 @@ export default function EditProductPage() {
                 </div>
               )}
             </div>
-
             {/* Publish */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
               <h2 className="text-sm font-semibold text-gray-900">Publikasi</h2>
