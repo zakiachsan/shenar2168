@@ -87,19 +87,7 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
       .map((a: any) => ({ name: a.name, options: a.options }));
   }, [wcProductRaw]);
 
-  // Auto-select first option for each variation attribute
-  useEffect(() => {
-    if (variationAttributes.length === 0) return;
-    setSelectedAttributes((prev) => {
-      const next = { ...prev };
-      for (const attr of variationAttributes) {
-        if (!next[attr.name] && attr.options.length > 0) {
-          next[attr.name] = attr.options[0];
-        }
-      }
-      return next;
-    });
-  }, [variationAttributes.map((a: any) => a.name + ':' + a.options.join(',')).join('|')]);
+  // NOTE: No auto-select — user must pick variant manually
 
   // Find matching variation
   const matchedVariation = useMemo(() => {
@@ -368,15 +356,17 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
     );
   }
 
+              // Image logic: no variant selected -> non-variant images; variant selected -> variant image
               const fallbackImg = NO_IMAGE_PLACEHOLDER;
-              const allVariantImages = variations.filter((v: any) => v.image?.src).map((v: any) => v.image.src);
-              const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+              const nonVariantImages = product.images && product.images.length > 0
+                ? product.images
+                : product.image ? [product.image] : [];
               const matchedImage = matchedVariation?.image?.src || null;
               const images = isVariable && matchedImage
                 ? [matchedImage]
-                : isVariable && allVariantImages.length > 0
-                ? [...new Set([...allVariantImages, ...productImages])]
-                : productImages.length > 0 ? productImages : [fallbackImg];
+                : nonVariantImages.length > 0
+                  ? nonVariantImages
+                  : [fallbackImg];
 
   return (
     <>
