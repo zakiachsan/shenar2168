@@ -1,124 +1,10 @@
-/**
- * Checkout API — creates order + auto-marks as processing
- * Uses HTTPS + Basic Auth for WooCommerce API
- * TODO: Replace with Midtrans Snap integration
- */
 import { NextRequest, NextResponse } from 'next/server';
-import https from 'https';
-import { randomBytes } from 'crypto';
+import { createOrder, generateOrderNumber } from '@/lib/orders';
 import { earnCoins } from '@/lib/coins-store';
 import { getStoreSettings } from '@/lib/store-settings';
-import db from '@/lib/db';
-import { normalizePhone } from '@/lib/phone';
-
-const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_Uu641i6QalcTuvSnZ0LZbH3CJhW8IaagIbH4Hi0i';
-
-function generateOrderCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = 'SH';
-  const bytes = randomBytes(6);
-  for (let i = 0; i < 6; i++) {
-    result += chars[bytes[i] % chars.length];
-  }
-  return result;
-}
-
-function wcRequest(
-  method: string,
-  path: string,
-  body?: any
-): Promise<{ status: number; data: any }> {
-  return new Promise((resolve, reject) => {
-    const url = new URL(WC_URL + path);
-
-    const bodyStr = body ? JSON.stringify(body) : null;
-
-    const options: https.RequestOptions = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname + url.search,
-      method,
-      headers: {
-        'Authorization': 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64'),
-        'Accept': 'application/json',
-        ...(bodyStr
-          ? {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(bodyStr).toString(),
-            }
-          : {}),
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let responseBody = '';
-      res.on('data', (chunk: Buffer) => (responseBody += chunk.toString()));
-      res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode || 500, data: JSON.parse(responseBody) });
-        } catch {
-          resolve({ status: res.statusCode || 500, data: { error: responseBody } });
-        }
-      });
-    });
-
-    req.on('error', (e) => reject(e));
-    if (bodyStr) req.write(bodyStr);
-    req.end();
-  });
-}
-
-async function createBiteshipOrder(body: any, orderId: number) {
-  try {
-    const shipping = body.shipping || {};
-    const billing = body.billing || {};
-    const items = body.items || [];
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/biteship/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        destination_contact_name: shipping.first_name || billing.first_name || 'Customer',
-        destination_contact_phone: billing.phone || '081234567890',
-        destination_address: shipping.address_1 || billing.address_1 || '',
-        destination_postal_code: shipping.postcode || billing.postcode || '12345',
-        destination_note: body.customer_note || '',
-        courier_company: body.shipping_courier || 'jne',
-        courier_type: body.shipping_service || 'reguler',
-        weight: items.reduce((s: number, i: any) => s + (i.weight || 500) * i.quantity, 0),
-        items: items.map((i: any) => ({
-          name: i.name,
-          description: i.name,
-          value: i.price || i.value || 0,
-          quantity: i.quantity,
-          weight: i.weight || 500,
-          height: i.height,
-          length: i.length,
-          width: i.width,
-        })),
-      }),
-    });
-
-    if (!res.ok) {
-      console.error('Biteship order creation failed:', await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    return {
-      tracking_id: data.tracking_id || data.id,
-      waybill_id: data.waybill_id || data.id,
-      courier_company: data.courier?.company || body.shipping_courier,
-      courier_type: data.courier?.type || body.shipping_service,
-      status: data.status,
-    };
-  } catch (e) {
-    console.error('Biteship order exception:', e);
-    return null;
-  }
-}
+import { getProductById } from '@/lib/products';
+import { validateCoupon, incrementCouponUsage } from '@/lib/coupons';
+import { updateOrder } from '@/lib/orders';
 
 export async function POST(req: NextRequest) {
   try {
@@ -127,119 +13,193 @@ export async function POST(req: NextRequest) {
     if (!body.items?.length) return NextResponse.json({ error: 'Cart empty' }, { status: 400 });
     if (!body.billing?.first_name) return NextResponse.json({ error: 'Billing required' }, { status: 400 });
 
-    // Build coupon lines if provided
-    const couponLines = body.coupon_code
-      ? [{ code: body.coupon_code }]
-      : [];
-
-    // Build shipping lines if cost provided
-    const shippingLines = body.shipping_cost
-      ? [{
-          method_id: body.shipping_method || 'flat_rate',
-          method_title: body.shipping_courier
-            ? `${body.shipping_courier.toUpperCase()} - ${body.shipping_service || 'Reguler'}`
-            : 'Pengiriman',
-          total: String(body.shipping_cost),
-        }]
-      : [];
-
-    // 1. Create order
-    const createPayload: any = {
-      payment_method: body.payment_method || 'midtrans',
-      payment_method_title: body.payment_method === 'cod' ? 'Bayar di Tempat (COD)' : 'Transfer / COD',
-      set_paid: false,
-      billing: {
-        first_name: body.billing.first_name,
-        last_name: body.billing.last_name || '',
-        phone: body.billing.phone,
-        email: body.billing.email || `${body.billing.phone}@shenar2168.id`,
-        address_1: body.billing.address_1,
-        city: body.billing.city || 'Jakarta',
-        state: body.billing.state || '',
-        postcode: body.billing.postcode || '12345',
-        country: body.billing.country || 'ID',
-      },
-      shipping: {
-        first_name: body.shipping?.first_name || body.billing.first_name,
-        last_name: body.shipping?.last_name || '',
-        phone: body.billing.phone,
-        address_1: body.shipping?.address_1 || body.billing.address_1,
-        city: body.shipping?.city || body.billing.city,
-        state: body.shipping?.state || '',
-        postcode: body.shipping?.postcode || '12345',
-        country: 'ID',
-      },
-      line_items: body.items.map((i: any) => ({
-        product_id: i.productId,
-        quantity: i.quantity,
-        variation_id: i.variationId || 0,
-      })),
-      coupon_lines: couponLines,
-      shipping_lines: shippingLines,
-      customer_note: body.customer_note || body.note || '',
-    };
-
-    const createResult = await wcRequest('POST', '/wp-json/wc/v3/orders', createPayload);
-
-    if (createResult.status < 200 || createResult.status >= 300) {
-      return NextResponse.json({ error: createResult.data.message || 'Order failed' }, { status: createResult.status });
+    // Calculate totals
+    let subtotal = 0;
+    const orderItems = [];
+    for (const item of body.items) {
+      const product = await getProductById(item.productId);
+      if (!product) continue;
+      const qty = item.quantity || 1;
+      // Use variation price if variant is selected
+      let itemPrice = product.price;
+      let itemImage = product.image;
+      let variationId = item.variationId || null;
+      let variationInfo = item.variationInfo || null;
+      if (item.variationId) {
+        try {
+          const pool = (await import('@/lib/db')).default;
+          const conn = await pool.getConnection();
+          try {
+            const [varRows] = await conn.execute(
+              'SELECT regular_price, sale_price, image FROM product_variations WHERE id = ? AND product_id = ?',
+              [item.variationId, item.productId]
+            );
+            const v = (varRows as any[])[0];
+            if (v) {
+              itemPrice = v.sale_price > 0 ? v.sale_price : v.regular_price || product.price;
+              if (v.image) itemImage = v.image;
+              if (!variationInfo) {
+                const [attrRows] = await conn.execute(
+                  'SELECT attributes FROM product_variations WHERE id = ?',
+                  [item.variationId]
+                );
+                const attrs = (attrRows as any[])[0]?.attributes;
+                if (attrs) {
+                  const parsed = typeof attrs === 'string' ? JSON.parse(attrs) : attrs;
+                  variationInfo = parsed.map((a: any) => `${a.name}: ${a.option}`).join(', ');
+                }
+              }
+            }
+          } finally {
+            conn.release();
+          }
+        } catch {}
+      }
+      const itemTotal = itemPrice * qty;
+      subtotal += itemTotal;
+      orderItems.push({
+        productId: product.id,
+        productName: product.name,
+        quantity: qty,
+        price: itemPrice,
+        total: itemTotal,
+        image: itemImage,
+        variationId,
+        variationInfo,
+      });
     }
 
-    const order = createResult.data;
-
-    // 1b. Generate unique order code and save to WooCommerce meta + local DB
-    const orderCode = generateOrderCode();
-    await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-      meta_data: [
-        { key: '_order_code', value: orderCode },
-        { key: '_customer_phone', value: body.billing.phone },
-      ],
-    });
-
-    // Save mapping to local MySQL
-    try {
-      await db.execute(
-        'INSERT INTO order_codes (code, woo_order_id, phone) VALUES (?, ?, ?)',
-        [orderCode, order.id, normalizePhone(body.billing.phone)]
-      );
-    } catch (dbErr: any) {
-      // If code collision, regenerate once
-      if (dbErr.code === 'ER_DUP_ENTRY') {
-        const fallbackCode = generateOrderCode();
-        await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-          meta_data: [{ key: '_order_code', value: fallbackCode }],
-        });
-        await db.execute(
-          'INSERT INTO order_codes (code, woo_order_id, phone) VALUES (?, ?, ?)',
-          [fallbackCode, order.id, body.billing.phone]
-        );
-      } else {
-        console.error('Failed to save order code:', dbErr);
+    // Apply coupon if provided
+    let discount = 0;
+    let couponId = null;
+    if (body.coupon_code) {
+      const couponResult = await validateCoupon(body.coupon_code, subtotal);
+      if (couponResult.valid) {
+        discount = couponResult.discount;
+        const coupons = await import('@/lib/coupons');
+        const coupon = await coupons.getCouponByCode(body.coupon_code);
+        if (coupon) couponId = coupon.id;
       }
     }
 
-    // 2. Auto-advance order to processing (payment gateway integration pending)
-    const updateResult = await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
+    const shippingCost = body.shipping_cost || 0;
+    const total = Math.max(0, subtotal + shippingCost - discount);
+
+    // Build courier info
+    const shippingCourier = body.shipping_courier || '';
+    const shippingService = body.shipping_service || '';
+    const courierDisplay = shippingService ? `${shippingCourier}|${shippingService}` : shippingCourier;
+
+    // Create order
+    const order = await createOrder({
+      orderNumber: generateOrderNumber(),
+      customerName: `${body.billing.first_name} ${body.billing.last_name || ''}`.trim(),
+      customerEmail: body.billing.email || `${body.billing.phone}@ragamguna.id`,
+      customerPhone: body.billing.phone,
+      billingAddress: body.billing.address_1 || '',
+      shippingAddress: body.shipping?.address_1 || body.billing.address_1 || '',
       status: 'processing',
-      transaction_id: `ORDER-${order.id}`,
+      paymentMethod: body.payment_method || 'cod',
+      paymentStatus: 'pending',
+      shippingCost,
+      shippingService,
+      total,
+      discount,
+      couponCode: body.coupon_code || null,
+      note: body.customer_note || '',
+      courier: courierDisplay,
+      items: orderItems,
     });
 
-    const finalOrder = updateResult.status < 300 ? updateResult.data : order;
+    // Increment coupon usage
+    if (couponId) {
+      await incrementCouponUsage(couponId);
+    }
 
-    // 3. Create Biteship shipping order (non-blocking)
-    const biteshipData = await createBiteshipOrder(body, finalOrder.id);
+    // Create Biteship shipment
+    const BITESHIP_API_KEY = process.env.BITESHIP_API_KEY || '';
+    let shippingData: any = null;
+    if (BITESHIP_API_KEY && shippingCourier && order.shippingAddress) {
+      try {
+        // Parse courier code and service from "jne|Reguler" format
+        const courierParts = (order.courier || '').split('|');
+        const courierCompany = courierParts[0] || shippingCourier;
+        const courierType = courierParts[1]?.toLowerCase() || 'reguler';
 
-    // Earn coins based on store points settings
+        // Extract postal code from address (last 5 digits)
+        const postalMatch = order.shippingAddress.match(/(\d{5})\s*$/);
+        const destPostalCode = postalMatch ? postalMatch[1] : '14350';
+
+        const biteshipPayload = {
+          shipper_contact_name: 'Shenar Official Store',
+          shipper_contact_phone: '081234567890',
+          shipper_contact_email: 'store@shenar2168.id',
+          shipper_organization: 'Shenar Official Store',
+          origin_contact_name: 'Shenar Official Store',
+          origin_contact_phone: '081234567890',
+          origin_address: 'Pantai Indah Kapuk, Jakarta Utara',
+          origin_postal_code: '14470',
+          origin_note: '',
+          destination_contact_name: order.customerName || 'Customer',
+          destination_contact_phone: order.customerPhone || '081234567890',
+          destination_address: order.shippingAddress,
+          destination_postal_code: destPostalCode,
+          destination_note: order.note || '',
+          courier_company: courierCompany,
+          courier_type: courierType,
+          delivery_type: 'now',
+          package_type: 2,
+          weight: 1000,
+          items: orderItems.map((item: any) => ({
+            name: item.productName,
+            description: item.productName,
+            value: item.price,
+            quantity: item.quantity,
+            weight: 500,
+          })),
+        };
+
+        const biteshipRes = await fetch('https://api.biteship.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${BITESHIP_API_KEY}`,
+          },
+          body: JSON.stringify(biteshipPayload),
+        });
+
+        const biteshipData = await biteshipRes.json();
+
+        if (biteshipRes.ok && biteshipData.id) {
+          shippingData = {
+            tracking_id: biteshipData.tracking_id || null,
+            waybill_id: biteshipData.waybill_id || null,
+            status: biteshipData.status || 'confirmed',
+          };
+
+          // Update order with waybill info
+          await updateOrder(order.id, {
+            trackingId: shippingData.tracking_id,
+            waybillId: shippingData.waybill_id,
+          });
+        } else {
+          console.error('Biteship order creation failed:', biteshipData.error || biteshipData.message);
+        }
+      } catch (biteshipErr: any) {
+        console.error('Biteship shipment error:', biteshipErr.message);
+      }
+    }
+
+    // Earn coins
     if (body.billing?.phone) {
       try {
         const settings = await getStoreSettings();
         const pts = settings.points;
         let coinsEarned = 0;
-        const orderTotal = parseFloat(finalOrder.total) || 0;
 
-        if (pts.enabled && orderTotal >= pts.minOrder) {
+        if (pts.enabled && total >= pts.minOrder) {
           if (pts.type === 'percent') {
-            coinsEarned = Math.floor(orderTotal * (pts.value / 100));
+            coinsEarned = Math.floor(total * (pts.value / 100));
           } else {
             coinsEarned = Math.floor(pts.value);
           }
@@ -247,7 +207,7 @@ export async function POST(req: NextRequest) {
             coinsEarned = Math.min(coinsEarned, pts.maxPoints);
           }
           if (coinsEarned > 0) {
-            await earnCoins(body.billing.phone, coinsEarned, pts.caption || `Cashback dari pesanan #${finalOrder.id}`, String(finalOrder.id));
+            await earnCoins(body.billing.phone, coinsEarned, pts.caption || `Cashback dari pesanan #${order.id}`, String(order.id));
           }
         }
       } catch (e) {
@@ -255,32 +215,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Save tracking info to order meta (non-blocking)
-    if (biteshipData) {
-      try {
-        await wcRequest('PUT', `/wp-json/wc/v3/orders/${finalOrder.id}`, {
-          meta_data: [
-            { key: '_biteship_tracking_id', value: biteshipData.tracking_id },
-            { key: '_biteship_waybill_id', value: biteshipData.waybill_id },
-            { key: '_biteship_courier', value: `${biteshipData.courier_company}|${biteshipData.courier_type}` },
-          ],
-        });
-      } catch (e) {
-        console.error('Failed to save tracking meta:', e);
-      }
-    }
-
     return NextResponse.json({
       success: true,
       order: {
-        id: finalOrder.id,
-        orderCode,
-        order_key: finalOrder.order_key,
-        total: finalOrder.total,
-        status: finalOrder.status,
-        payment_status: finalOrder.status === 'processing' ? 'paid' : 'pending',
+        id: order.id,
+        order_number: order.orderNumber,
+        total: order.total,
+        status: order.status,
+        payment_status: order.paymentStatus,
       },
-      shipping: biteshipData,
+      shipping: shippingData,
     });
   } catch (e: any) {
     console.error('Checkout error:', e.message);
