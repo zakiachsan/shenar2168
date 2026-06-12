@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2, MapPin, CreditCard, User, MessageSquare } from "lucide-react";
+import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2, MapPin, CreditCard, User, MessageSquare, Download } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
-import ShippingLabel from "@/app/components/shipping/ShippingLabel";
+import { generateShippingLabelPDF } from "@/lib/generate-shipping-label";
 import { useAuth } from "@/app/components/layout/AuthProvider";
 
 interface OrderItem {
@@ -282,43 +282,70 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Shipping Label */}
-            {(() => {
-              const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
-              const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
-              const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
-              const courierCode = courier ? courier.split('|')[0] : '';
-              const courierService = courier ? courier.split('|')[1] || '' : '';
-              return (
-                <ShippingLabel
-                  orderNumber={order.code || String(order.id)}
-                  courierCode={courierCode}
-                  courierService={courierService}
-                  waybillId={waybillId || ''}
-                  trackingId={trackingId || ''}
-                  recipientName={`${order.shipping.first_name} ${order.shipping.last_name}`}
-                  recipientPhone={order.billing.phone}
-                  recipientAddress={`${order.shipping.address_1}, ${order.shipping.city}, ${order.shipping.state} ${order.shipping.postcode}`}
-                  recipientCity={order.shipping.city}
-                  recipientPostalCode={order.shipping.postcode}
-                  senderName="Shenar Official Store"
-                  senderPhone="081234567890"
-                  senderAddress="Pantai Indah Kapuk, Jakarta Utara"
-                  senderCity="Jakarta Utara"
-                  senderPostalCode="14470"
-                  items={order.line_items?.map((item: any) => ({
-                    name: item.name,
-                    variation: item.variation?.attributes?.map((a: any) => `${a.option}`).join(', ') || '',
-                    quantity: item.quantity,
-                  })) || []}
-                  storeName="Shenar2168"
-                  showCTA={true}
-                  compact={false}
-                />
-              );
-            })()}
+{/* Shipping Method */}
+            <div className="bg-white lg:rounded-sm p-4 space-y-2">
+              <h3 className="text-sm font-medium text-shopee-text flex items-center gap-2">
+                <Truck className="w-4 h-4 text-shopee-orange" />
+                Metode Pengiriman
+              </h3>
+              {(() => {
+                const trackingId = order.meta_data?.find((m: any) => m.key === '_biteship_tracking_id')?.value;
+                const waybillId = order.meta_data?.find((m: any) => m.key === '_biteship_waybill_id')?.value;
+                const courier = order.meta_data?.find((m: any) => m.key === '_biteship_courier')?.value;
+                const courierCode = courier ? courier.split('|')[0] : '';
+                const courierService = courier ? courier.split('|')[1] || '' : '';
+                const courierName = courierCode.toUpperCase();
+                return (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-shopee-text-secondary">Kurir</span>
+                      <span className="text-shopee-text">{courierName || '-'}</span>
+                    </div>
+                    {waybillId && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-shopee-text-secondary">No. Resi</span>
+                        <span className="text-shopee-text font-mono text-xs">{waybillId}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        generateShippingLabelPDF({
+                          storeName: 'Shenar2168',
+                          orderNumber: order.code || String(order.id),
+                          courierName: courierName,
+                          courierService: courierService,
+                          waybillId: waybillId || '',
+                          recipientName: `${order.shipping.first_name} ${order.shipping.last_name}`.trim(),
+                          recipientPhone: order.billing.phone || '',
+                          recipientAddress: `${order.shipping.address_1}, ${order.shipping.city}, ${order.shipping.state} ${order.shipping.postcode}`,
+                          recipientCity: order.shipping.city,
+                          recipientPostalCode: order.shipping.postcode,
+                          senderName: 'Shenar Official Store',
+                          senderPhone: '081234567890',
+                          senderAddress: 'Pantai Indah Kapuk, Jakarta Utara',
+                          senderCity: 'Jakarta Utara',
+                          senderPostalCode: '14470',
+                          weight: 0,
+                          codAmount: 0,
+                          items: order.line_items?.map((item: any) => ({
+                            name: item.name,
+                            variation: item.variation?.attributes?.map((a: any) => a.option).join(', ') || '',
+                            quantity: item.quantity,
+                          })) || [],
+                        });
+                      }}
+                      className="mt-2 w-full py-2.5 bg-shopee-orange text-white text-sm font-medium rounded-sm hover:bg-[#D46A0A] transition-colors inline-flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Resi
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
 
-            {/* Review section — only show if completed */}
+
+{/* Review section — only show if completed */}
             {order.status === 'completed' && (
               <div className="bg-white lg:rounded-sm p-4">
                 <h3 className="text-sm font-medium text-shopee-text mb-3">Beri Ulasan</h3>

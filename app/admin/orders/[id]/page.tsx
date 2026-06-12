@@ -1,6 +1,6 @@
 'use client';
 
-import ShippingLabel from '@/app/components/shipping/ShippingLabel';
+import { generateShippingLabelPDF } from '@/lib/generate-shipping-label';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -12,6 +12,7 @@ import {
   Package,
   Loader2,
   CheckCircle,
+  Download,
 } from 'lucide-react';
 
 interface OrderDetail {
@@ -385,49 +386,75 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Shipping Label */}
-          <ShippingLabel
-            orderNumber={order.number || String(order.id)}
-            courierCode={order.shipping_lines?.[0]?.method_title?.toLowerCase()?.replace(/\s+/g, '') || ''}
-            courierService={order.shipping_lines?.[0]?.method_title || ''}
-            waybillId={(order as any).waybill_id || ''}
-            trackingId={(order as any).tracking_id || ''}
-            recipientName={order.shipping?.first_name ? `${order.shipping.first_name} ${order.shipping.last_name || ''}`.trim() : order.billing?.first_name ? `${order.billing.first_name} ${order.billing.last_name || ''}`.trim() : 'Pembeli'}
-            recipientPhone={order.billing?.phone || ''}
-            recipientAddress={order.shipping?.address_1 || order.billing?.address_1 || ''}
-            recipientCity={order.shipping?.city || ''}
-            recipientPostalCode={order.shipping?.postcode || ''}
-            senderName="RagamGuna Official Store"
-            senderPhone="081234567890"
-            senderAddress="Pantai Indah Kapuk, Jakarta Utara"
-            senderCity="Jakarta Utara"
-            senderPostalCode="14470"
-            weight={0}
-            codAmount={0}
-            items={order.line_items?.map(item => ({
-              name: item.name,
-              sku: item.sku,
-              variation: item.variation_info || '',
-              quantity: item.quantity,
-            })) || []}
-            storeName="RagamGuna"
-            showCTA={false}
-            compact={false}
-          />
-
-          {/* Shipping Cost */}
-          {order.shipping_lines?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="space-y-1.5 text-sm">
-                {order.shipping_lines.map((sl, i) => (
-                  <div key={i} className="flex justify-between">
-                    <span className="text-gray-500">{sl.method_title}</span>
-                    <span className="font-medium text-gray-700">{formatCurrency(sl.total)}</span>
-                  </div>
-                ))}
-              </div>
+          {/* Shipping */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              Pengiriman
+            </h2>
+            <div className="space-y-1.5 text-sm">
+              <p className="text-gray-900 font-medium">
+                {order.shipping?.first_name} {order.shipping?.last_name}
+              </p>
+              {order.shipping?.address_1 && (
+                <p className="text-gray-500 text-xs">
+                  {order.shipping.address_1}, {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}
+                </p>
+              )}
+              {order.shipping_lines?.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                  {order.shipping_lines.map((sl, i) => (
+                    <div key={i} className="flex justify-between">
+                      <span className="text-gray-500">{sl.method_title}</span>
+                      <span className="font-medium text-gray-700">{formatCurrency(sl.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(order as any).waybill_id && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-400">No. Resi</p>
+                  <p className="text-sm font-mono font-semibold text-gray-900">{(order as any).waybill_id}</p>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Download Resi Button */}
+            <button
+              onClick={() => {
+                const courierName = order.shipping_lines?.[0]?.method_title || '';
+                generateShippingLabelPDF({
+                  storeName: 'Shenar2168',
+                  orderNumber: order.number || String(order.id),
+                  courierName: courierName,
+                  courierService: courierName,
+                  waybillId: (order as any).waybill_id || '',
+                  recipientName: order.shipping?.first_name ? `${order.shipping.first_name} ${order.shipping.last_name || ''}`.trim() : order.billing?.first_name ? `${order.billing.first_name} ${order.billing.last_name || ''}`.trim() : 'Pembeli',
+                  recipientPhone: order.billing?.phone || '',
+                  recipientAddress: order.shipping?.address_1 || order.billing?.address_1 || '',
+                  recipientCity: order.shipping?.city || '',
+                  recipientPostalCode: order.shipping?.postcode || '',
+                  senderName: 'Shenar2168 Official Store',
+                  senderPhone: '081234567890',
+                  senderAddress: 'Pantai Indah Kapuk, Jakarta Utara',
+                  senderCity: 'Jakarta Utara',
+                  senderPostalCode: '14470',
+                  weight: 0,
+                  codAmount: 0,
+                  items: order.line_items?.map(item => ({
+                    name: item.name,
+                    sku: item.sku,
+                    variation: item.variation_info || '',
+                    quantity: item.quantity,
+                  })) || [],
+                });
+              }}
+              className="mt-3 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download Resi
+            </button>
+          </div>
 
           {/* Payment */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
