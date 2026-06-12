@@ -419,7 +419,8 @@ export default function OrderDetailPage() {
               )}
             </div>
 
-            {/* Download Resi Button */}
+            {/* Download Resi Button - only when shipped + waybill exists */}
+            {order.status === "shipped" && (order as any).waybill_id && (
             <button
               onClick={() => {
                 const courierName = order.shipping_lines?.[0]?.method_title || '';
@@ -454,6 +455,7 @@ export default function OrderDetailPage() {
               <Download className="w-4 h-4" />
               Download Resi
             </button>
+            )}
           </div>
 
           {/* Payment */}

@@ -3,6 +3,24 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { adminGetOrders, adminGetOrder, adminUpdateOrderStatus } from '@/lib/admin-api';
 import db from '@/lib/db';
 
+const BITESHIP_API_KEY = process.env.BITESHIP_API_KEY || '';
+const BITESHIP_BASE_URL = 'https://api.biteship.com';
+
+const COURIER_TYPE_MAP: Record<string, string> = {
+  'reguler': 'yes', 'yes': 'yes', 'reg': 'yes', 'oke': 'oke',
+  'ez': 'ez', 'oxy': 'oxy', 'halu': 'halu',
+  'sicepat reg': 'reg', 'next day': 'next_day', 'next_day': 'next_day',
+  'same day': 'same_day', 'same_day': 'same_day',
+  'standard': 'standard', 'express': 'express',
+  'instant': 'instant', 'sameday': 'sameday',
+};
+
+function resolveCourierType(serviceName: string): string {
+  if (!serviceName) return 'reguler';
+  const lower = serviceName.toLowerCase().trim();
+  return COURIER_TYPE_MAP[lower] || lower.replace(/\s+/g, '_');
+}
+
 function getOrderCodeFromMeta(meta: any[]): string | null {
   const found = meta?.find((m: any) => m.key === '_order_code');
   return found?.value || null;
@@ -120,6 +138,92 @@ export async function PUT(req: NextRequest) {
         variation_info: getVariationInfoFromMeta(item.meta_data),
       }));
     }
+    // Auto-create Biteship shipment when status changes to shipped
+    if (body.status === 'shipped' && BITESHIP_API_KEY) {
+      const waybillMeta = order.meta_data?.find((m: any) => m.key === '_biteship_waybill_id');
+      if (!waybillMeta?.value) {
+        try {
+          const courierMeta = order.meta_data?.find((m: any) => m.key === '_biteship_courier');
+          const courierRaw = courierMeta?.value || order.shipping_lines?.[0]?.method_title || '';
+          const courierParts = courierRaw.split('|');
+          const courierCompany = courierParts[0] || '';
+          const courierType = resolveCourierType(courierParts[1] || '');
+
+          const shippingAddr = order.shipping || {};
+          const postalMatch = (shippingAddr.address_1 || '').match(/\b(\d{5})\b/);
+          const postalCode = postalMatch ? postalMatch[1] : '12345';
+
+          if (courierCompany) {
+            const biteshipPayload = {
+              shipper_contact_name: 'Shenar Store',
+              shipper_contact_phone: '081234567890',
+              shipper_contact_email: 'store@shenar2168.com',
+              shipper_organization: 'Shenar Store',
+              origin_contact_name: 'Shenar Store',
+              origin_contact_phone: '081234567890',
+              origin_address: 'Pantai Indah Kapuk, Jakarta Utara',
+              origin_postal_code: '14470',
+              origin_note: '',
+              destination_contact_name: (shippingAddr.first_name || '') + ' ' + (shippingAddr.last_name || ''),
+              destination_contact_phone: shippingAddr.phone || order.billing?.phone || '081234567890',
+              destination_address: shippingAddr.address_1 || '',
+              destination_postal_code: shippingAddr.postcode || postalCode,
+              destination_note: '',
+              courier_company: courierCompany,
+              courier_type: courierType || 'yes',
+              delivery_type: 'now',
+              package_type: 2,
+              weight: 500,
+              items: (order.line_items || []).map((item: any) => ({
+                name: item.name,
+                description: item.name,
+                value: Math.round(item.price || 0),
+                quantity: item.quantity || 1,
+                weight: 500,
+              })),
+            };
+
+            const biteshipRes = await fetch(BITESHIP_BASE_URL + '/v1/orders', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + BITESHIP_API_KEY,
+              },
+              body: JSON.stringify(biteshipPayload),
+            });
+
+            const biteshipData = await biteshipRes.json();
+            if (biteshipRes.ok && biteshipData.courier) {
+              const waybillId = biteshipData.courier.waybill_id || biteshipData.id;
+              const trackingId = biteshipData.courier.tracking_id || null;
+              try {
+                await db.query(
+                  "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES (?, '_biteship_waybill_id', ?) ON DUPLICATE KEY UPDATE meta_value = ?",
+                  [body.id, waybillId, waybillId]
+                );
+                if (trackingId) {
+                  await db.query(
+                    "INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES (?, '_biteship_tracking_id', ?) ON DUPLICATE KEY UPDATE meta_value = ?",
+                    [body.id, trackingId, trackingId]
+                  );
+                }
+              } catch (dbErr) {
+                console.error('Failed to save waybill to DB:', dbErr);
+              }
+              order.meta_data = order.meta_data || [];
+              order.meta_data.push({ key: '_biteship_waybill_id', value: waybillId });
+              if (trackingId) order.meta_data.push({ key: '_biteship_tracking_id', value: trackingId });
+              console.log('Biteship shipment created for order #' + body.id + ': waybill=' + waybillId);
+            } else {
+              console.error('Biteship shipment failed for order #' + body.id + ':', biteshipData.error || biteshipData.message);
+            }
+          }
+        } catch (biteshipErr) {
+          console.error('Biteship shipment error for order #' + body.id + ':', biteshipErr);
+        }
+      }
+    }
+
     return NextResponse.json(order);
   } catch (e: any) {
     if (e.message === 'Unauthorized') {

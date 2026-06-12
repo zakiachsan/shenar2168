@@ -307,6 +307,7 @@ export default function OrderDetailPage() {
                         <span className="text-shopee-text font-mono text-xs">{waybillId}</span>
                       </div>
                     )}
+                    {order.status === 'shipped' && waybillId && (
                     <button
                       onClick={() => {
                         generateShippingLabelPDF({
@@ -339,6 +340,7 @@ export default function OrderDetailPage() {
                       <Download className="w-4 h-4" />
                       Download Resi
                     </button>
+                    )}
                   </>
                 );
               })()}

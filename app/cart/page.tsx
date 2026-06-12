@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Minus, Plus, Trash2, Truck, ChevronRight, ShoppingCart } from "lucide-react";
 import Header from "@/app/components/layout/Header";
@@ -8,7 +9,7 @@ import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
-import { getProducts, WCProduct } from "@/lib/woocommerce";
+
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, getItemCount, getSubtotal } = useCart();
@@ -18,6 +19,14 @@ export default function CartPage() {
   // Generate unique key for cart item
   const itemKey = (item: { productId: number; variationId?: number }) =>
     `${item.productId}-${item.variationId || 0}`;
+
+  const router = useRouter();
+
+  const goToCheckout = useCallback(() => {
+    if (selected.length === 0) return;
+    localStorage.setItem("ragamguna-checkout-selected", JSON.stringify(selected));
+    router.push("/checkout");
+  }, [selected, router]);
 
   // Select all items by default
   useEffect(() => {
@@ -52,7 +61,7 @@ export default function CartPage() {
   const totalOriginal = selectedItems.reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
 
   // Group by "shop" (for now, all from one shop since it's single-store)
-  const shop = "Shenar2168 Official";
+  const shop = "RagamGuna Official";
   const groupedItems = items;
 
   if (loading) {
@@ -130,7 +139,7 @@ export default function CartPage() {
                           {item.sku && (
                             <p className="text-xs text-shopee-text-secondary mt-0.5">SKU: {item.sku}</p>
                           )}
-                          {item.variantLabel && (
+                          {item.variationId && item.variantLabel && (
                             <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
                           )}
                           <div className="flex items-end justify-between mt-2">
@@ -215,8 +224,8 @@ export default function CartPage() {
                       <span className="text-xl text-shopee-orange font-medium">{formatPrice(totalPrice)}</span>
                     </div>
                   </div>
-                  <Link
-                    href="/checkout"
+                  <button
+                    onClick={goToCheckout}
                     className={`mt-4 w-full h-11 rounded-sm font-medium flex items-center justify-center transition-colors ${
                       selected.length > 0
                         ? "bg-shopee-orange hover:bg-[#1A7BD4] text-white"
@@ -224,7 +233,7 @@ export default function CartPage() {
                     }`}
                   >
                     Checkout ({totalItems})
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}
@@ -239,14 +248,14 @@ export default function CartPage() {
             <p className="text-xs text-shopee-text-secondary">Total ({totalItems} Produk)</p>
             <p className="text-lg text-shopee-orange font-medium">{formatPrice(totalPrice)}</p>
           </div>
-          <Link
-            href="/checkout"
+          <button
+            onClick={goToCheckout}
             className={`px-6 py-2.5 rounded-sm text-sm font-medium transition-colors ${
               selected.length > 0 ? "bg-shopee-orange text-white" : "bg-shopee-border text-shopee-text-secondary"
             }`}
           >
             Checkout
-          </Link>
+          </button>
         </div>
       )}
 
