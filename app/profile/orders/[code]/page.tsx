@@ -8,6 +8,7 @@ import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
+import ShippingLabel from "@/app/components/shipping/ShippingLabel";
 import { useAuth } from "@/app/components/layout/AuthProvider";
 
 interface OrderItem {
@@ -281,54 +282,41 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Shipping */}
-            <div className="bg-white lg:rounded-sm p-4 space-y-2">
-              <h3 className="text-sm font-medium text-shopee-text flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-shopee-text-secondary" />
-                Informasi Pengiriman
-              </h3>
-              <div className="flex items-start gap-2">
-                <User className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-shopee-text">{order.shipping.first_name} {order.shipping.last_name}</p>
-                  <p className="text-sm text-shopee-text-secondary">{order.billing.phone}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-shopee-text-secondary">{order.shipping.address_1}, {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</p>
-              </div>
-              {order.shipping_lines && order.shipping_lines.length > 0 && (
-                <div className="pt-2 border-t border-shopee-border space-y-1">
-                  {order.shipping_lines.map((sl, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-shopee-text-secondary">{sl.method_title}</span>
-                      <span className="text-shopee-text">{formatPrice(Number(sl.total))}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {(() => {
-                const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
-                const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
-                const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
-                if (!trackingId && !waybillId && !courier) return null;
-                return (
-                  <div className="pt-2 border-t border-shopee-border space-y-1">
-                    <p className="text-xs font-medium text-shopee-text">Informasi Ekspedisi</p>
-                    {courier && <p className="text-xs text-shopee-text-secondary">Kurir: {courier.replace('|', ' ').toUpperCase()}</p>}
-                    {waybillId && <p className="text-xs text-shopee-text-secondary">No. Resi: <span className="font-mono">{waybillId}</span></p>}
-                    {trackingId && <p className="text-xs text-shopee-text-secondary">Tracking ID: <span className="font-mono">{trackingId}</span></p>}
-                  </div>
-                );
-              })()}
-              {order.customer_note && (
-                <div className="pt-2 border-t border-shopee-border flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-shopee-text-secondary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-shopee-text-secondary">Catatan: {order.customer_note}</p>
-                </div>
-              )}
-            </div>
+            {/* Shipping Label */}
+            {(() => {
+              const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
+              const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
+              const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
+              const courierCode = courier ? courier.split('|')[0] : '';
+              const courierService = courier ? courier.split('|')[1] || '' : '';
+              return (
+                <ShippingLabel
+                  orderNumber={order.code || String(order.id)}
+                  courierCode={courierCode}
+                  courierService={courierService}
+                  waybillId={waybillId || ''}
+                  trackingId={trackingId || ''}
+                  recipientName={`${order.shipping.first_name} ${order.shipping.last_name}`}
+                  recipientPhone={order.billing.phone}
+                  recipientAddress={`${order.shipping.address_1}, ${order.shipping.city}, ${order.shipping.state} ${order.shipping.postcode}`}
+                  recipientCity={order.shipping.city}
+                  recipientPostalCode={order.shipping.postcode}
+                  senderName="Shenar Official Store"
+                  senderPhone="081234567890"
+                  senderAddress="Pantai Indah Kapuk, Jakarta Utara"
+                  senderCity="Jakarta Utara"
+                  senderPostalCode="14470"
+                  items={order.line_items?.map((item: any) => ({
+                    name: item.name,
+                    variation: item.variation?.attributes?.map((a: any) => `${a.option}`).join(', ') || '',
+                    quantity: item.quantity,
+                  })) || []}
+                  storeName="Shenar2168"
+                  showCTA={true}
+                  compact={false}
+                />
+              );
+            })()}
 
             {/* Review section — only show if completed */}
             {order.status === 'completed' && (
