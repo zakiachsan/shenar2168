@@ -1,5 +1,6 @@
 'use client';
 
+import ShippingLabel from '@/app/components/shipping/ShippingLabel';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -11,9 +12,6 @@ import {
   Package,
   Loader2,
   CheckCircle,
-  X,
-  AlertTriangle,
-  Truck,
 } from 'lucide-react';
 
 interface OrderDetail {
@@ -30,9 +28,6 @@ interface OrderDetail {
   payment_method_title: string;
   transaction_id: string;
   customer_note: string;
-  _order_code?: string | null;
-  meta_data?: Array<{ key: string; value: string }>;
-  coupon_lines?: Array<{ code: string; discount: string }>;
   billing: {
     first_name: string;
     last_name: string;
@@ -58,14 +53,14 @@ interface OrderDetail {
   line_items: {
     id: number;
     name: string;
-    image: { id: number; src: string; name: string; alt: string } | null;
-    variation_info: string;
     product_id: number;
     quantity: number;
     price: number;
     total: string;
     sku: string;
-    meta_data: { key: string; value: string }[];
+    image?: string;
+    variation_id?: number;
+    variation_info?: string;
   }[];
   shipping_lines: {
     method_title: string;
@@ -98,20 +93,12 @@ const STATUS_LABELS: Record<string, string> = {
 const TRANSITIONS: Record<string, string[]> = {
   pending: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['completed', 'cancelled'],
+  shipped: ['completed'],
   'on-hold': ['processing', 'cancelled'],
   completed: ['refunded'],
   cancelled: [],
   refunded: [],
   failed: ['pending', 'cancelled'],
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  processing: 'Proses Pesanan',
-  shipped: 'Siap Dikirim',
-  completed: 'Tandai Selesai',
-  cancelled: 'Batalkan Pesanan',
-  refunded: 'Proses Pengembalian',
 };
 
 function formatCurrency(amount: string): string {
@@ -153,7 +140,7 @@ export default function OrderDetailPage() {
 
   const loadOrder = async () => {
     try {
-      const res = await fetch(`/api/admin/orders?id=${orderId}`);
+      const res = await fetch(`/api/admin/orders/${orderId}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
@@ -171,10 +158,10 @@ export default function OrderDetailPage() {
     setUpdating(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/orders', {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: parseInt(orderId), status: newStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (res.ok) {
@@ -243,13 +230,6 @@ export default function OrderDetailPage() {
                 {STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
-            {order._order_code && (
-              <p className="text-sm font-medium mt-1">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-orange-50 text-orange-700 border border-orange-200">
-                  {order._order_code}
-                </span>
-              </p>
-            )}
             <p className="text-sm text-gray-500 mt-1">
               Dibuat: {formatDate(order.date_created)}
             </p>
@@ -276,24 +256,24 @@ export default function OrderDetailPage() {
             </div>
             <div className="divide-y divide-gray-100">
               {order.line_items.map((item) => (
-                <div key={item.id} className="p-5 flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    {item.image?.src && (
-                      <img
-                        src={item.image.src}
-                        alt={item.image.alt || item.name}
-                        className="w-12 h-12 rounded object-cover flex-shrink-0 border border-gray-200"
-                      />
+                <div key={item.id} className="p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-5 h-5 text-gray-400" />
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                      {item.variation_info && (
-                        <p className="text-xs text-orange-600 mt-0.5">{item.variation_info}</p>
-                      )}
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        SKU: {item.sku || '-'} &middot; Qty: {item.quantity}
-                      </p>
-                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.name}</p>
+                    {item.variation_info && (
+                      <p className="text-xs text-orange-600 mt-0.5">{item.variation_info}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Qty: {item.quantity}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-900">
@@ -315,13 +295,7 @@ export default function OrderDetailPage() {
                 <span className="text-gray-500">Ongkos Kirim</span>
                 <span className="text-gray-700">{formatCurrency(order.shipping_total || '0')}</span>
               </div>
-              {order.coupon_lines && order.coupon_lines.length > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Voucher ({order.coupon_lines.map(c => c.code).join(', ')})</span>
-                  <span className="text-green-600">-{formatCurrency(order.discount_total || '0')}</span>
-                </div>
-              )}
-              {!order.coupon_lines?.length && order.discount_total && parseFloat(order.discount_total) > 0 && (
+              {order.discount_total && parseFloat(order.discount_total) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Diskon</span>
                   <span className="text-green-600">-{formatCurrency(order.discount_total)}</span>
@@ -357,22 +331,32 @@ export default function OrderDetailPage() {
               </p>
             ) : (
               <div className="space-y-2">
-                {availableTransitions.map((newStatus) => (
-                  <button
-                    key={newStatus}
-                    onClick={() => setConfirmStatus(newStatus)}
-                    disabled={updating}
-                    className={`w-full px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                      newStatus === 'cancelled'
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                        : newStatus === 'completed'
-                        ? 'bg-green-50 text-green-600 hover:bg-green-100'
-                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    }`}
-                  >
-                    {updating ? 'Memproses...' : (ACTION_LABELS[newStatus] || `Tandai ${STATUS_LABELS[newStatus] || newStatus}`)}
-                  </button>
-                ))}
+                {availableTransitions.map((newStatus) => {
+                  const label =
+                    newStatus === 'shipped'
+                      ? 'Siap Dikirim'
+                      : newStatus === 'completed'
+                      ? 'Selesaikan Pesanan'
+                      : newStatus === 'cancelled'
+                      ? 'Batalkan Pesanan'
+                      : `Tandai ${STATUS_LABELS[newStatus] || newStatus}`;
+                  return (
+                    <button
+                      key={newStatus}
+                      onClick={() => setConfirmStatus(newStatus)}
+                      disabled={updating}
+                      className={`w-full px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                        newStatus === 'cancelled'
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : newStatus === 'completed'
+                          ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -387,62 +371,63 @@ export default function OrderDetailPage() {
               <p className="text-gray-900 font-medium">
                 {order.billing?.first_name} {order.billing?.last_name}
               </p>
-              <p className="text-gray-500">{order.billing?.email}</p>
               <p className="text-gray-500">{order.billing?.phone}</p>
               {order.billing?.address_1 && (
                 <p className="text-gray-500 text-xs mt-2">
                   {order.billing.address_1}
-                  {order.billing.address_2 ? `, ${order.billing.address_2}` : ''}
-                  <br />
-                  {order.billing.city}, {order.billing.state} {order.billing.postcode}
+                </p>
+              )}
+              {order.customer_note && (
+                <p className="text-xs text-orange-600 mt-2 bg-orange-50 rounded px-2 py-1">
+                  Catatan: {order.customer_note}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Shipping */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              Pengiriman
-            </h2>
-            <div className="space-y-1.5 text-sm">
-              <p className="text-gray-900 font-medium">
-                {order.shipping?.first_name} {order.shipping?.last_name}
-              </p>
-              {order.shipping?.address_1 && (
-                <p className="text-gray-500 text-xs">
-                  {order.shipping.address_1}
-                  {order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
-                  <br />
-                  {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}
-                </p>
-              )}
-              {order.shipping_lines?.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  {order.shipping_lines.map((sl, i) => (
-                    <p key={i} className="text-xs text-gray-500">
-                      {sl.method_title}: {formatCurrency(sl.total)}
-                    </p>
-                  ))}
-                </div>
-              )}
-              {(() => {
-                const trackingId = order.meta_data?.find((m) => m.key === '_biteship_tracking_id')?.value;
-                const waybillId = order.meta_data?.find((m) => m.key === '_biteship_waybill_id')?.value;
-                const courier = order.meta_data?.find((m) => m.key === '_biteship_courier')?.value;
-                if (!trackingId && !waybillId && !courier) return null;
-                return (
-                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
-                    <p className="text-xs font-medium text-gray-700">Informasi Ekspedisi</p>
-                    {courier && <p className="text-xs text-gray-500">Kurir: {courier.replace('|', ' ').toUpperCase()}</p>}
-                    {waybillId && <p className="text-xs text-gray-500">No. Resi: {waybillId}</p>}
-                    {trackingId && <p className="text-xs text-gray-500">Tracking ID: {trackingId}</p>}
+          {/* Shipping Label */}
+          <ShippingLabel
+            orderNumber={order.number || String(order.id)}
+            courierCode={order.shipping_lines?.[0]?.method_title?.toLowerCase()?.replace(/\s+/g, '') || ''}
+            courierService={order.shipping_lines?.[0]?.method_title || ''}
+            waybillId={(order as any).waybill_id || ''}
+            trackingId={(order as any).tracking_id || ''}
+            recipientName={order.shipping?.first_name ? `${order.shipping.first_name} ${order.shipping.last_name || ''}`.trim() : order.billing?.first_name ? `${order.billing.first_name} ${order.billing.last_name || ''}`.trim() : 'Pembeli'}
+            recipientPhone={order.billing?.phone || ''}
+            recipientAddress={order.shipping?.address_1 || order.billing?.address_1 || ''}
+            recipientCity={order.shipping?.city || ''}
+            recipientPostalCode={order.shipping?.postcode || ''}
+            senderName="RagamGuna Official Store"
+            senderPhone="081234567890"
+            senderAddress="Pantai Indah Kapuk, Jakarta Utara"
+            senderCity="Jakarta Utara"
+            senderPostalCode="14470"
+            weight={0}
+            codAmount={0}
+            items={order.line_items?.map(item => ({
+              name: item.name,
+              sku: item.sku,
+              variation: item.variation_info || '',
+              quantity: item.quantity,
+            })) || []}
+            storeName="RagamGuna"
+            showCTA={false}
+            compact={false}
+          />
+
+          {/* Shipping Cost */}
+          {order.shipping_lines?.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="space-y-1.5 text-sm">
+                {order.shipping_lines.map((sl, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-gray-500">{sl.method_title}</span>
+                    <span className="font-medium text-gray-700">{formatCurrency(sl.total)}</span>
                   </div>
-                );
-              })()}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Payment */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -452,15 +437,6 @@ export default function OrderDetailPage() {
             </h2>
             <div className="space-y-1.5 text-sm">
               <p className="text-gray-700">{order.payment_method_title || order.payment_method}</p>
-              {order.payment_method === 'bacs' && (
-                <p className="text-xs text-gray-500">Transfer Bank (BCA/BNI/BRI/Mandiri)</p>
-              )}
-              {order.payment_method === 'cod' && (
-                <p className="text-xs text-gray-500">Bayar di Tempat (COD)</p>
-              )}
-              {order.payment_method === 'midtrans' && (
-                <p className="text-xs text-gray-500">Transfer Bank / E-Wallet / QRIS</p>
-              )}
               {order.transaction_id && (
                 <p className="text-xs text-gray-400">
                   Transaksi: {order.transaction_id}
@@ -470,89 +446,88 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
-    {/* Confirmation Modal */}
-    {confirmStatus && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div
-          className="absolute inset-0 bg-black/50"
-          onClick={() => setConfirmStatus(null)}
-        />
-        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
-          <button
+
+      {/* Confirmation Modal */}
+      {confirmStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
             onClick={() => setConfirmStatus(null)}
-            className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-          <div className="flex items-center gap-3">
-            {confirmStatus === 'cancelled' ? (
-              <div className="p-2 rounded-full bg-red-100">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+          />
+          {/* Modal Card */}
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6 z-10">
+            <div className="text-center">
+              {confirmStatus === 'cancelled' ? (
+                <>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Batalkan Pesanan?
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Tindakan ini tidak dapat diburukkan.
+                  </p>
+                </>
+              ) : confirmStatus === 'shipped' ? (
+                <>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Tandai Pesanan Siap Dikirim?
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Status akan berubah ke Dalam Pengiriman.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Konfirmasi Perubahan Status
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Anda yakin ingin mengubah status ke <span className="font-medium text-gray-700">{STATUS_LABELS[confirmStatus] || confirmStatus}</span>?
+                  </p>
+                </>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmStatus(null)}
+                  disabled={updating}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    updateStatus(confirmStatus);
+                    setConfirmStatus(null);
+                  }}
+                  disabled={updating}
+                  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                    confirmStatus === 'cancelled'
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {updating ? 'Memproses...' : 'Konfirmasi'}
+                </button>
               </div>
-            ) : confirmStatus === 'shipped' ? (
-              <div className="p-2 rounded-full bg-indigo-100">
-                <Truck className="w-5 h-5 text-indigo-600" />
-              </div>
-            ) : (
-              <div className="p-2 rounded-full bg-blue-100">
-                <CheckCircle className="w-5 h-5 text-blue-600" />
-              </div>
-            )}
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">
-                {confirmStatus === 'cancelled'
-                  ? 'Batalkan Pesanan?'
-                  : confirmStatus === 'shipped'
-                  ? 'Tandai Dikirim?'
-                  : confirmStatus === 'completed'
-                  ? 'Tandai Selesai?'
-                  : `Update ke "${STATUS_LABELS[confirmStatus] || confirmStatus}"?`}
-              </h3>
             </div>
           </div>
-          {confirmStatus === 'cancelled' ? (
-            <p className="text-sm text-red-600">
-              Pesanan yang dibatalkan tidak dapat dikembalikan ke status sebelumnya. Pastikan Anda yakin ingin membatalkan pesanan ini.
-            </p>
-          ) : confirmStatus === 'shipped' ? (
-            <p className="text-sm text-indigo-600">
-              Pastikan nomor resi dan informasi ekspedisi sudah benar sebelum mengubah status ke "Dalam Pengiriman".
-            </p>
-          ) : (
-            <p className="text-sm text-gray-600">
-              Anda yakin ingin mengubah status pesanan ke <strong>{STATUS_LABELS[confirmStatus] || confirmStatus}</strong>?
-            </p>
-          )}
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setConfirmStatus(null)}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              onClick={() => {
-                const status = confirmStatus;
-                setConfirmStatus(null);
-                updateStatus(status);
-              }}
-              disabled={updating}
-              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-                confirmStatus === 'cancelled'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : confirmStatus === 'shipped'
-                  ? 'bg-indigo-600 hover:bg-indigo-700'
-                  : confirmStatus === 'completed'
-                  ? 'bg-green-600 hover:bg-green-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {updating ? 'Memproses...' : 'Konfirmasi'}
-            </button>
-          </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 }

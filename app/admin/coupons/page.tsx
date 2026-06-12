@@ -13,7 +13,10 @@ import {
   ShoppingBag,
   Percent,
   Banknote,
+  CheckCircle2,
+  ExternalLink,
 } from 'lucide-react';
+import Link from "next/link";
 import NumberInput from '@/app/components/ui/NumberInput';
 
 interface Product {
@@ -78,6 +81,7 @@ export default function AdminCouponsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [showSaved, setShowSaved] = useState(false);
 
   // Form state
   const [code, setCode] = useState('');
@@ -105,7 +109,7 @@ export default function AdminCouponsPage() {
       const res = await fetch(`/api/admin/coupons?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setCoupons(Array.isArray(data) ? data : []);
+        setCoupons(Array.isArray(data.coupons) ? data.coupons : []);
       }
     } catch (err) {
       console.error('Failed to load coupons:', err);
@@ -114,12 +118,23 @@ export default function AdminCouponsPage() {
     }
   };
 
+  // Check for saved redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('saved') === '1') {
+      setShowSaved(true);
+      window.history.replaceState({}, '', '/admin/coupons');
+      const timer = setTimeout(() => setShowSaved(false), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const loadProducts = async () => {
     try {
       const res = await fetch('/api/admin/products?per_page=100&status=publish');
       if (res.ok) {
         const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+        setProducts(Array.isArray(data.products) ? data.products : []);
       }
     } catch (err) {
       console.error('Failed to load products:', err);
@@ -161,7 +176,7 @@ export default function AdminCouponsPage() {
       let discount_type = 'fixed_cart';
       if (couponType === 'cart' && discountMode === 'percent') discount_type = 'percent';
       else if (couponType === 'product' && discountMode === 'fixed') discount_type = 'fixed_product';
-      else if (couponType === 'product' && discountMode === 'percent') discount_type = 'percent_product';
+      else if (couponType === 'product' && discountMode === 'percent') discount_type = 'percent';
 
       const payload: any = {
         code: code.toUpperCase().trim(),
@@ -318,7 +333,9 @@ export default function AdminCouponsPage() {
                           <Tag className="w-5 h-5 text-blue-500" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{coupon.code}</p>
+                          <Link href={`/admin/coupons/edit?id=${coupon.id}`} className="text-sm font-semibold text-gray-900 hover:text-blue-600 hover:underline">
+                          {coupon.code}
+                        </Link>
                           <p className="text-xs text-gray-400">ID: {coupon.id}</p>
                         </div>
                       </div>
@@ -649,6 +666,21 @@ export default function AdminCouponsPage() {
           </div>
         </div>
       )}
-    </div>
+          {/* Saved Toast */}
+      {showSaved && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="flex items-center gap-3 bg-white border border-green-200 rounded-xl shadow-lg px-5 py-3.5">
+            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Voucher tersimpan</p>
+              <p className="text-xs text-gray-500">Perubahan berhasil diperbarui</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+</div>
   );
 }
