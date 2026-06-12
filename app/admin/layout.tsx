@@ -24,7 +24,7 @@ import {
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Produk', icon: Package },
-  { href: '/admin/orders', label: 'Pesanan', icon: ShoppingCart },
+  { href: '/admin/orders', label: 'Pesanan', icon: ShoppingCart, badge: 'processing' },
   { href: '/admin/categories', label: 'Kategori', icon: Tags },
   { href: '/admin/banners', label: 'Banner', icon: Image },
   { href: '/admin/etalase', label: 'Etalase', icon: Store },
@@ -42,31 +42,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [username, setUsername] = useState('Admin');
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [processingCount, setProcessingCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/admin/me')
-      .then((res) => {
-        if (!res.ok) throw new Error('Unauthorized');
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        if (data.username) {
-          setUsername(data.username);
-          setIsAuthenticated(true);
-        } else {
-          throw new Error('Unauthorized');
-        }
+        if (data.username) setUsername(data.username);
       })
-      .catch(() => {
-        setIsAuthenticated(false);
-        if (pathname !== '/admin/login') {
-          router.replace('/admin/login');
-        }
-      })
-      .finally(() => setAuthChecked(true));
-  }, [pathname, router]);
+      .catch(() => {});
+  }, []);
+
+  // Fetch processing orders count
+  useEffect(() => {
+    const fetchCount = () => {
+      fetch('/api/admin/orders?status=processing&per_page=1')
+        .then((res) => res.json())
+        .then((data) => {
+          setProcessingCount(data.total || 0);
+        })
+        .catch(() => {});
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -81,24 +82,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Login page: render without sidebar
   if (pathname === '/admin/login') {
     return <>{children}</>;
-  }
-
-  // Show loading while checking auth
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  // If not authenticated, don't render admin layout (redirect handled in effect)
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
   }
 
   return (
@@ -128,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 RG
               </div>
               <div>
-                <h1 className="text-sm font-semibold text-white">Shenar2168</h1>
+                <h1 className="text-sm font-semibold text-white">RagamGuna</h1>
                 <p className="text-[10px] text-gray-400 -mt-0.5">Admin Panel</p>
               </div>
             </div>
@@ -156,12 +139,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
+            const showBadge = item.badge === 'processing' && processingCount > 0;
             return (
               <a
                 key={item.href}
                 href={item.href}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm relative
                   ${
                     active
                       ? 'bg-blue-600 text-white font-medium'
@@ -178,7 +162,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 title={!sidebarOpen ? item.label : undefined}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span>{item.label}</span>}
+                {sidebarOpen && <span className="flex-1">{item.label}</span>}
+                {sidebarOpen && showBadge && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                    {processingCount > 99 ? '99+' : processingCount}
+                  </span>
+                )}
+                {!sidebarOpen && showBadge && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-gray-900" />
+                )}
               </a>
             );
           })}
