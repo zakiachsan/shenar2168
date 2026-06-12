@@ -425,7 +425,7 @@ export default function OrderDetailPage() {
               onClick={() => {
                 const courierName = order.shipping_lines?.[0]?.method_title || '';
                 generateShippingLabelPDF({
-                  storeName: 'Shenar2168',
+                  storeName: 'RagamGuna',
                   orderNumber: order.number || String(order.id),
                   courierName: courierName,
                   courierService: courierName,
@@ -435,7 +435,7 @@ export default function OrderDetailPage() {
                   recipientAddress: order.shipping?.address_1 || order.billing?.address_1 || '',
                   recipientCity: order.shipping?.city || '',
                   recipientPostalCode: order.shipping?.postcode || '',
-                  senderName: 'Shenar2168 Official Store',
+                  senderName: 'RagamGuna Official Store',
                   senderPhone: '081234567890',
                   senderAddress: 'Pantai Indah Kapuk, Jakarta Utara',
                   senderCity: 'Jakarta Utara',
@@ -498,7 +498,7 @@ export default function OrderDetailPage() {
                     Batalkan Pesanan?
                   </h3>
                   <p className="text-sm text-gray-500 mb-6">
-                    Tindakan ini tidak dapat diburukkan.
+                    Tindakan ini tidak dapat dibatalkan.
                   </p>
                 </>
               ) : confirmStatus === 'shipped' ? (
