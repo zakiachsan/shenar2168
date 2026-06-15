@@ -18,6 +18,7 @@ import {
   User,
   Send,
   Check,
+  ShoppingCart,
 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
@@ -27,6 +28,8 @@ import BuyNowButton from "@/app/components/product/BuyNowButton";
 import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stripHtml, toSlug } from "@/lib/data";
 import { getProductVariations, WCVariation } from "@/lib/woocommerce";
 import { isFavorite, toggleFavorite, FavoriteItem } from "@/lib/favorites";
+import { useCart } from "@/lib/cart-context";
+import { useRouter } from "next/navigation";
 
 function mapWCProductToLocal(wcProduct: any): Product {
   const image = wcProduct.images?.[0]?.src || "";
@@ -73,6 +76,35 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   const [favorited, setFavorited] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [storeSettings, setStoreSettings] = useState<{ storeLogo?: string; storeName?: string }>({});
+
+  // Handlers for Chat, Wishlist, Share
+  const handleChat = () => {
+    const waNumber = '6285694662592'; // Store WhatsApp
+    const msg = encodeURIComponent(`Halo, saya tertarik dengan produk:\n\n*${product?.name}*\nHarga: Rp ${(effectivePrice || 0).toLocaleString('id-ID')}\n\nhttps://shenar2168.com/product/${id}`);
+    window.open(`https://wa.me/${waNumber}?text=${msg}`, '_blank');
+  };
+
+  const handleWishlist = () => {
+    if (!product) return;
+    const newState = toggleFavorite({ id: product.id, name: product.name, price: effectivePrice, image: product.image || '' });
+    setFavorited(newState);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = product?.name || 'Produk Shenar2168';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url, text: `Cek produk ini: ${title}` });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch {}
+    }
+  };
 
   // Variant pricing state
   const [wcProductRaw, setWcProductRaw] = useState<any>(null);
@@ -728,6 +760,35 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   />
                 </div>
 
+                {/* Desktop CTAs: Chat, Wishlist, Share */}
+                <div className="hidden lg:flex items-center gap-3 mt-3">
+                  <button
+                    onClick={handleChat}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-shopee-border rounded-sm text-sm text-shopee-text hover:border-green-400 hover:text-green-600 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Chat
+                  </button>
+                  <button
+                    onClick={handleWishlist}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+                      favorited
+                        ? 'border-red-300 text-red-500 bg-red-50'
+                        : 'border-shopee-border text-shopee-text hover:border-red-300 hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${favorited ? 'fill-red-500' : ''}`} />
+                    {favorited ? 'Tersimpan' : 'Wishlist'}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-shopee-border rounded-sm text-sm text-shopee-text hover:border-shopee-orange hover:text-shopee-orange transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    {shareCopied ? 'Tersalin!' : 'Share'}
+                  </button>
+                </div>
+
                 {/* Guarantees — mobile & desktop */}
                 <div className="flex items-center justify-between mt-4 p-3 border border-shopee-border rounded-sm">
                   <div className="flex items-center gap-1.5 text-[11px] text-shopee-text-secondary">
@@ -1091,48 +1152,132 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
       </main>
 
       {/* Mobile Sticky Actions */}
-      <div className="lg:hidden fixed bottom-14 left-0 right-0 bg-white border-t border-shopee-border z-[60] flex items-center h-14">
-        <AddToCartButton
-          productId={product.id}
-          name={product.name}
-          price={effectivePrice}
-          originalPrice={effectiveOriginalPrice}
-          image={product.image}
-          sku={effectiveSku}
-          stock={effectiveStock}
-          quantity={qty}
-          variationId={matchedVariation?.id}
-          variantLabel={variantLabel || undefined}
-          weight={productWeight}
-          height={productHeight}
-          length={productLength}
-          width={productWidth}
-          variant="default"
-          className="flex-1 h-full border-0 rounded-none text-xs whitespace-nowrap"
-        />
-        <BuyNowButton
-          productId={product.id}
-          name={product.name}
-          price={effectivePrice}
-          originalPrice={effectiveOriginalPrice}
-          image={product.image}
-          sku={effectiveSku}
-          stock={effectiveStock}
-          quantity={qty}
-          variationId={matchedVariation?.id}
-          variantLabel={variantLabel || undefined}
-          weight={productWeight}
-          height={productHeight}
-          length={productLength}
-          width={productWidth}
-          className="flex-1 h-full rounded-none text-sm whitespace-nowrap"
-        />
-      </div>
+      {/* Mobile Sticky Actions — 3 columns: Chat | AddToCart | BuyWithVoucher */}
+      <MobileStickyBar
+        productId={product.id}
+        productName={product.name}
+        effectivePrice={effectivePrice}
+        productImage={product.image}
+        effectiveSku={effectiveSku}
+        effectiveStock={effectiveStock}
+        qty={qty}
+        matchedVariationId={matchedVariation?.id}
+        variantLabel={variantLabel || ''}
+        productWeight={productWeight}
+        productHeight={productHeight}
+        productLength={productLength}
+        productWidth={productWidth}
+        handleChat={handleChat}
+      />
 
       <div className="hidden lg:block">
         <Footer />
       </div>
       <BottomNav />
     </>
+  );
+}
+
+// ===== Mobile Sticky Bar Component =====
+interface MobileStickyBarProps {
+  productId: number;
+  productName: string;
+  effectivePrice: number;
+  productImage: string;
+  effectiveSku: string;
+  effectiveStock: number | null;
+  qty: number;
+  matchedVariationId?: number;
+  variantLabel: string;
+  productWeight?: number;
+  productHeight?: number;
+  productLength?: number;
+  productWidth?: number;
+  handleChat: () => void;
+}
+
+function MobileStickyBar({
+  productId,
+  productName,
+  effectivePrice,
+  productImage,
+  effectiveSku,
+  effectiveStock,
+  qty,
+  matchedVariationId,
+  variantLabel,
+  productWeight = 500,
+  productHeight = 10,
+  productLength = 20,
+  productWidth = 15,
+  handleChat,
+}: MobileStickyBarProps) {
+  const { addItem } = useCart();
+  const router = useRouter();
+  const [buyLoading, setBuyLoading] = useState(false);
+
+  const handleAddToCart = () => {
+    addItem({
+      productId,
+      name: productName,
+      price: effectivePrice,
+      originalPrice: effectivePrice,
+      image: productImage,
+      quantity: qty,
+      sku: effectiveSku,
+      stock: effectiveStock,
+      variationId: matchedVariationId,
+      variantLabel,
+      weight: productWeight,
+      height: productHeight,
+      length: productLength,
+      width: productWidth,
+    });
+  };
+
+  const handleBuyWithVoucher = () => {
+    setBuyLoading(true);
+    handleAddToCart();
+    const selectedKey = `\${productId}-\${matchedVariationId || 0}`;
+    localStorage.setItem("shenar2168-checkout-selected", JSON.stringify([selectedKey]));
+    router.push("/checkout");
+  };
+
+  return (
+    <div className="lg:hidden fixed bottom-14 left-0 right-0 z-[60] flex items-stretch h-14">
+      {/* Chat Sekarang */}
+      <button
+        onClick={handleChat}
+        className="flex flex-col items-center justify-center gap-0.5 flex-1 bg-[#00A19B] text-white active:bg-[#008B85] transition-colors min-w-0"
+      >
+        <MessageCircle className="w-5 h-5" />
+        <span className="text-[10px] font-semibold leading-tight">Chat Sekarang</span>
+      </button>
+
+      {/* Masukkan Keranjang */}
+      <button
+        onClick={handleAddToCart}
+        className="flex flex-col items-center justify-center gap-0.5 flex-1 bg-[#00A19B] text-white active:bg-[#008B85] transition-colors border-l border-white/30 min-w-0"
+      >
+        <ShoppingCart className="w-5 h-5" />
+        <span className="text-[10px] font-semibold leading-tight">Masukkan Keranjang</span>
+      </button>
+
+      {/* Beli Dengan Voucher */}
+      <button
+        onClick={handleBuyWithVoucher}
+        disabled={buyLoading}
+        className="flex flex-col items-center justify-center flex-[1.3] bg-[#EE4D2D] text-white active:bg-[#D63F21] transition-colors disabled:opacity-70 border-l border-white/30"
+      >
+        {buyLoading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            <span className="text-[10px] font-semibold leading-tight">Beli Dengan Voucher</span>
+            <span className="text-sm font-bold leading-tight">Rp {effectivePrice.toLocaleString('id-ID')}</span>
+          </>
+        )}
+      </button>
+    </div>
   );
 }
