@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2, TrendingUp } from "lucide-react";
+import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2, TrendingUp, MessageCircle } from "lucide-react";
+import LoginModal from "./LoginModal";
+import { useAuth } from "./AuthProvider";
+import { useChat } from "@/lib/chat-context";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
@@ -22,6 +25,9 @@ const categories = [
 
 export default function Header({ sticky = true }: { sticky?: boolean }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const { openChat } = useChat();
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const { getItemCount } = useCart();
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -31,6 +37,18 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const cartCount = getItemCount();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleChatClick = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    if (window.innerWidth < 1024) {
+      router.push("/chat");
+    } else {
+      openChat();
+    }
+  };
 
   const handleSearch = (query?: string) => {
     const q = query || searchValue.trim();
@@ -218,6 +236,15 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
             </div>
           </div>
 
+          {/* Chat Button */}
+            <button
+              onClick={handleChatClick}
+              className="relative hover:opacity-80 transition-opacity"
+              title="Chat Penjual"
+            >
+              <MessageCircle className="w-7 h-7 text-shopee-orange" />
+            </button>
+
           {/* Cart Icon */}
           <Link href="/cart" className="relative hover:opacity-80 transition-opacity mt-1.5">
             <ShoppingCart className="w-7 h-7 text-shopee-orange" />
@@ -400,6 +427,9 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
             </div>
           </div>
         </>
+      )}
+      {showLoginModal && (
+        <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       )}
     </header>
   );

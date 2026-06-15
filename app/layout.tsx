@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./components/layout/AuthProvider";
 import { CartProvider } from "@/lib/cart-context";
+import { ChatProvider } from "@/lib/chat-context";
 import TopBar from "./components/layout/TopBar";
 import { getStoreSettings } from "@/lib/store-settings";
 
@@ -30,10 +31,10 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} antialiased`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          <CartProvider>
+          <ChatProvider><CartProvider>
             <TopBar />
             {children}
-          </CartProvider>
+          </CartProvider></ChatProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{
           __html: `

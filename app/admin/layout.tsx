@@ -34,6 +34,7 @@ const NAV_ITEMS = [
   { href: '/admin/customers', label: 'Pelanggan', icon: Users },
   { href: '/admin/reviews', label: 'Ulasan', icon: MessageSquare },
   { href: '/admin/discussions', label: 'Diskusi', icon: MessageSquare },
+  { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
   { href: '/admin/shipping', label: 'Pengiriman', icon: Truck },
   { href: '/admin/settings', label: 'Pengaturan', icon: Settings },
 ];
