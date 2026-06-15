@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Loader2,
   MessageCircle,
@@ -10,11 +10,9 @@ import {
   Clock,
   X,
   User,
-  Package,
   ArrowLeft,
   Trash2,
   CircleDot,
-  Filter,
   Settings,
   Save,
 } from 'lucide-react';
@@ -44,12 +42,11 @@ interface ChatMessage {
   createdAt: string;
 }
 
-const STATUS_TABS = [
+const SUB_FILTERS = [
   { value: 'all', label: 'Semua', icon: MessageCircle },
   { value: 'open', label: 'Aktif', icon: CircleDot },
   { value: 'unread', label: 'Belum Dibaca', icon: Clock },
   { value: 'closed', label: 'Selesai', icon: CheckCircle2 },
-  { value: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 
 function formatTime(dateStr: string) {
@@ -74,7 +71,8 @@ function formatFullTime(dateStr: string) {
 export default function AdminChatPage() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [mainTab, setMainTab] = useState<'chat' | 'settings'>('chat');
+  const [subFilter, setSubFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -84,7 +82,7 @@ export default function AdminChatPage() {
   const [lastMessageId, setLastMessageId] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Settings state
   const [greetingMessage, setGreetingMessage] = useState('');
   const [offlineMessage, setOfflineMessage] = useState('');
@@ -92,27 +90,26 @@ export default function AdminChatPage() {
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
-    if (filter !== 'settings') {
+    if (mainTab === 'chat') {
       loadThreads();
     } else {
       loadSettings();
     }
-  }, [filter]);
+  }, [mainTab, subFilter]);
 
   useEffect(() => {
-    // Auto-refresh threads every 10s
     const interval = setInterval(() => {
-      if (filter !== 'settings') loadThreads();
+      if (mainTab === 'chat') loadThreads();
     }, 10000);
     return () => clearInterval(interval);
-  }, [filter]);
+  }, [mainTab]);
 
   const loadThreads = async () => {
     try {
       const params = new URLSearchParams();
-      if (filter === 'open' || filter === 'closed') params.set('status', filter);
-      if (filter === 'unread') params.set('unreadOnly', '1');
-      
+      if (subFilter === 'open' || subFilter === 'closed') params.set('status', subFilter);
+      if (subFilter === 'unread') params.set('unreadOnly', '1');
+
       const res = await fetch(`/api/admin/chat?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -163,7 +160,6 @@ export default function AdminChatPage() {
     } catch {}
   };
 
-  // Poll for new messages when thread is selected
   useEffect(() => {
     if (!selectedThread) return;
 
@@ -203,7 +199,6 @@ export default function AdminChatPage() {
     setSelectedThread(thread);
     setMessages([]);
     setLastMessageId(0);
-    // Mark as read locally
     setThreads((prev) =>
       prev.map((t) => (t.id === thread.id ? { ...t, unreadCount: 0, adminRead: true } : t))
     );
@@ -228,7 +223,6 @@ export default function AdminChatPage() {
           setMessages((prev) => [...prev, data.message]);
           setLastMessageId(data.message.id);
           setReplyText('');
-          // Update thread last message
           setThreads((prev) =>
             prev.map((t) =>
               t.id === selectedThread.id
@@ -275,7 +269,6 @@ export default function AdminChatPage() {
     }
   };
 
-  // Filter threads by search
   const filteredThreads = threads.filter((t) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -286,69 +279,270 @@ export default function AdminChatPage() {
     );
   });
 
-  // Count unread
   const unreadCount = threads.filter((t) => t.unreadCount > 0).length;
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      {/* Thread List (Left Panel) */}
-      <div className={`${selectedThread ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[380px] border-r border-gray-200`}>
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold text-gray-800">Chat</h1>
-            {unreadCount > 0 && (
-              <span className="bg-shopee-orange text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-
-          {/* Search */}
-          {filter !== 'settings' && (
-            <div className="relative mb-3">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Cari chat..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-shopee-orange"
-              />
-            </div>
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Main Tabs */}
+      <div className="flex border-b border-gray-200 bg-white flex-shrink-0">
+        <button
+          onClick={() => setMainTab('chat')}
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+            mainTab === 'chat'
+              ? 'border-shopee-orange text-shopee-orange'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4" />
+          Chat
+          {unreadCount > 0 && (
+            <span className="bg-shopee-orange text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
           )}
+        </button>
+        <button
+          onClick={() => setMainTab('settings')}
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+            mainTab === 'settings'
+              ? 'border-shopee-orange text-shopee-orange'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          Pengaturan
+        </button>
+      </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-1 overflow-x-auto">
-            {STATUS_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = filter === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setFilter(tab.value)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'bg-shopee-orange text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  {tab.label}
-                  {tab.value === 'unread' && unreadCount > 0 && (
-                    <span className={`ml-0.5 text-[10px] ${isActive ? 'text-white/80' : 'text-shopee-orange'}`}>
-                      {unreadCount}
-                    </span>
+      {/* Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {mainTab === 'chat' ? (
+          <>
+            {/* Thread List (Left Panel) */}
+            <div className={`${selectedThread ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[380px] border-r border-gray-200`}>
+              {/* Search */}
+              <div className="px-4 py-3 border-b border-gray-200 bg-white">
+                <div className="relative mb-3">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari chat..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-shopee-orange"
+                  />
+                </div>
+
+                {/* Sub Filter Tabs */}
+                <div className="flex gap-1 overflow-x-auto">
+                  {SUB_FILTERS.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = subFilter === tab.value;
+                    return (
+                      <button
+                        key={tab.value}
+                        onClick={() => setSubFilter(tab.value)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                          isActive
+                            ? 'bg-shopee-orange text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {tab.label}
+                        {tab.value === 'unread' && unreadCount > 0 && (
+                          <span className={`ml-0.5 text-[10px] ${isActive ? 'text-white/80' : 'text-shopee-orange'}`}>
+                            {unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Thread List */}
+              <div className="flex-1 overflow-y-auto">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
+                  </div>
+                ) : filteredThreads.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                    <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
+                    <p className="text-sm text-gray-500">Belum ada chat</p>
+                  </div>
+                ) : (
+                  filteredThreads.map((thread) => (
+                    <div
+                      key={thread.id}
+                      onClick={() => handleSelectThread(thread)}
+                      className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                        selectedThread?.id === thread.id ? 'bg-orange-50 border-l-2 border-l-shopee-orange' : ''
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-shopee-orange/10 flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-shopee-orange" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm font-medium truncate ${thread.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                            {thread.userName}
+                          </p>
+                          <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">
+                            {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
+                          </span>
+                        </div>
+                        {thread.productName && (
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                            📦 {thread.productName}
+                          </span>
+                        )}
+                        <div className="flex items-center justify-between mt-1">
+                          <p className={`text-xs truncate ${thread.unreadCount > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
+                            {thread.lastMessage || 'Mulai percakapan...'}
+                          </p>
+                          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                            {thread.unreadCount > 0 && (
+                              <span className="w-5 h-5 bg-shopee-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                {thread.unreadCount}
+                              </span>
+                            )}
+                            {thread.status === 'closed' && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Chat Detail (Right Panel) */}
+            <div className={`${selectedThread ? 'flex' : 'hidden md:flex'} flex-col flex-1`}>
+              {selectedThread ? (
+                <>
+                  <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setSelectedThread(null)} className="md:hidden p-1 hover:bg-gray-100 rounded-lg">
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+                      <div className="w-9 h-9 rounded-full bg-shopee-orange/10 flex items-center justify-center">
+                        <User className="w-5 h-5 text-shopee-orange" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{selectedThread.userName}</p>
+                        <p className="text-[11px] text-gray-400">
+                          {selectedThread.productName || 'Chat Umum'}
+                          {selectedThread.userPhone && ` · ${selectedThread.userPhone}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleStatus(selectedThread)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          selectedThread.status === 'open'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {selectedThread.status === 'open' ? '✅ Aktif' : '🔒 Selesai'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteThread(selectedThread)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                    {loadingMessages ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="flex items-center justify-center py-8 text-gray-400 text-sm">Belum ada pesan</div>
+                    ) : (
+                      messages.map((msg) => (
+                        <div key={msg.id} className={`flex items-end gap-2 ${msg.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                          {msg.senderType === 'user' && (
+                            <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                              <User className="w-3.5 h-3.5 text-gray-500" />
+                            </div>
+                          )}
+                          <div className={`rounded-lg px-3 py-2 max-w-[70%] ${
+                            msg.senderType === 'admin'
+                              ? 'bg-shopee-orange text-white rounded-br-none'
+                              : 'bg-white text-gray-700 rounded-bl-none shadow-sm border border-gray-100'
+                          }`}>
+                            {msg.senderType === 'user' && <p className="text-[10px] text-gray-400 mb-0.5">{msg.senderName}</p>}
+                            <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                            <p className={`text-[10px] mt-1 text-right ${msg.senderType === 'admin' ? 'text-white/60' : 'text-gray-400'}`}>
+                              {formatFullTime(msg.createdAt)}
+                            </p>
+                          </div>
+                          {msg.senderType === 'admin' && (
+                            <div className="w-7 h-7 rounded-full bg-shopee-orange flex items-center justify-center flex-shrink-0">
+                              <MessageCircle className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {selectedThread.status === 'open' ? (
+                    <div className="px-4 py-3 border-t border-gray-200 bg-white flex-shrink-0">
+                      <div className="flex items-end gap-2">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          placeholder="Ketik balasan..."
+                          rows={1}
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-shopee-orange max-h-20"
+                          style={{ minHeight: '38px' }}
+                        />
+                        <button
+                          onClick={handleSendReply}
+                          disabled={!replyText.trim() || sending}
+                          className="p-2 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                        >
+                          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 text-center">
+                      <p className="text-xs text-gray-400">Chat ini sudah ditutup</p>
+                      <button onClick={() => handleToggleStatus(selectedThread)} className="text-xs text-shopee-orange font-medium mt-1 hover:underline">
+                        Buka kembali
+                      </button>
+                    </div>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Thread List or Settings */}
-        {filter === 'settings' ? (
-          <div className="flex-1 overflow-y-auto p-4">
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-center px-4">
+                  <div>
+                    <MessageCircle className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">Pilih chat untuk mulai membalas</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {threads.length} percakapan • {unreadCount} belum dibaca
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Settings Tab */
+          <div className="flex-1 overflow-y-auto p-6">
             {loadingSettings ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
@@ -359,12 +553,10 @@ export default function AdminChatPage() {
                   <h2 className="text-lg font-bold text-gray-800 mb-2">Pengaturan Chat</h2>
                   <p className="text-sm text-gray-500">Atur pesan otomatis yang dikirim ke customer.</p>
                 </div>
-                
-                <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+
+                <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      💬 Pesan Sambutan (Greeting)
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">💬 Pesan Sambutan (Greeting)</label>
                     <p className="text-xs text-gray-400 mb-2">Dikirim otomatis saat customer pertama kali chat.</p>
                     <textarea
                       value={greetingMessage}
@@ -374,12 +566,10 @@ export default function AdminChatPage() {
                       placeholder="Halo! 👋 Selamat datang. Ada yang bisa kami bantu?"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      🌙 Pesan Admin Offline
-                    </label>
-                    <p className="text-xs text-gray-400 mb-2">Dikirim otomatis saat admin tidak aktif (CMS ditutup).</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">🌙 Pesan Admin Offline</label>
+                    <p className="text-xs text-gray-400 mb-2">Dikirim otomatis saat admin tidak aktif (lebih dari 5 menit tidak membalas).</p>
                     <textarea
                       value={offlineMessage}
                       onChange={(e) => setOfflineMessage(e.target.value)}
@@ -388,227 +578,20 @@ export default function AdminChatPage() {
                       placeholder="Terima kasih telah menghubungi kami. Saat ini admin sedang offline..."
                     />
                   </div>
-                  
+
                   <div className="flex justify-end pt-2">
                     <button
                       onClick={handleSaveSettings}
                       disabled={savingSettings}
-                      className="flex items-center gap-2 px-4 py-2 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 transition-colors"
                     >
-                      {savingSettings ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
+                      {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Simpan
                     </button>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
-              </div>
-            ) : filteredThreads.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm text-gray-500">Belum ada chat</p>
-              </div>
-            ) : (
-              filteredThreads.map((thread) => (
-                <div
-                  key={thread.id}
-                  onClick={() => handleSelectThread(thread)}
-                  className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                    selectedThread?.id === thread.id ? 'bg-orange-50 border-l-2 border-l-shopee-orange' : ''
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-shopee-orange/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-shopee-orange" />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className={`text-sm font-medium truncate ${thread.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-                        {thread.userName}
-                      </p>
-                      <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">
-                        {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {thread.productName && (
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">
-                          📦 {thread.productName}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className={`text-xs truncate ${thread.unreadCount > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
-                        {thread.lastMessage || 'Mulai percakapan...'}
-                      </p>
-                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                        {thread.unreadCount > 0 && (
-                          <span className="w-5 h-5 bg-shopee-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                            {thread.unreadCount}
-                          </span>
-                        )}
-                        {thread.status === 'closed' && (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Chat Detail (Right Panel) */}
-      <div className={`${selectedThread ? 'flex' : 'hidden md:flex'} flex-col flex-1`}>
-        {selectedThread ? (
-          <>
-            {/* Chat Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSelectedThread(null)}
-                  className="md:hidden p-1 hover:bg-gray-100 rounded-lg"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="w-9 h-9 rounded-full bg-shopee-orange/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-shopee-orange" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{selectedThread.userName}</p>
-                  <p className="text-[11px] text-gray-400">
-                    {selectedThread.productName || 'Chat Umum'}
-                    {selectedThread.userPhone && ` · ${selectedThread.userPhone}`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleToggleStatus(selectedThread)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    selectedThread.status === 'open'
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {selectedThread.status === 'open' ? '✅ Aktif' : '🔒 Selesai'}
-                </button>
-                <button
-                  onClick={() => handleDeleteThread(selectedThread)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-              {loadingMessages ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-gray-400 text-sm">
-                  Belum ada pesan
-                </div>
-              ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex items-end gap-2 ${msg.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.senderType === 'user' && (
-                      <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <User className="w-3.5 h-3.5 text-gray-500" />
-                      </div>
-                    )}
-                    <div
-                      className={`rounded-lg px-3 py-2 max-w-[70%] ${
-                        msg.senderType === 'admin'
-                          ? 'bg-shopee-orange text-white rounded-br-none'
-                          : 'bg-white text-gray-700 rounded-bl-none shadow-sm border border-gray-100'
-                      }`}
-                    >
-                      {msg.senderType === 'user' && (
-                        <p className="text-[10px] text-gray-400 mb-0.5">{msg.senderName}</p>
-                      )}
-                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                      <p className={`text-[10px] mt-1 text-right ${
-                        msg.senderType === 'admin' ? 'text-white/60' : 'text-gray-400'
-                      }`}>
-                        {formatFullTime(msg.createdAt)}
-                      </p>
-                    </div>
-                    {msg.senderType === 'admin' && (
-                      <div className="w-7 h-7 rounded-full bg-shopee-orange flex items-center justify-center flex-shrink-0">
-                        <MessageCircle className="w-3.5 h-3.5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Reply Input */}
-            {selectedThread.status === 'open' ? (
-              <div className="px-4 py-3 border-t border-gray-200 bg-white flex-shrink-0">
-                <div className="flex items-end gap-2">
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ketik balasan..."
-                    rows={1}
-                    className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-shopee-orange max-h-20"
-                    style={{ minHeight: '38px' }}
-                  />
-                  <button
-                    onClick={handleSendReply}
-                    disabled={!replyText.trim() || sending}
-                    className="p-2 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                  >
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 text-center">
-                <p className="text-xs text-gray-400">Chat ini sudah ditutup</p>
-                <button
-                  onClick={() => handleToggleStatus(selectedThread)}
-                  className="text-xs text-shopee-orange font-medium mt-1 hover:underline"
-                >
-                  Buka kembali
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          /* No Thread Selected */
-          <div className="flex-1 flex items-center justify-center text-center px-4">
-            <div>
-              <MessageCircle className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Pilih chat untuk mulai membalas</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {threads.length} percakapan • {unreadCount} belum dibaca
-              </p>
-            </div>
           </div>
         )}
       </div>
