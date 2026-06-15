@@ -31,6 +31,7 @@ export interface StoreSettings {
     enableFreeShipping: boolean;
     freeShippingMinOrder: number;
     defaultShippingCity: string;
+    enabledCouriers: string[];
   };
   points: PointsSettings;
 }
@@ -58,6 +59,7 @@ const defaultSettings: StoreSettings = {
     enableFreeShipping: false,
     freeShippingMinOrder: 0,
     defaultShippingCity: '',
+    enabledCouriers: ["jne", "jnt", "sicepat", "anteraja", "ninja", "gojek", "grab"],
   },
   points: {
     enabled: true,
@@ -92,6 +94,7 @@ function mapRow(row: any): StoreSettings {
       enableFreeShipping: Boolean(row.shipping_enable_free_shipping),
       freeShippingMinOrder: row.shipping_free_shipping_min_order || 0,
       defaultShippingCity: row.shipping_default_city || '',
+      enabledCouriers: row.shipping_enabled_couriers ? JSON.parse(row.shipping_enabled_couriers) : ['jne', 'jnt', 'sicepat', 'anteraja', 'ninja', 'gojek', 'grab'],
     },
     points: {
       enabled: Boolean(row.points_enabled),
@@ -123,9 +126,9 @@ export async function saveStoreSettings(settings: StoreSettings): Promise<void> 
       `INSERT INTO store_settings (id, store_name, store_logo, store_description, contact_phone, contact_email, contact_whatsapp, store_address,
         seo_meta_title, seo_meta_description, seo_favicon_url,
         payment_midtrans_client_key, payment_midtrans_environment, payment_enable_cod,
-        shipping_enable_free_shipping, shipping_free_shipping_min_order, shipping_default_city,
+        shipping_enable_free_shipping, shipping_free_shipping_min_order, shipping_default_city, shipping_enabled_couriers,
         points_enabled, points_type, points_value, points_min_order, points_max_points, points_caption)
-       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
         store_name = VALUES(store_name), store_logo = VALUES(store_logo), store_description = VALUES(store_description),
         contact_phone = VALUES(contact_phone), contact_email = VALUES(contact_email), contact_whatsapp = VALUES(contact_whatsapp),
@@ -133,7 +136,7 @@ export async function saveStoreSettings(settings: StoreSettings): Promise<void> 
         seo_favicon_url = VALUES(seo_favicon_url), payment_midtrans_client_key = VALUES(payment_midtrans_client_key),
         payment_midtrans_environment = VALUES(payment_midtrans_environment), payment_enable_cod = VALUES(payment_enable_cod),
         shipping_enable_free_shipping = VALUES(shipping_enable_free_shipping), shipping_free_shipping_min_order = VALUES(shipping_free_shipping_min_order),
-        shipping_default_city = VALUES(shipping_default_city), points_enabled = VALUES(points_enabled), points_type = VALUES(points_type),
+        shipping_default_city = VALUES(shipping_default_city), shipping_enabled_couriers = VALUES(shipping_enabled_couriers), points_enabled = VALUES(points_enabled), points_type = VALUES(points_type),
         points_value = VALUES(points_value), points_min_order = VALUES(points_min_order), points_max_points = VALUES(points_max_points),
         points_caption = VALUES(points_caption)`,
       [
@@ -153,6 +156,7 @@ export async function saveStoreSettings(settings: StoreSettings): Promise<void> 
         settings.shipping.enableFreeShipping ? 1 : 0,
         settings.shipping.freeShippingMinOrder,
         settings.shipping.defaultShippingCity,
+        JSON.stringify(settings.shipping.enabledCouriers),
         settings.points.enabled ? 1 : 0,
         settings.points.type,
         settings.points.value,

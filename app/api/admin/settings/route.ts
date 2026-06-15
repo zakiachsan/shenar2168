@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
           body.shipping?.freeShippingMinOrder ?? current.shipping.freeShippingMinOrder,
         defaultShippingCity:
           body.shipping?.defaultShippingCity ?? current.shipping.defaultShippingCity,
+        enabledCouriers:
+          body.shipping?.enabledCouriers ?? current.shipping.enabledCouriers ?? [],
       },
       points: {
         enabled: body.points?.enabled ?? current.points.enabled,
