@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateThread, sendMessage, getMessages, markAsRead, getUserThreads } from '@/lib/chat';
+import { getOrCreateThread, sendMessage, getMessages, markAsRead, getUserThreads, findThread } from '@/lib/chat';
+import { getChatSettings } from '@/lib/chat-settings';
+import { checkAndSendOfflineMessage } from '@/lib/chat-offline';
 
 // GET: Get user's threads or messages for a thread
 export async function GET(req: NextRequest) {
@@ -44,6 +46,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pesan diperlukan' }, { status: 400 });
     }
 
+    // Check if this is a new thread
+    const existingThread = await findThread(Number(userId), productId ? Number(productId) : null);
+    const isNewThread = !existingThread;
+
     // Get or create thread
     const thread = await getOrCreateThread({
       userId: Number(userId),
@@ -53,13 +59,37 @@ export async function POST(req: NextRequest) {
       productName,
     });
 
-    // Send message
+    // Send user message
     const msg = await sendMessage({
       threadId: thread.id,
       senderType: 'user',
       senderName: userName,
       message: message.trim(),
     });
+
+    // If new thread, send greeting message
+    if (isNewThread) {
+      try {
+        const settings = await getChatSettings();
+        if (settings.greeting_message) {
+          await sendMessage({
+            threadId: thread.id,
+            senderType: 'admin',
+            senderName: 'Admin',
+            message: settings.greeting_message,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to send greeting:', e);
+      }
+    } else {
+      // For existing threads, check if admin is offline
+      try {
+        await checkAndSendOfflineMessage(thread.id);
+      } catch (e) {
+        console.error('Failed to check offline status:', e);
+      }
+    }
 
     return NextResponse.json({ thread, message: msg }, { status: 201 });
   } catch (e: any) {

@@ -41,4 +41,24 @@ const pool = mysql.createPool({
   }
 })();
 
+
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS chat_settings (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        setting_key VARCHAR(50) UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    // Insert default values if not exists
+    await pool.execute(`
+      INSERT IGNORE INTO chat_settings (setting_key, setting_value) VALUES 
+      ('greeting_message', 'Halo! 👋 Selamat datang di Shenar2168. Ada yang bisa kami bantu?'),
+      ('offline_message', 'Terima kasih telah menghubungi kami. Saat ini admin sedang offline. Kami akan membalas pesan Anda segera.')
+    `);
+  } catch (e) {
+    console.error('DB auto-migrate chat_settings error:', e);
+  }
+
 export default pool;

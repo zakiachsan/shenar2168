@@ -15,6 +15,8 @@ import {
   Trash2,
   CircleDot,
   Filter,
+  Settings,
+  Save,
 } from 'lucide-react';
 
 interface ChatThread {
@@ -47,6 +49,7 @@ const STATUS_TABS = [
   { value: 'open', label: 'Aktif', icon: CircleDot },
   { value: 'unread', label: 'Belum Dibaca', icon: Clock },
   { value: 'closed', label: 'Selesai', icon: CheckCircle2 },
+  { value: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 
 function formatTime(dateStr: string) {
@@ -81,14 +84,26 @@ export default function AdminChatPage() {
   const [lastMessageId, setLastMessageId] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Settings state
+  const [greetingMessage, setGreetingMessage] = useState('');
+  const [offlineMessage, setOfflineMessage] = useState('');
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
-    loadThreads();
+    if (filter !== 'settings') {
+      loadThreads();
+    } else {
+      loadSettings();
+    }
   }, [filter]);
 
   useEffect(() => {
     // Auto-refresh threads every 10s
-    const interval = setInterval(loadThreads, 10000);
+    const interval = setInterval(() => {
+      if (filter !== 'settings') loadThreads();
+    }, 10000);
     return () => clearInterval(interval);
   }, [filter]);
 
@@ -105,6 +120,34 @@ export default function AdminChatPage() {
       }
     } catch {}
     setLoading(false);
+  };
+
+  const loadSettings = async () => {
+    setLoadingSettings(true);
+    try {
+      const res = await fetch('/api/admin/chat/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setGreetingMessage(data.settings?.greeting_message || '');
+        setOfflineMessage(data.settings?.offline_message || '');
+      }
+    } catch {}
+    setLoadingSettings(false);
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/admin/chat/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ greeting_message: greetingMessage, offline_message: offlineMessage }),
+      });
+      if (res.ok) {
+        alert('Pengaturan berhasil disimpan!');
+      }
+    } catch {}
+    setSavingSettings(false);
   };
 
   const loadMessages = async (threadId: number) => {
@@ -262,16 +305,18 @@ export default function AdminChatPage() {
           </div>
 
           {/* Search */}
-          <div className="relative mb-3">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cari chat..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-shopee-orange"
-            />
-          </div>
+          {filter !== 'settings' && (
+            <div className="relative mb-3">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari chat..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-shopee-orange"
+              />
+            </div>
+          )}
 
           {/* Filter Tabs */}
           <div className="flex gap-1 overflow-x-auto">
@@ -301,68 +346,130 @@ export default function AdminChatPage() {
           </div>
         </div>
 
-        {/* Thread List */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
-            </div>
-          ) : filteredThreads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-              <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">Belum ada chat</p>
-            </div>
-          ) : (
-            filteredThreads.map((thread) => (
-              <div
-                key={thread.id}
-                onClick={() => handleSelectThread(thread)}
-                className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedThread?.id === thread.id ? 'bg-orange-50 border-l-2 border-l-shopee-orange' : ''
-                }`}
-              >
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-shopee-orange/10 flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-shopee-orange" />
+        {/* Thread List or Settings */}
+        {filter === 'settings' ? (
+          <div className="flex-1 overflow-y-auto p-4">
+            {loadingSettings ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
+              </div>
+            ) : (
+              <div className="max-w-xl mx-auto space-y-6">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 mb-2">Pengaturan Chat</h2>
+                  <p className="text-sm text-gray-500">Atur pesan otomatis yang dikirim ke customer.</p>
                 </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className={`text-sm font-medium truncate ${thread.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-                      {thread.userName}
-                    </p>
-                    <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">
-                      {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
-                    </span>
+                
+                <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💬 Pesan Sambutan (Greeting)
+                    </label>
+                    <p className="text-xs text-gray-400 mb-2">Dikirim otomatis saat customer pertama kali chat.</p>
+                    <textarea
+                      value={greetingMessage}
+                      onChange={(e) => setGreetingMessage(e.target.value)}
+                      rows={3}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-shopee-orange"
+                      placeholder="Halo! 👋 Selamat datang. Ada yang bisa kami bantu?"
+                    />
                   </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {thread.productName && (
-                      <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">
-                        📦 {thread.productName}
-                      </span>
-                    )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🌙 Pesan Admin Offline
+                    </label>
+                    <p className="text-xs text-gray-400 mb-2">Dikirim otomatis saat admin tidak aktif (CMS ditutup).</p>
+                    <textarea
+                      value={offlineMessage}
+                      onChange={(e) => setOfflineMessage(e.target.value)}
+                      rows={3}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-shopee-orange"
+                      placeholder="Terima kasih telah menghubungi kami. Saat ini admin sedang offline..."
+                    />
                   </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className={`text-xs truncate ${thread.unreadCount > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
-                      {thread.lastMessage || 'Mulai percakapan...'}
-                    </p>
-                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                      {thread.unreadCount > 0 && (
-                        <span className="w-5 h-5 bg-shopee-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                          {thread.unreadCount}
-                        </span>
+                  
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={savingSettings}
+                      className="flex items-center gap-2 px-4 py-2 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 transition-colors"
+                    >
+                      {savingSettings ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
                       )}
-                      {thread.status === 'closed' && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                      )}
-                    </div>
+                      Simpan
+                    </button>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
+              </div>
+            ) : filteredThreads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">Belum ada chat</p>
+              </div>
+            ) : (
+              filteredThreads.map((thread) => (
+                <div
+                  key={thread.id}
+                  onClick={() => handleSelectThread(thread)}
+                  className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                    selectedThread?.id === thread.id ? 'bg-orange-50 border-l-2 border-l-shopee-orange' : ''
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-shopee-orange/10 flex items-center justify-center flex-shrink-0">
+                    <User className="w-5 h-5 text-shopee-orange" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className={`text-sm font-medium truncate ${thread.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                        {thread.userName}
+                      </p>
+                      <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">
+                        {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {thread.productName && (
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                          📦 {thread.productName}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className={`text-xs truncate ${thread.unreadCount > 0 ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
+                        {thread.lastMessage || 'Mulai percakapan...'}
+                      </p>
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        {thread.unreadCount > 0 && (
+                          <span className="w-5 h-5 bg-shopee-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {thread.unreadCount}
+                          </span>
+                        )}
+                        {thread.status === 'closed' && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Chat Detail (Right Panel) */}
