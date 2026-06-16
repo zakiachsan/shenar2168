@@ -29,6 +29,9 @@ import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stri
 import { getProductVariations, WCVariation } from "@/lib/woocommerce";
 import { isFavorite, toggleFavorite, FavoriteItem } from "@/lib/favorites";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/app/components/layout/AuthProvider";
+import { useChat } from "@/lib/chat-context";
+import LoginModal from "@/app/components/layout/LoginModal";
 import { useRouter } from "next/navigation";
 
 function mapWCProductToLocal(wcProduct: any): Product {
@@ -76,12 +79,22 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   const [favorited, setFavorited] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [storeSettings, setStoreSettings] = useState<{ storeLogo?: string; storeName?: string }>({});
+  const { user } = useAuth();
+  const { openChat } = useChat();
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Handlers for Chat, Wishlist, Share
   const handleChat = () => {
-    const waNumber = '6285694662592'; // Store WhatsApp
-    const msg = encodeURIComponent(`Halo, saya tertarik dengan produk:\n\n*${product?.name}*\nHarga: Rp ${(effectivePrice || 0).toLocaleString('id-ID')}\n\nhttps://shenar2168.com/product/${id}`);
-    window.open(`https://wa.me/${waNumber}?text=${msg}`, '_blank');
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    if (window.innerWidth < 1024) {
+      router.push("/chat");
+    } else {
+      openChat(product?.id, product?.name);
+    }
   };
 
   const handleWishlist = () => {
@@ -861,7 +874,13 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                 {["deskripsi", "ulasan", "diskusi"].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => {
+                      if (tab === "diskusi") {
+                        router.push("/chat");
+                      } else {
+                        setActiveTab(tab);
+                      }
+                    }}
                     className={`flex-1 py-3 text-sm capitalize transition-colors relative ${
                       activeTab === tab
                         ? "text-shopee-orange font-medium"
@@ -1193,6 +1212,9 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
         <Footer />
       </div>
       <BottomNav />
+      {showLoginModal && (
+        <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      )}
     </>
   );
 }

@@ -239,7 +239,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
           {/* Chat Button */}
             <button
               onClick={handleChatClick}
-              className="relative hover:opacity-80 transition-opacity"
+              className="relative hover:opacity-80 transition-opacity mt-1.5"
               title="Chat Penjual"
             >
               <MessageCircle className="w-7 h-7 text-shopee-orange" />
