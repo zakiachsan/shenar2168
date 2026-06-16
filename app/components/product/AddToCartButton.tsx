@@ -26,6 +26,8 @@ interface AddToCartButtonProps {
   height?: number;
   length?: number;
   width?: number;
+  isPreorder?: boolean;
+  preorderDays?: number;
   variant?: "default" | "small" | "icon-only";
   className?: string;
 }
@@ -45,6 +47,8 @@ export default function AddToCartButton({
   height,
   length,
   width,
+  isPreorder,
+  preorderDays,
   variant = "default",
   className = "",
 }: AddToCartButtonProps) {
@@ -69,6 +73,8 @@ export default function AddToCartButton({
       height,
       length,
       width,
+      isPreorder,
+      preorderDays,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);

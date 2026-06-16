@@ -25,6 +25,8 @@ export interface CartItem {
   height?: number; // in cm
   length?: number; // in cm
   width?: number;  // in cm
+  isPreorder?: boolean;
+  preorderDays?: number;
 }
 
 interface CartContextType {
@@ -138,6 +140,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             height: newItem.height,
             length: newItem.length,
             width: newItem.width,
+            isPreorder: newItem.isPreorder || false,
+            preorderDays: newItem.preorderDays || 0,
           },
         ];
       }

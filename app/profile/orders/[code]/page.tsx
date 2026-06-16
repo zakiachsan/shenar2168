@@ -56,6 +56,8 @@ interface CustomerOrder {
   payment_method_title: string;
   customer_note: string;
   meta_data?: Array<{ key: string; value: string }>;
+  isPreorder?: boolean;
+  preorderDays?: number;
 }
 
 const statusSteps = [
@@ -208,6 +210,22 @@ export default function OrderDetailPage() {
                 })}
               </div>
             </div>
+
+            {/* Pre-order info */}
+            {order.isPreorder && (
+              <div className="bg-white lg:rounded-sm p-4 mt-1">
+                <div className="flex items-center gap-2 text-sm text-blue-800 font-medium">
+                  <Clock className="w-4 h-4" />
+                  <span>Pesanan Pre-Order</span>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  Estimasi pengiriman: {order.preorderDays || 7} hari setelah pembayaran
+                </p>
+                <p className="text-xs text-blue-600">
+                  Estimasi barang sampai: {new Date(Date.now() + (order.preorderDays || 7) * 86400000).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            )}
 
             {/* Items */}
             <div className="bg-white lg:rounded-sm p-4 space-y-3">

@@ -139,6 +139,9 @@ export default function CartPage() {
                           {item.sku && (
                             <p className="text-xs text-shopee-text-secondary mt-0.5">SKU: {item.sku}</p>
                           )}
+                          {item.isPreorder && (
+                            <p className="text-xs text-blue-600 mt-0.5">Pre-Order {item.preorderDays || 7} Hari</p>
+                          )}
                           {item.variationId && item.variantLabel && (
                             <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
                           )}

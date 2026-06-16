@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import {
   adminGetProducts,
+  adminGetProduct,
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct,
@@ -228,6 +229,28 @@ export async function PUT(req: NextRequest) {
         visible: attr.visible !== false,
         variation: attr.variation === true,
       }));
+    }
+
+    // Handle meta_data: merge with existing to avoid overwriting other meta
+    if (body.meta_data && Array.isArray(body.meta_data)) {
+      // Fetch existing product meta_data first to merge
+      const existingResult = await adminGetProduct(body.id);
+      const existingMeta: { key: string; value: string }[] = [];
+      if (existingResult.status === 200 && existingResult.data?.meta_data) {
+        for (const m of existingResult.data.meta_data) {
+          existingMeta.push({ key: m.key, value: m.value });
+        }
+      }
+      // Update or add each meta from the request
+      for (const newMeta of body.meta_data) {
+        const idx = existingMeta.findIndex((m) => m.key === newMeta.key);
+        if (idx >= 0) {
+          existingMeta[idx].value = String(newMeta.value);
+        } else {
+          existingMeta.push({ key: newMeta.key, value: String(newMeta.value) });
+        }
+      }
+      payload.meta_data = existingMeta;
     }
 
     const result = await adminUpdateProduct(body.id, payload);

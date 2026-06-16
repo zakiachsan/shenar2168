@@ -67,6 +67,10 @@ interface OrderDetail {
     method_title: string;
     total: string;
   }[];
+  meta_data?: {
+    key: string;
+    value: string;
+  }[];
 }
 
 const STATUS_BADGES: Record<string, string> = {
@@ -122,6 +126,16 @@ function formatDate(dateStr: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function getPreorderInfo(meta_data?: { key: string; value: string }[]): {
+  isPreorder: boolean;
+  days: number;
+} {
+  if (!meta_data) return { isPreorder: false, days: 0 };
+  const isPreorder = !!meta_data.find(m => m.key === '_is_preorder' && m.value === 'yes');
+  const days = parseInt(meta_data.find(m => m.key === '_preorder_days')?.value || '0');
+  return { isPreorder, days };
 }
 
 export default function OrderDetailPage() {
@@ -230,6 +244,11 @@ export default function OrderDetailPage() {
               >
                 {STATUS_LABELS[order.status] || order.status}
               </span>
+              {getPreorderInfo(order.meta_data).isPreorder && (
+                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 ring-1 ring-purple-300">
+                  📦 Pre-Order
+                </span>
+              )}
             </div>
             <p className="text-sm text-gray-500 mt-1">
               Dibuat: {formatDate(order.date_created)}
@@ -288,6 +307,23 @@ export default function OrderDetailPage() {
               ))}
             </div>
             <div className="p-5 border-t border-gray-100 space-y-1.5">
+              {getPreorderInfo(order.meta_data).isPreorder && (() => {
+                const { days } = getPreorderInfo(order.meta_data);
+                const estDate = new Date(Date.now() + days * 86400000);
+                return (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mb-2">
+                    <p className="text-xs font-semibold text-purple-800 flex items-center gap-1">
+                      📦 Pre-Order
+                    </p>
+                    <p className="text-xs text-purple-600 mt-0.5">
+                      Estimasi pengiriman: {days} hari setelah pembayaran
+                    </p>
+                    <p className="text-xs text-purple-500">
+                      Estimasi sampai: {estDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                );
+              })()}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Subtotal</span>
                 <span className="text-gray-700">{formatCurrency(order.subtotal || '0')}</span>

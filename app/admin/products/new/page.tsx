@@ -190,6 +190,8 @@ export default function NewProductPage() {
   const [sku, setSku] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [manageStock, setManageStock] = useState(true);
+  const [isPreorder, setIsPreorder] = useState(false);
+  const [preorderDays, setPreorderDays] = useState('7');
   const [status, setStatus] = useState('draft');
   const [featured, setFeatured] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -292,6 +294,10 @@ export default function NewProductPage() {
         featured,
         description,
         short_description: shortDescription,
+        meta_data: [
+          { key: '_is_preorder', value: isPreorder ? 'yes' : 'no' },
+          { key: '_preorder_days', value: isPreorder ? preorderDays : '0' },
+        ],
       };
 
       if (!useVariant) {
@@ -659,6 +665,41 @@ export default function NewProductPage() {
                 )}
               </div>
             )}
+
+            {/* Pre-Order */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <h2 className="text-sm font-semibold text-gray-900">Pre-Order</h2>
+
+                <label className="flex items-center gap-2.5 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={isPreorder}
+                    onChange={(e) => setIsPreorder(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600"
+                  />
+                  Aktifkan Pre-Order
+                </label>
+
+                {isPreorder && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 whitespace-nowrap">
+                      Estimasi Pengiriman:
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={preorderDays}
+                      onChange={(e) => setPreorderDays(e.target.value)}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <span className="text-sm text-gray-500">hari</span>
+                    <span className="text-xs text-gray-400">
+                      (setelah pembayaran)
+                    </span>
+                  </div>
+                )}
+              </div>
 
             {/* Categories */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">

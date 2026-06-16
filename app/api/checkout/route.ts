@@ -189,11 +189,24 @@ export async function POST(req: NextRequest) {
 
     // 1b. Generate unique order code and save to WooCommerce meta + local DB
     const orderCode = generateOrderCode();
+
+    // Check if any items are pre-order
+    const hasPreorder = body.items.some((i: any) => i.isPreorder);
+    const preorderDays = hasPreorder
+      ? Math.max(...body.items.filter((i: any) => i.isPreorder).map((i: any) => i.preorderDays || 0))
+      : 0;
+
+    const metaData: any[] = [
+      { key: '_order_code', value: orderCode },
+      { key: '_customer_phone', value: body.billing.phone },
+    ];
+    if (hasPreorder) {
+      metaData.push({ key: '_is_preorder', value: 'yes' });
+      metaData.push({ key: '_preorder_days', value: String(preorderDays) });
+    }
+
     await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-      meta_data: [
-        { key: '_order_code', value: orderCode },
-        { key: '_customer_phone', value: body.billing.phone },
-      ],
+      meta_data: metaData,
     });
 
     // Save mapping to local MySQL

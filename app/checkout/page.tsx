@@ -384,6 +384,8 @@ export default function CheckoutPage() {
             height: item.height,
             length: item.length,
             width: item.width,
+            isPreorder: item.isPreorder || false,
+            preorderDays: item.preorderDays || 0,
           })),
           billing: {
             first_name: address.name.split(" ")[0],
@@ -664,6 +666,9 @@ export default function CheckoutPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm text-shopee-text line-clamp-2">{item.name}</h4>
+                          {item.isPreorder && (
+                            <p className="text-xs text-blue-600 mt-0.5">Pre-Order {item.preorderDays || 7} Hari</p>
+                          )}
                           {item.variantLabel ? (
                             <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
                           ) : item.variationId ? (

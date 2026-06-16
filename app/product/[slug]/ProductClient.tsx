@@ -158,6 +158,11 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
   const effectiveStock = matchedVariation?.stock_quantity ?? null;
   const isVariable = wcProductRaw?.type === 'variable';
 
+  // Pre-order state from WooCommerce meta_data
+  const productMeta = (product as any)?.meta_data || wcProductRaw?.meta_data || [];
+  const isPreorder = productMeta?.find?.((m: any) => m.key === '_is_preorder' && m.value === 'yes');
+  const preorderDays = parseInt(productMeta?.find?.((m: any) => m.key === '_preorder_days')?.value || '7');
+
   // Product dimensions/weight for shipping (from WooCommerce or fallback)
   const productWeight = matchedVariation?.weight
     ? parseFloat(matchedVariation.weight) * 1000
@@ -722,6 +727,16 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                   </div>
                 </div>
 
+                {/* Pre-order status badge */}
+                {isPreorder && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      <Clock className="w-3 h-3" />
+                      Pre-Order {preorderDays} Hari
+                    </span>
+                  </div>
+                )}
+
                 {/* Actions Desktop */}
                 <div className="hidden lg:flex items-center gap-3 mt-6">
                   <AddToCartButton
@@ -739,6 +754,8 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     height={productHeight}
                     length={productLength}
                     width={productWidth}
+                    isPreorder={!!isPreorder}
+                    preorderDays={preorderDays}
                     className="flex-1 whitespace-nowrap"
                   />
                   <BuyNowButton
@@ -756,6 +773,8 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     height={productHeight}
                     length={productLength}
                     width={productWidth}
+                    isPreorder={!!isPreorder}
+                    preorderDays={preorderDays}
                     className="flex-1 whitespace-nowrap"
                   />
                 </div>
