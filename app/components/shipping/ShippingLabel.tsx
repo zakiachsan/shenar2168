@@ -152,7 +152,7 @@ export default function ShippingLabel({
   weight = 0,
   codAmount = 0,
   items = [],
-  storeName = 'RagamGuna',
+  storeName = 'Shenar2168',
   showCTA = true,
   onTrack,
   compact = false,

@@ -13,12 +13,14 @@ interface WCCategory {
   name: string;
   slug: string;
   count?: number;
-  image?: { src: string } | null;
+  image?: string | { src: string } | null;
 }
 
-function getImageSrc(image: { src: string } | null | undefined): string | null {
+function getImageSrc(image: string | { src: string } | null | undefined): string | null {
   if (!image) return null;
-  return image.src || null;
+  if (typeof image === "string") return image;
+  if (typeof image === "object" && "src" in image) return image.src;
+  return null;
 }
 
 const FALLBACK_COLORS = [
@@ -64,6 +66,7 @@ export default function CategoryListPage() {
       <Header />
 
       <main className="pb-20 lg:pb-0">
+        {/* Page Header */}
         <div className="bg-white border-b border-shopee-border">
           <div className="max-w-[1200px] mx-auto px-4 py-4">
             <h1 className="text-lg font-medium text-shopee-text flex items-center gap-2">
@@ -89,7 +92,7 @@ export default function CategoryListPage() {
                 return (
                   <Link
                     key={cat.id}
-                    href={`/category/${cat.slug}`}
+                    href={`/category/${cat.id}`}
                     className="bg-white rounded-sm border border-shopee-border p-4 flex flex-col items-center gap-3 hover:border-shopee-orange hover:shadow-sm transition-all group"
                   >
                     <div

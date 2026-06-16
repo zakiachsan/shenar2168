@@ -21,6 +21,7 @@ interface AddToCartButtonProps {
   stock?: number | null;
   quantity?: number;
   variationId?: number;
+  variationInfo?: string;
   variantLabel?: string;
   weight?: number;
   height?: number;

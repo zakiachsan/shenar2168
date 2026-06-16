@@ -24,7 +24,7 @@ export default function CartPage() {
 
   const goToCheckout = useCallback(() => {
     if (selected.length === 0) return;
-    localStorage.setItem("ragamguna-checkout-selected", JSON.stringify(selected));
+    localStorage.setItem("shenar2168-checkout-selected", JSON.stringify(selected));
     router.push("/checkout");
   }, [selected, router]);
 
@@ -61,7 +61,7 @@ export default function CartPage() {
   const totalOriginal = selectedItems.reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
 
   // Group by "shop" (for now, all from one shop since it's single-store)
-  const shop = "RagamGuna Official";
+  const shop = "Shenar2168 Official";
   const groupedItems = items;
 
   if (loading) {

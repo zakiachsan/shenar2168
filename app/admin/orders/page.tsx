@@ -28,7 +28,6 @@ const STATUS_TABS = [
   { value: 'processing', label: 'Diproses' },
   { value: 'completed', label: 'Selesai' },
   { value: 'cancelled', label: 'Dibatalkan' },
-  { value: 'refunded', label: 'Dikembalikan' },
 ];
 
 const STATUS_BADGES: Record<string, string> = {
@@ -37,7 +36,6 @@ const STATUS_BADGES: Record<string, string> = {
   'on-hold': 'bg-orange-100 text-orange-800 ring-1 ring-orange-300',
   completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   cancelled: 'bg-red-100 text-red-800 ring-1 ring-red-300',
-  refunded: 'bg-purple-100 text-purple-800 ring-1 ring-purple-300',
   failed: 'bg-gray-100 text-gray-800 ring-1 ring-gray-300',
 };
 
@@ -47,7 +45,6 @@ const STATUS_LABELS: Record<string, string> = {
   'on-hold': 'Ditahan',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
-  refunded: 'Dikembalikan',
   failed: 'Gagal',
 };
 

@@ -352,6 +352,31 @@ export default function OrderDetailPage() {
               <p className="text-sm text-gray-600">{order.customer_note}</p>
             </div>
           )}
+
+{/* Billing */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-400" />
+              Informasi Tagihan
+            </h2>
+            <div className="space-y-1.5 text-sm">
+              <p className="text-gray-900 font-medium">
+                {order.billing?.first_name} {order.billing?.last_name}
+              </p>
+              <p className="text-gray-500">{order.billing?.phone}</p>
+              {order.billing?.address_1 && (
+                <p className="text-gray-500 text-xs mt-2">
+                  {order.billing.address_1}
+                </p>
+              )}
+              {order.customer_note && (
+                <p className="text-xs text-orange-600 mt-2 bg-orange-50 rounded px-2 py-1">
+                  Catatan: {order.customer_note}
+                </p>
+              )}
+            </div>
+          </div>
+
         </div>
 
         {/* Sidebar */}
@@ -398,30 +423,6 @@ export default function OrderDetailPage() {
             )}
           </div>
 
-          {/* Billing */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-400" />
-              Informasi Tagihan
-            </h2>
-            <div className="space-y-1.5 text-sm">
-              <p className="text-gray-900 font-medium">
-                {order.billing?.first_name} {order.billing?.last_name}
-              </p>
-              <p className="text-gray-500">{order.billing?.phone}</p>
-              {order.billing?.address_1 && (
-                <p className="text-gray-500 text-xs mt-2">
-                  {order.billing.address_1}
-                </p>
-              )}
-              {order.customer_note && (
-                <p className="text-xs text-orange-600 mt-2 bg-orange-50 rounded px-2 py-1">
-                  Catatan: {order.customer_note}
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Shipping */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -461,7 +462,7 @@ export default function OrderDetailPage() {
               onClick={() => {
                 const courierName = order.shipping_lines?.[0]?.method_title || '';
                 generateShippingLabelPDF({
-                  storeName: 'RagamGuna',
+                  storeName: 'Shenar2168',
                   orderNumber: order.number || String(order.id),
                   courierName: courierName,
                   courierService: courierName,
@@ -471,7 +472,7 @@ export default function OrderDetailPage() {
                   recipientAddress: order.shipping?.address_1 || order.billing?.address_1 || '',
                   recipientCity: order.shipping?.city || '',
                   recipientPostalCode: order.shipping?.postcode || '',
-                  senderName: 'RagamGuna Official Store',
+                  senderName: 'Shenar2168 Official Store',
                   senderPhone: '081234567890',
                   senderAddress: 'Pantai Indah Kapuk, Jakarta Utara',
                   senderCity: 'Jakarta Utara',

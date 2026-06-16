@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "./components/layout/AuthProvider";
 import { CartProvider } from "@/lib/cart-context";
 import { ChatProvider } from "@/lib/chat-context";
+import ChatWidget from "./components/chat/ChatWidget";
 import TopBar from "./components/layout/TopBar";
 import { getStoreSettings } from "@/lib/store-settings";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
           <ChatProvider><CartProvider>
             <TopBar />
             {children}
+            <ChatWidget />
           </CartProvider></ChatProvider>
         </AuthProvider>
         <script dangerouslySetInnerHTML={{

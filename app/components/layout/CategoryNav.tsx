@@ -58,7 +58,7 @@ export default function CategoryNav() {
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/category/${cat.slug}`}
+              href={`/category/${cat.id}`}
               className={`whitespace-nowrap px-4 py-2.5 text-[13px] transition-colors relative ${
                 activeSlug === cat.slug
                   ? "text-shopee-orange font-medium"

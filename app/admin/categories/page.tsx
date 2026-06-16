@@ -422,6 +422,27 @@ export default function AdminCategoriesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Slug <span className="text-gray-400 text-xs font-normal">(biarkan kosong untuk auto-generate)</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-gray-400">/</span>
+                  <input
+                    type="text"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-xs"
+                    placeholder="nama-kategori"
+                  />
+                </div>
+                {!slug.trim() && name.trim() && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Akan otomatis: <span className="font-mono">/{name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}</span>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Deskripsi
                 </label>
                 <textarea

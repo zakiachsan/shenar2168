@@ -5,11 +5,13 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 export interface AuthUser {
   phone: string;
   name: string;
+  address?: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (phone: string, name?: string) => void;
+  login: (phone: string, name?: string, address?: string) => void;
+  updateProfile: (updates: Partial<AuthUser>) => void;
   logout: () => void;
   loginOpen: boolean;
   openLogin: () => void;
@@ -19,6 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
+  updateProfile: () => {},
   logout: () => {},
   loginOpen: false,
   openLogin: () => {},
@@ -38,13 +41,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setHydrated(true);
   }, []);
 
-  const login = (phone: string, name = "Pengguna") => {
-    const u: AuthUser = { phone, name };
+  const login = (phone: string, name = "Pengguna", address?: string) => {
+    let finalName = name;
+    let finalAddress = address;
+    try {
+      const saved = localStorage.getItem("shenar2168_saved_profile");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.phone === phone) {
+          if (parsed.name && parsed.name !== "Pengguna") finalName = parsed.name;
+          if (parsed.address) finalAddress = parsed.address;
+        }
+      }
+    } catch {}
+    const u: AuthUser = { phone, name: finalName, ...(finalAddress ? { address: finalAddress } : {}) };
     localStorage.setItem("shopee_clone_user", JSON.stringify(u));
     setUser(u);
   };
 
+  const updateProfile = (updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const u = { ...prev, ...updates };
+      localStorage.setItem("shopee_clone_user", JSON.stringify(u));
+      return u;
+    });
+  };
+
   const logout = () => {
+    try {
+      const current = localStorage.getItem("shopee_clone_user");
+      if (current) {
+        const parsed = JSON.parse(current);
+        localStorage.setItem("shenar2168_saved_profile", JSON.stringify({
+          name: parsed.name,
+          address: parsed.address,
+          phone: parsed.phone,
+        }));
+      }
+    } catch {}
     localStorage.removeItem("shopee_clone_user");
     setUser(null);
   };
@@ -53,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const closeLogin = useCallback(() => setLoginOpen(false), []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loginOpen, openLogin, closeLogin }}>
+    <AuthContext.Provider value={{ user, login, updateProfile, logout, loginOpen, openLogin, closeLogin }}>
       {children}
     </AuthContext.Provider>
   );

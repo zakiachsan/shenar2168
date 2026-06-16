@@ -214,7 +214,7 @@ export default function AdminProductsPage() {
   // Compute tab counts
   const tabCounts = useMemo(() => {
     const active = products.filter((p) => isStatusActive(p.status));
-    const lowStock = active.filter((p) => (p.stock_quantity ?? 0) <= 5);
+    const lowStock = active.filter((p) => (p.stock_quantity ?? 0) < 20);
     const inactive = products.filter((p) => isStatusInactive(p.status));
     return {
       all: products.length,
@@ -232,7 +232,7 @@ export default function AdminProductsPage() {
       result = result.filter((p) => isStatusActive(p.status));
     } else if (filterTab === 'low-stock') {
       result = result.filter(
-        (p) => isStatusActive(p.status) && (p.stock_quantity ?? 0) <= 5
+        (p) => isStatusActive(p.status) && (p.stock_quantity ?? 0) < 20
       );
     } else if (filterTab === 'inactive') {
       result = result.filter((p) => isStatusInactive(p.status));
@@ -541,7 +541,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`text-sm ${
-                        (product.stock_quantity ?? 0) <= 5 && isStatusActive(product.status)
+                        (product.stock_quantity ?? 0) < 20 && isStatusActive(product.status)
                           ? 'text-red-600 font-medium'
                           : 'text-gray-700'
                       }`}>

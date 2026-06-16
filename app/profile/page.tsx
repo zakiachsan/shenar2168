@@ -60,8 +60,30 @@ const menuGroups: MenuGroup[] = [
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, openLogin } = useAuth();
+const { user, logout, openLogin, updateProfile } = useAuth();
   const [voucherCount, setVoucherCount] = useState(0);
+  const [displayAddress, setDisplayAddress] = useState("");
+  // Always load address from address book (preferred) or user profile
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("shenar2168-address-book");
+      if (raw) {
+        const book = JSON.parse(raw);
+        if (Array.isArray(book) && book.length > 0) {
+          const defaultAddr = book.find((a: any) => a.isDefault) || book[0];
+          if (defaultAddr?.fullAddress) {
+            setDisplayAddress(defaultAddr.fullAddress);
+            if (defaultAddr.fullAddress !== user?.address) {
+              updateProfile({ address: defaultAddr.fullAddress });
+            }
+            return;
+          }
+        }
+      }
+    } catch {}
+    if (user?.address) setDisplayAddress(user.address);
+  }, [user?.phone]);
+
   const [coins, setCoins] = useState(0);
 
   useEffect(() => {
@@ -81,6 +103,16 @@ export default function ProfilePage() {
       .then((res) => res.json())
       .then((data) => setCoins(data.coins || 0))
       .catch(() => setCoins(0));
+
+    // Fetch address from server to keep profile header up-to-date
+    fetch(`/api/profile/save-address?phone=${encodeURIComponent(user.phone)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.address?.fullAddress && data.address.fullAddress !== user.address) {
+          updateProfile({ address: data.address.fullAddress });
+        }
+      })
+      .catch(() => {});
   }, [user]);
 
   const handleMenuClick = (item: MenuItem) => {
@@ -195,7 +227,7 @@ export default function ProfilePage() {
           <div className="mt-3 bg-white lg:rounded-sm p-4">
             {user ? (
               <button
-                onClick={logout}
+                onClick={() => { logout(); router.push('/'); }}
                 className="w-full py-3 bg-red-50 text-red-500 text-sm font-medium rounded-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />

@@ -15,6 +15,7 @@ interface BuyNowButtonProps {
   stock?: number | null;
   quantity?: number;
   variationId?: number;
+  variationInfo?: string;
   variantLabel?: string;
   weight?: number;
   height?: number;

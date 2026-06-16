@@ -83,7 +83,18 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
       } else {
         const cleaned = phone.replace(/\D/g, "");
         const normalizedPhone = cleaned.startsWith("62") ? cleaned : "62" + cleaned;
-        login(normalizedPhone);
+        // Preserve existing user name if already saved
+        let finalName = "Pengguna";
+        try {
+          const existing = localStorage.getItem("shopee_clone_user");
+          if (existing) {
+            const parsed = JSON.parse(existing);
+            if (parsed.phone === normalizedPhone && parsed.name && parsed.name !== "Pengguna") {
+              finalName = parsed.name;
+            }
+          }
+        } catch {}
+        login(normalizedPhone, finalName);
         onClose();
         alert("Berhasil masuk! Selamat datang kembali.");
       }

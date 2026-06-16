@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useChat } from '@/lib/chat-context';
 import { useAuth } from '@/app/components/layout/AuthProvider';
 import LoginModal from '@/app/components/layout/LoginModal';
-import { X, Send, MessageCircle, Loader2, User, ChevronLeft } from 'lucide-react';
+import { X, Send, MessageCircle, Loader2, User, Package, Star, Clock, ShoppingCart } from 'lucide-react';
+import Link from 'next/link';
 
 interface ChatMessage {
   id: number;
@@ -28,6 +29,13 @@ interface ChatThread {
   lastMessageAt: string | null;
 }
 
+interface ProductDetail {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+}
+
 export default function ChatWidget() {
   const { isOpen, productId, productName, closeChat } = useChat();
   const { user } = useAuth();
@@ -37,6 +45,9 @@ export default function ChatWidget() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [productSent, setProductSent] = useState(false);
+  const [showProductCard, setShowProductCard] = useState(true);
+  const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastMessageIdRef = useRef(0);
@@ -60,6 +71,32 @@ export default function ChatWidget() {
     }
   }, [isOpen, user]);
 
+  // Fetch product details when productId is available
+  useEffect(() => {
+    if (!productId || !isOpen) return;
+    fetch(`/api/products/${productId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const p = data.product || data;
+        const variations = data.variations || [];
+        if (p?.id) {
+          const img = p.image || p.images?.[0]?.src || variations[0]?.image || '';
+          setProductDetail({
+            id: p.id,
+            name: p.name || productName || '',
+            price: p.price || p.regular_price || 0,
+            image: img,
+          });
+        }
+      })
+      .catch(() => {
+        // Fallback: use productName from context
+        if (productName) {
+          setProductDetail({ id: Number(productId), name: productName, price: 0, image: '' });
+        }
+      });
+  }, [productId, isOpen, productName]);
+
   // Load or create thread when chat opens
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -75,6 +112,10 @@ export default function ChatWidget() {
           });
           if (existing) {
             setThread(existing);
+            if (existing.productId && String(existing.productId) === String(productId)) {
+              setProductSent(true);
+              setShowProductCard(false);
+            }
             return fetchMessages(existing.id);
           }
         }
@@ -100,7 +141,7 @@ export default function ChatWidget() {
     }
   }, [messages]);
 
-  // Poll for new messages — uses ref for lastMessageId to avoid re-renders
+  // Poll for new messages
   useEffect(() => {
     if (!thread) return;
     
@@ -113,7 +154,6 @@ export default function ChatWidget() {
               const existingIds = new Set(prev.map((m) => m.id));
               const newMsgs = data.messages.filter((m: ChatMessage) => !existingIds.has(m.id));
               if (newMsgs.length > 0) {
-                // Update ref directly — no re-render from this
                 lastMessageIdRef.current = Math.max(lastMessageIdRef.current, ...newMsgs.map((m: ChatMessage) => m.id));
                 return [...prev, ...newMsgs];
               }
@@ -129,7 +169,7 @@ export default function ChatWidget() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [thread?.id]); // Only re-run when thread ID changes, not on lastMessageId
+  }, [thread?.id]);
 
   const fetchMessages = async (threadId: number) => {
     try {
@@ -145,34 +185,68 @@ export default function ChatWidget() {
   };
 
   const handleSend = async () => {
-    if (!message.trim() || !user) return;
+    if (!user) return;
+    const shouldSendProduct = productId && !productSent;
+    if (!message.trim() && !shouldSendProduct) return;
+
     setSending(true);
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.phone,
-          userName: user.name || user.phone,
-          userPhone: user.phone,
-          productId: productId || undefined,
-          productName: productName || undefined,
-          message: message.trim(),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.thread && !thread) {
-          setThread(data.thread);
+      // Step 1: Send product card first (if needed)
+      if (shouldSendProduct) {
+        const productText = productName
+          ? `Saya ingin bertanya tentang produk:\n${productName}`
+          : 'Saya ingin bertanya tentang produk ini';
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.phone,
+            userName: user.name || user.phone,
+            userPhone: user.phone,
+            message: productText,
+            productId: Number(productId),
+            productName: productName || undefined,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.thread && !thread) setThread(data.thread);
+          if (data.message) {
+            setMessages((prev) => [...prev, data.message]);
+            lastMessageIdRef.current = data.message.id;
+          }
         }
-        if (data.message) {
-          setMessages((prev) => [...prev, data.message]);
-          lastMessageIdRef.current = data.message.id;
+        setProductSent(true);
+        setShowProductCard(false);
+      }
+
+      // Step 2: Send user's text message (if any)
+      if (message.trim()) {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.phone,
+            userName: user.name || user.phone,
+            userPhone: user.phone,
+            message: message.trim(),
+            productId: productId ? Number(productId) : undefined,
+            productName: productName || undefined,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.thread && !thread) setThread(data.thread);
+          if (data.message) {
+            setMessages((prev) => [...prev, data.message]);
+            lastMessageIdRef.current = data.message.id;
+          }
         }
         setMessage('');
-        // Re-focus textarea after send
-        setTimeout(() => textareaRef.current?.focus(), 100);
       }
+
+      setTimeout(() => textareaRef.current?.focus(), 100);
     } catch {}
     setSending(false);
   };
@@ -195,10 +269,74 @@ export default function ChatWidget() {
     return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const isGeneralChat = !productId;
 
+  // Product card for desktop widget
+  const renderProductCard = () => {
+    if (!productId || !showProductCard || productSent) return null;
+    const p = productDetail;
+    return (
+      <div className="flex items-end gap-2 justify-end">
+        <div className="max-w-[90%]">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="w-full aspect-square bg-gray-50 flex items-center justify-center overflow-hidden max-h-[120px]">
+              {p?.image ? (
+                <img src={p.image} alt={p.name || ''} className="w-full h-full object-cover" />
+              ) : (
+                <Package className="w-10 h-10 text-gray-300" />
+              )}
+            </div>
+            <div className="p-2.5">
+              <p className="text-xs font-medium text-gray-900 line-clamp-2 leading-snug">
+                {p?.name || productName || 'Produk'}
+              </p>
+              <div className="flex items-center gap-1.5 mt-1">
+                {(p?.price || 0) > 0 && (
+                  <p className="text-xs font-semibold text-shopee-orange">
+                    {formatCurrency(p?.price || 0)}
+                  </p>
+                )}
+                <span className="text-[9px] text-white bg-red-500 px-1 py-0.5 rounded-sm font-medium">COD</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-400">
+                <span className="flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  1-2 Hari
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+                  5.0
+                </span>
+              </div>
+            </div>
+            <Link
+              href={`/product/${productId}`}
+              target="_blank"
+              className="block mx-2.5 mb-2.5 px-3 py-1.5 bg-shopee-orange text-white text-center text-xs font-medium rounded-lg hover:bg-[#EA580C] transition-colors"
+            >
+              <ShoppingCart className="w-3 h-3 inline mr-1" />
+              Lihat Produk
+            </Link>
+          </div>
+          <p className="text-[9px] text-gray-400 mt-0.5 text-right">
+            {formatTime(new Date().toISOString())}
+          </p>
+        </div>
+        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+          <User className="w-3 h-3 text-gray-500" />
+        </div>
+      </div>
+    );
+  };
+
   // Chat Widget Component (shared between desktop and mobile)
-  const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const ChatContent = useCallback(({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-shopee-orange text-white px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -227,7 +365,7 @@ export default function ChatWidget() {
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !showProductCard ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-shopee-orange/10 flex items-center justify-center mb-4">
               <MessageCircle className="w-8 h-8 text-shopee-orange" />
@@ -249,6 +387,9 @@ export default function ChatWidget() {
           </div>
         ) : (
           <>
+            {/* Product Card */}
+            {renderProductCard()}
+
             {messages.map((msg) => (
               <div key={msg.id} className={`flex items-end gap-2 ${msg.senderType === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.senderType === 'admin' && (
@@ -280,8 +421,23 @@ export default function ChatWidget() {
                 )}
               </div>
             ))}
-            {/* Waiting indicator when last message is from user */}
-            
+            {messages.length > 0 && messages[messages.length - 1].senderType === 'user' && (
+              <div className="flex items-start gap-2">
+                <div className="w-7 h-7 rounded-full bg-shopee-orange flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-[10px] text-gray-400">Menunggu jawaban...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
         <div ref={messagesEndRef} />
@@ -295,14 +451,14 @@ export default function ChatWidget() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ketik pesan..."
+            placeholder={productId && !productSent ? "Ketik pertanyaan tentang produk..." : "Ketik pesan..."}
             rows={1}
             className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-shopee-orange max-h-20"
             style={{ minHeight: '38px' }}
           />
           <button
             onClick={handleSend}
-            disabled={!message.trim() || sending}
+            disabled={(!!message.trim() ? false : !!productId && !productSent ? false : true) || sending}
             className="p-2 bg-shopee-orange text-white rounded-lg hover:bg-[#EA580C] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -310,15 +466,23 @@ export default function ChatWidget() {
         </div>
       </div>
     </div>
-  );
+  ), [loading, messages, showProductCard, thread, productName, productId, productSent, productDetail, message, sending, formatTime, formatCurrency, renderProductCard, handleSend, handleKeyDown, closeChat, handleScroll]);
 
-  // On mobile, redirect to /chat page (better keyboard support)
-  // Only show floating widget on desktop
   return (
-    <div className="hidden lg:block fixed bottom-6 right-6 z-[100]">
-      <div className="w-[380px] h-[520px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
-        <ChatContent />
+    <>
+      {/* Desktop: Floating Widget */}
+      <div className="hidden lg:block fixed bottom-6 right-6 z-[100]">
+        <div className="w-[380px] h-[520px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+          <ChatContent />
+        </div>
       </div>
-    </div>
+
+      {/* Mobile: Full-screen Modal */}
+      {isOpen && (
+        <div className="lg:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+          <ChatContent isMobile />
+        </div>
+      )}
+    </>
   );
 }

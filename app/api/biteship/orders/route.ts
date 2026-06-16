@@ -19,11 +19,19 @@ interface BiteshipOrderPayload {
   origin_address: string;
   origin_postal_code: string;
   origin_note: string;
+  origin_coordinate?: {
+    latitude: number;
+    longitude: number;
+  };
   destination_contact_name: string;
   destination_contact_phone: string;
   destination_address: string;
   destination_postal_code: string;
   destination_note: string;
+  destination_coordinate?: {
+    latitude: number;
+    longitude: number;
+  };
   courier_company: string;
   courier_type: string;
   delivery_type: string;
@@ -73,6 +81,10 @@ export async function POST(req: NextRequest) {
       origin_address: "Pantai Indah Kapuk, Jakarta Utara",
       origin_postal_code: "14470",
       origin_note: "",
+      origin_coordinate: {
+        latitude: -6.1180,
+        longitude: 106.7940
+      },
       destination_contact_name: destination_contact_name || "Customer",
       destination_contact_phone: destination_contact_phone || "081234567890",
       destination_address: destination_address || "",

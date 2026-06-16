@@ -25,8 +25,8 @@ interface WCCategory {
   name: string;
   slug: string;
   description: string;
-  image: { src: string } | null;
-  banner?: string | null;
+  image: string | null;
+  banner: string | null;
   count: number;
 }
 
@@ -48,30 +48,24 @@ interface CategoryClientProps {
 }
 
 export default function CategoryClient({ slug }: CategoryClientProps) {
-  const safeSlug = slug || "";
+  // Support both ID-based (new) and slug-based (legacy) URLs
+  const catId = Number(slug);
+  const isIdBased = catId && !isNaN(catId);
   const { addItem } = useCart();
 
   const [category, setCategory] = useState<WCCategory | null>(null);
   const [catLoading, setCatLoading] = useState(true);
 
-  // Fetch category info from WooCommerce
+  // Fetch category info — use ID if available, fallback to slug
   useEffect(() => {
     async function loadCategory() {
       setCatLoading(true);
       try {
-        const res = await fetch(`/api/wc/products/categories?slug=${safeSlug}`);
+        const res = await fetch(`/api/categories/${slug}`);
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setCategory(data[0]);
-            // Fetch banner from local DB
-            const bannerRes = await fetch("/api/category-banners");
-            if (bannerRes.ok) {
-              const banners = await bannerRes.json();
-              if (banners[data[0].id]) {
-                setCategory({ ...data[0], banner: banners[data[0].id] });
-              }
-            }
+          if (data && !data.error) {
+            setCategory(data);
           }
         }
       } catch (err) {
@@ -81,7 +75,7 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
       }
     }
     loadCategory();
-  }, [safeSlug]);
+  }, [slug]);
 
   // Fetch products from WooCommerce by category
   const wcCatId = category?.id;
@@ -144,8 +138,8 @@ export default function CategoryClient({ slug }: CategoryClientProps) {
 
   const activeFiltersCount = [selectedPrice, selectedLocation, selectedRating].filter(Boolean).length;
 
-  const displayName = decodeHtmlEntities(category?.name || '') || safeSlug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-  const bannerUrl = category?.banner || category?.image?.src || defaultBanner;
+  const displayName = decodeHtmlEntities(category?.name || '') || 'Kategori';
+  const bannerUrl = category?.banner || defaultBanner;
   const productCount = filteredProducts.length;
 
   return (

@@ -13,6 +13,7 @@ import {
   Hash,
   FileText,
 } from 'lucide-react';
+import { toSlug } from '@/lib/data';
 
 interface Category {
   id: number;
@@ -59,19 +60,24 @@ export default function AdminCategoryDetailPage() {
     setError('');
     try {
       // Load category info
-      const catRes = await fetch(`/api/admin/categories?id=${id}`);
+      const catRes = await fetch(`/api/admin/categories/${id}`);
       if (catRes.ok) {
         const catData = await catRes.json();
-        // The GET endpoint returns array, so we need to find the matching one
-        // Actually the API returns all categories. Let's also fetch from detail endpoint via wc proxy
-        const detailRes = await fetch(`/api/wc/products/categories/${id}`);
-        if (detailRes.ok) {
-          const detail = await detailRes.json();
-          setCategory(detail);
-        } else if (Array.isArray(catData)) {
-          const found = catData.find((c: Category) => c.id === id);
-          if (found) setCategory(found);
+        if (catData.id) {
+          setCategory({
+            id: catData.id,
+            name: catData.name,
+            slug: catData.slug,
+            description: catData.description || '',
+            count: catData.productCount ?? catData.count ?? 0,
+            image: catData.image ? { src: catData.image } : null,
+            menu_order: catData.sortOrder ?? catData.menu_order ?? 0,
+          });
+        } else {
+          setError('Kategori tidak ditemukan');
         }
+      } else {
+        setError('Kategori tidak ditemukan');
       }
 
       // Load products in this category
@@ -181,7 +187,7 @@ export default function AdminCategoryDetailPage() {
           </div>
           <div className="flex flex-col gap-2">
             <Link
-              href={`/category/${category.slug}`}
+              href={`/category/${category.id}`}
               target="_blank"
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
             >
@@ -291,7 +297,7 @@ export default function AdminCategoryDetailPage() {
                           Edit
                         </button>
                         <Link
-                          href={`/product/${product.id}-${product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                          href={`/product/${product.id}-${toSlug(product.name)}`}
                           target="_blank"
                           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                           title="Lihat di toko"

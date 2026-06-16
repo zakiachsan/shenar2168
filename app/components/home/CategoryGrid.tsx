@@ -9,13 +9,15 @@ interface WCCategory {
   id: number;
   name: string;
   slug: string;
-  image: { src: string } | null;
+  image: string | { src: string } | null;
   menu_order: number;
 }
 
-function getImageSrc(image: { src: string } | null): string | null {
+function getImageSrc(image: string | { src: string } | null): string | null {
   if (!image) return null;
-  return image.src || null;
+  if (typeof image === "string") return image;
+  if (typeof image === "object" && "src" in image) return image.src;
+  return null;
 }
 
 const FALLBACK_COLORS = [
@@ -35,6 +37,7 @@ function getFallbackColor(index: number): string {
   return FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
 
+/** Insert soft-hyphens into individual words that are too long */
 function softHyphenate(text: string, chunkSize: number = 7): string {
   return text
     .split(" ")
@@ -87,13 +90,14 @@ export default function CategoryGrid() {
   return (
     <div className="max-w-[1200px] mx-auto px-4">
       <div className="bg-white rounded-sm">
+        {/* Desktop: 2 rows x 10 columns */}
         <div className="hidden md:grid grid-cols-10 gap-0 py-4">
           {categories.map((cat, index) => {
             const imgSrc = getImageSrc(cat.image);
             return (
               <Link
                 key={cat.id}
-                href={`/category/${cat.slug}`}
+                href={`/category/${cat.id}`}
                 className="flex flex-col items-center gap-2 p-2 cursor-pointer hover:bg-shopee-orange-light/50 transition-colors rounded-sm group"
               >
                 <div
@@ -121,6 +125,7 @@ export default function CategoryGrid() {
           })}
         </div>
 
+        {/* Mobile: horizontal scroll 2 rows */}
         <div className="md:hidden py-4">
           <div className="grid grid-cols-5 gap-y-4 px-2">
             {categories.slice(0, 10).map((cat, index) => {
@@ -128,7 +133,7 @@ export default function CategoryGrid() {
               return (
                 <Link
                   key={cat.id}
-                  href={`/category/${cat.slug}`}
+                  href={`/category/${cat.id}`}
                   className="flex flex-col items-center gap-1.5 cursor-pointer"
                 >
                   <div

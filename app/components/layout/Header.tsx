@@ -1,50 +1,65 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2, TrendingUp, MessageCircle } from "lucide-react";
-import LoginModal from "./LoginModal";
-import { useAuth } from "./AuthProvider";
-import { useChat } from "@/lib/chat-context";
+import { Search, ShoppingCart, X, Home, Grid3X3, ShoppingBag, User, HelpCircle, Loader2, MessageCircle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useChat } from "@/lib/chat-context";
+import { useAuth } from "./AuthProvider";
+import LoginModal from "./LoginModal";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
-const categories = [
-  { name: "Elektronik", href: "/category/elektronik" },
-  { name: "Komputer", href: "/category/komputer" },
-  { name: "Handphone", href: "/category/handphone" },
-  { name: "Pakaian Pria", href: "/category/pakaian-pria" },
-  { name: "Pakaian Wanita", href: "/category/pakaian-wanita" },
-  { name: "Kecantikan", href: "/category/kecantikan" },
-  { name: "Rumah Tangga", href: "/category/rumah-tangga" },
-  { name: "Tas & Sepatu", href: "/category/tas-sepatu" },
-  { name: "Olahraga", href: "/category/olahraga" },
-  { name: "Makanan", href: "/category/makanan" },
-];
+interface NavCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
 
-export default function Header({ sticky = true }: { sticky?: boolean }) {
+export default function Header() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { items, getItemCount } = useCart();
   const { openChat } = useChat();
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const { getItemCount } = useCart();
+  const { user } = useAuth();
+  const [navCategories, setNavCategories] = useState<NavCategory[]>([]);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
-  const cartCount = getItemCount();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const cartCount = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch categories + popular searches on mount
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((r) => r.json())
+      .then((data) => {
+        const cats = Array.isArray(data.categories) ? data.categories : Array.isArray(data) ? data : [];
+        setNavCategories(cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug })));
+      })
+      .catch(() => {});
+
+    fetch('/api/search/popular')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.searches?.length) {
+          setPopularSearches(data.searches.map((s: any) => s.query));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleChatClick = () => {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
+    // Mobile: navigate to /chat page (better keyboard support)
     if (window.innerWidth < 1024) {
-      router.push("/chat");
+      router.push('/chat');
     } else {
       openChat();
     }
@@ -53,10 +68,10 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
   const handleSearch = (query?: string) => {
     const q = query || searchValue.trim();
     if (q) {
-      // Log the search query
-      fetch("/api/search/popular", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // Log the search
+      fetch('/api/search/popular', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q }),
       }).catch(() => {});
       router.push(`/search?q=${encodeURIComponent(q)}`);
@@ -100,28 +115,16 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
     };
   }, [searchValue]);
 
-  // Fetch popular searches on mount
-  useEffect(() => {
-    fetch("/api/search/popular")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.searches && data.searches.length > 0) {
-          setPopularSearches(data.searches.map((s: any) => s.query));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   return (
-    <header className={`bg-white ${sticky ? 'sticky top-0' : ''} z-50 shadow-sm`}>
+    <header className="bg-white sticky top-0 z-50 shadow-sm">
       {/* Desktop Header */}
       <div className="hidden lg:block">
         <div className="max-w-[1200px] mx-auto px-4 py-4 flex items-start gap-6">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0 cursor-pointer">
             <svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <text x="0" y="28" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="22" fill="#2D96F6">
-                SHENAR2168
+              <text x="0" y="28" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="22" fill="#F97316">
+                RAGAMGUNA
               </text>
               <text x="0" y="38" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="8" fill="#757575" letterSpacing="2">
                 MARKETPLACE
@@ -160,7 +163,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
                 {!searchValue.trim() ? (
                   <div className="p-2">
                     <p className="text-xs text-shopee-text-secondary px-2 py-1">Pencarian Populer</p>
-                    {(popularSearches.length > 0 ? popularSearches : ["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"]).map((s) => (
+                    {["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"].map((s) => (
                       <button
                         key={s}
                         onMouseDown={(e) => e.preventDefault()}
@@ -222,38 +225,43 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
               </div>
             )}
 
-            {/* Quick Tags */}
-            <div className="flex items-center gap-3 mt-1 text-xs text-[#757575]/80">
-              {(popularSearches.length > 0 ? popularSearches.slice(0, 5) : ["kaos polos", "sepatu sneakers", "kemeja pria", "tas ransel", "hoodie"]).map((s) => (
-                <Link
-                  key={s}
-                  href={`/search?q=${encodeURIComponent(s)}`}
-                  className="hover:text-shopee-orange cursor-pointer"
-                >
-                  {s}
-                </Link>
-              ))}
-            </div>
+            {/* Popular Searches */}
+            {popularSearches.length > 0 && (
+              <div className="flex items-center gap-3 mt-1 text-xs text-[#757575]/80 flex-wrap">
+                {popularSearches.map((q) => (
+                  <Link
+                    key={q}
+                    href={`/search?q=${encodeURIComponent(q)}`}
+                    className="hover:text-shopee-orange cursor-pointer"
+                  >
+                    {q}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Chat Button */}
+          {/* Chat + Cart Icons */}
+          <div className="flex items-center gap-4 mt-1.5">
+            {/* Chat Button */}
             <button
               onClick={handleChatClick}
-              className="relative hover:opacity-80 transition-opacity mt-1.5"
+              className="relative hover:opacity-80 transition-opacity"
               title="Chat Penjual"
             >
               <MessageCircle className="w-7 h-7 text-shopee-orange" />
             </button>
 
-          {/* Cart Icon */}
-          <Link href="/cart" className="relative hover:opacity-80 transition-opacity mt-1.5">
-            <ShoppingCart className="w-7 h-7 text-shopee-orange" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-white text-shopee-orange text-[10px] font-bold w-4 h-4 rounded-full border border-shopee-orange flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+            {/* Cart Icon */}
+            <Link href="/cart" className="relative hover:opacity-80 transition-opacity">
+              <ShoppingCart className="w-7 h-7 text-shopee-orange" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-white text-shopee-orange text-[10px] font-bold w-4 h-4 rounded-full border border-shopee-orange flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -290,7 +298,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
               {!searchValue.trim() ? (
                 <div className="p-2">
                   <p className="text-xs text-shopee-text-secondary px-2 py-1">Pencarian Populer</p>
-                  {(popularSearches.length > 0 ? popularSearches : ["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"]).map((s) => (
+                  {["kaos polos", "sepatu sneakers", "headphone bluetooth", "powerbank", "jam tangan", "hoodie", "tas ransel"].map((s) => (
                     <button
                       key={s}
                       onMouseDown={(e) => e.preventDefault()}
@@ -352,6 +360,14 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
             </div>
           )}
         </div>
+        {/* Chat + Cart Icons */}
+        <button
+          onClick={handleChatClick}
+          className="text-white p-1"
+          title="Chat Penjual"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
         <Link href="/cart" className="relative text-white p-1">
           <ShoppingCart className="w-6 h-6" />
           {cartCount > 0 && (
@@ -394,7 +410,17 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
                 <Grid3X3 className="w-5 h-5 text-shopee-orange" />
                 <span className="text-[10px] text-shopee-text">Flash Sale</span>
               </Link>
-              <button className="flex flex-col items-center gap-1 py-3 hover:bg-shopee-gray transition-colors">
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (user) {
+                    window.location.href = '/profile';
+                  } else {
+                    setShowLoginModal(true);
+                  }
+                }}
+                className="flex flex-col items-center gap-1 py-3 hover:bg-shopee-gray transition-colors"
+              >
                 <User className="w-5 h-5 text-shopee-orange" />
                 <span className="text-[10px] text-shopee-text">Saya</span>
               </button>
@@ -403,10 +429,10 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
             {/* Categories */}
             <div className="flex-1 overflow-y-auto">
               <p className="px-4 py-2 text-xs font-medium text-shopee-text-secondary bg-shopee-gray">KATEGORI</p>
-              {categories.map((cat) => (
+              {navCategories.map((cat) => (
                 <Link
-                  key={cat.name}
-                  href={cat.href}
+                  key={cat.id}
+                  href={`/category/${cat.id}`}
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center justify-between px-4 py-3 border-b border-shopee-border/50 hover:bg-shopee-gray transition-colors"
                 >
@@ -428,6 +454,8 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
           </div>
         </>
       )}
+
+      {/* Login Modal */}
       {showLoginModal && (
         <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       )}

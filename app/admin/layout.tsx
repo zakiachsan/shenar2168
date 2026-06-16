@@ -10,7 +10,6 @@ import {
   Image,
   Store,
   Settings,
-  Truck,
   TicketPercent,
   Users,
   MessageSquare,
@@ -20,6 +19,7 @@ import {
   Menu,
   X,
   Coins,
+  Truck,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -29,13 +29,13 @@ const NAV_ITEMS = [
   { href: '/admin/categories', label: 'Kategori', icon: Tags },
   { href: '/admin/banners', label: 'Banner', icon: Image },
   { href: '/admin/etalase', label: 'Etalase', icon: Store },
+  { href: '/admin/shipping', label: 'Pengiriman', icon: Truck },
   { href: '/admin/coupons', label: 'Kupon', icon: TicketPercent },
   { href: '/admin/points', label: 'Poin', icon: Coins },
   { href: '/admin/customers', label: 'Pelanggan', icon: Users },
   { href: '/admin/reviews', label: 'Ulasan', icon: MessageSquare },
   { href: '/admin/discussions', label: 'Diskusi', icon: MessageSquare },
-  { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
-  { href: '/admin/shipping', label: 'Pengiriman', icon: Truck },
+  { href: '/admin/chat', label: 'Chat', icon: MessageSquare, badge: 'chat' },
   { href: '/admin/settings', label: 'Pengaturan', icon: Settings },
 ];
 
@@ -46,6 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [username, setUsername] = useState('Admin');
   const [processingCount, setProcessingCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/admin/me')
@@ -54,6 +55,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (data.username) setUsername(data.username);
       })
       .catch(() => {});
+  }, []);
+
+  // Fetch unread chat count
+  useEffect(() => {
+    const fetchChatCount = () => {
+      fetch('/api/admin/chat?unreadOnly=1')
+        .then((res) => res.json())
+        .then((data) => {
+          setUnreadChatCount(data.threads?.length || 0);
+        })
+        .catch(() => {});
+    };
+    fetchChatCount();
+    const interval = setInterval(fetchChatCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch processing orders count
@@ -142,7 +158,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            const showBadge = item.badge === 'processing' && processingCount > 0;
+            const showBadge = (item.badge === 'processing' && processingCount > 0) || (item.badge === 'chat' && unreadChatCount > 0);
+            const badgeCount = item.badge === 'processing' ? processingCount : item.badge === 'chat' ? unreadChatCount : 0;
             return (
               <a
                 key={item.href}
@@ -168,7 +185,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {sidebarOpen && <span className="flex-1">{item.label}</span>}
                 {sidebarOpen && showBadge && (
                   <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                    {processingCount > 99 ? '99+' : processingCount}
+                    {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
                 {!sidebarOpen && showBadge && (

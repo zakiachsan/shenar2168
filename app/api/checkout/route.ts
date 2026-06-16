@@ -85,6 +85,10 @@ async function createBiteshipOrder(body: any, orderId: number) {
         destination_address: shipping.address_1 || billing.address_1 || '',
         destination_postal_code: shipping.postcode || billing.postcode || '12345',
         destination_note: body.customer_note || '',
+        destination_coordinate: {
+          latitude: shipping.latitude || -6.1200,
+          longitude: shipping.longitude || 106.8700
+        },
         courier_company: body.shipping_courier || 'jne',
         courier_type: body.shipping_service || 'reguler',
         weight: items.reduce((s: number, i: any) => s + (i.weight || 500) * i.quantity, 0),

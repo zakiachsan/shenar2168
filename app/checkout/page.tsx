@@ -91,93 +91,27 @@ export default function CheckoutPage() {
   const [mapPostalCode, setMapPostalCode] = useState("");
   const [pendingCheckout, setPendingCheckout] = useState(false);
 
-  const { user, openLogin, closeLogin, loginOpen } = useAuth();
+  const { user, openLogin, closeLogin, loginOpen, updateProfile } = useAuth();
 
-  // Helper: get / save user addresses to localStorage
-  const getUserAddresses = (): any[] => {
-    if (!user?.phone || typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(`shenar2168-addresses-${user.phone}`);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveUserAddress = (addr: AddressData & { lat?: number; lng?: number }) => {
-    if (!user?.phone || typeof window === "undefined") return;
-    const existing = getUserAddresses();
-    const newItem = {
-      id: existing.length > 0 ? Math.max(...existing.map((a: any) => a.id)) + 1 : 1,
-      name: addr.name,
-      phone: addr.phone,
-      fullAddress: addr.fullAddress,
-      note: addr.note || "",
-      postalCode: addr.postalCode || "",
-      lat: addr.lat,
-      lng: addr.lng,
-      isDefault: existing.length === 0,
-    };
-    const updated = [...existing, newItem];
-    localStorage.setItem(`shenar2168-addresses-${user.phone}`, JSON.stringify(updated));
-  };
-
-  // Auto-fill address from user's saved addresses when logged in
-  useEffect(() => {
-    if (!user || address) return;
-    const saved = getUserAddresses();
-    const defaultAddr = saved.find((a: any) => a.isDefault) || saved[0];
-    if (defaultAddr) {
-      const loaded: AddressData = {
-        name: defaultAddr.name,
-        phone: defaultAddr.phone,
-        fullAddress: defaultAddr.fullAddress,
-        note: defaultAddr.note || "",
-        postalCode: defaultAddr.postalCode || "",
-      };
-      setAddress(loaded);
-      setFormName(loaded.name);
-      setFormPhone(loaded.phone);
-      setFormAddress(loaded.fullAddress);
-      setFormNote(loaded.note);
-      setFormPostalCode(loaded.postalCode);
-      if (defaultAddr.lat != null && defaultAddr.lng != null) {
-        setMapLatLng({ lat: defaultAddr.lat, lng: defaultAddr.lng });
-      }
-      if (loaded.postalCode) setMapPostalCode(loaded.postalCode);
-      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(loaded));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  // Auto-resume checkout after login + save checkout address to user account
+  // Auto-resume checkout after login
   useEffect(() => {
     if (user && pendingCheckout && address && checkoutItems.length > 0) {
-      // Save checkout address to user addresses if not already saved
-      const saved = getUserAddresses();
-      const alreadyExists = saved.some(
-        (a: any) => a.fullAddress === address.fullAddress && a.phone === address.phone
-      );
-      if (!alreadyExists) {
-        saveUserAddress({ ...address, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
-      }
       setPendingCheckout(false);
       handleCheckout();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Load address + latlng from localStorage on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const rawAddr = localStorage.getItem("shenar2168-checkout-address");
+      const rawAddr = localStorage.getItem("ragamguna-checkout-address");
       if (rawAddr) {
         const parsed = JSON.parse(rawAddr);
         setAddress(parsed);
         if (parsed.postalCode) setMapPostalCode(parsed.postalCode);
       }
-      const rawLatLng = localStorage.getItem("shenar2168-checkout-latlng");
+      const rawLatLng = localStorage.getItem("ragamguna-checkout-latlng");
       if (rawLatLng) {
         const parsed = JSON.parse(rawLatLng);
         setMapLatLng(parsed);
@@ -187,11 +121,76 @@ export default function CheckoutPage() {
     }
   }, []);
 
+  // Load address from server if logged in and no local address
+  useEffect(() => {
+    if (address || !user?.phone) return;
+    fetch(`/api/profile/save-address?phone=${encodeURIComponent(user.phone)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.address?.fullAddress) {
+          const serverAddr = {
+            name: data.address.name || '',
+            phone: user.phone || '',
+            fullAddress: data.address.fullAddress || '',
+            note: data.address.note || '',
+            postalCode: data.address.postalCode || '',
+          };
+          setAddress(serverAddr);
+          if (serverAddr.postalCode) setMapPostalCode(serverAddr.postalCode);
+          localStorage.setItem("ragamguna-checkout-address", JSON.stringify(serverAddr));
+        }
+      })
+      .catch(() => {});
+  }, [user?.phone]);
+
+  // Auto-fill address from address book if checkout address is empty
+  useEffect(() => {
+    if (address) return; // already have address
+    if (typeof window === "undefined") return;
+    try {
+      const rawBook = localStorage.getItem("ragamguna-address-book");
+      if (rawBook) {
+        const book = JSON.parse(rawBook);
+        if (Array.isArray(book) && book.length > 0) {
+          const defaultAddr = book.find((a: any) => a.isDefault) || book[0];
+          const autoAddress = {
+            name: defaultAddr.name || "",
+            phone: defaultAddr.phone || "",
+            fullAddress: defaultAddr.fullAddress || "",
+            note: defaultAddr.note || "",
+            postalCode: defaultAddr.postalCode || "",
+          };
+          setAddress(autoAddress);
+          if (autoAddress.postalCode) setMapPostalCode(autoAddress.postalCode);
+          if (defaultAddr.lat && defaultAddr.lng) {
+            setMapLatLng({ lat: defaultAddr.lat, lng: defaultAddr.lng });
+          }
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    // Fallback: auto-fill from logged-in user profile
+    if (!user) return;
+    const fullAddr = user.address || "";
+    const postalMatch = fullAddr.match(/\b(\d{5})\b/);
+    const autoAddress = {
+      name: user.name || "",
+      phone: user.phone || "",
+      fullAddress: fullAddr,
+      note: "",
+      postalCode: postalMatch ? postalMatch[1] : "",
+    };
+    setAddress(autoAddress);
+    if (autoAddress.postalCode) setMapPostalCode(autoAddress.postalCode);
+  }, [user]);
+
   // Read selected items from localStorage (set by cart page or buy-now)
   const [selectedKeys, setSelectedKeys] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      const raw = localStorage.getItem("shenar2168-checkout-selected");
+      const raw = localStorage.getItem("ragamguna-checkout-selected");
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -243,9 +242,7 @@ export default function CheckoutPage() {
           service_type: r.service_type,
         }));
         setShippingRates(rates);
-        if (rates.length > 0 && !selectedShipping) {
-          setSelectedShipping(`${rates[0].courier_code}|${rates[0].courier_service_name}`);
-        }
+        // Don't auto-select — user must explicitly choose
       } catch (err) {
         setShippingError(err instanceof Error ? err.message : "Terjadi kesalahan");
         setShippingRates([]);
@@ -322,23 +319,49 @@ export default function CheckoutPage() {
   }
   const total = subtotal + shipping - voucherDiscount;
 
+  // Form validation for disabling the submit button
+  const isCheckoutValid = (() => {
+    if (!address) return false;
+    if (!address.name.trim()) return false;
+    if (!address.phone.trim()) return false;
+    if (!address.fullAddress.trim()) return false;
+    if (!(address.postalCode || formPostalCode || mapPostalCode)) return false;
+    if (!selectedShipping) return false;
+    return true;
+  })();
+
   const applyVoucher = async () => {
     if (!voucher.trim()) return;
     setVoucherError("");
     setVoucherLoading(true);
     try {
-      const res = await fetch("/api/coupons");
-      if (!res.ok) throw new Error("Gagal memuat voucher");
-      const data = await res.json();
-      const coupons = Array.isArray(data.coupons) ? data.coupons : [];
-      const found = coupons.find(
-        (c: any) => c.code.toUpperCase() === voucher.trim().toUpperCase()
+      // Server-side validation: checks min_order, expiry, usage_limit
+      const res = await fetch(
+        `/api/coupons?code=${encodeURIComponent(voucher.trim())}&total=${subtotal}`
       );
-      if (!found) {
-        setVoucherError("Kode voucher tidak ditemukan atau sudah tidak berlaku.");
+      if (!res.ok) throw new Error("Gagal memvalidasi voucher");
+      const data = await res.json();
+      if (!data.valid) {
+        setVoucherError(data.message || "Kode voucher tidak valid.");
         setAppliedCoupon(null);
       } else {
-        setAppliedCoupon(found);
+        // Also fetch coupon details for display
+        const listRes = await fetch("/api/coupons");
+        const listData = await listRes.json();
+        const coupons = Array.isArray(listData.coupons) ? listData.coupons : [];
+        const found = coupons.find(
+          (c: any) => c.code.toUpperCase() === voucher.trim().toUpperCase()
+        );
+        if (found) {
+          setAppliedCoupon(found);
+        } else {
+          // Fallback: build minimal coupon object from validation response
+          setAppliedCoupon({
+            code: voucher.trim().toUpperCase(),
+            discount_type: data.discount > 0 && data.discount < subtotal ? "percent" : "fixed_cart",
+            amount: String(data.discount),
+          });
+        }
       }
     } catch {
       setVoucherError("Terjadi kesalahan. Coba lagi.");
@@ -348,13 +371,39 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    // Validate all fields
     if (!address) {
-      alert("Harap isi alamat pengiriman terlebih dahulu.");
+      setError("Harap isi alamat pengiriman terlebih dahulu.");
+      return;
+    }
+
+    if (!address.name.trim()) {
+      setError("Nama lengkap wajib diisi.");
+      return;
+    }
+
+    if (!address.phone.trim()) {
+      setError("Nomor telepon wajib diisi.");
+      return;
+    }
+
+    if (!address.fullAddress.trim()) {
+      setError("Alamat lengkap wajib diisi.");
+      return;
+    }
+
+    if (!(address.postalCode || formPostalCode || mapPostalCode)) {
+      setError("Kode pos wajib diisi. Pilih titik lokasi di peta terlebih dahulu.");
+      return;
+    }
+
+    if (!selectedShipping) {
+      setError("Pilih jasa pengiriman terlebih dahulu.");
       return;
     }
 
     if (checkoutItems.length === 0) {
-      alert("Keranjang belanjamu masih kosong.");
+      setError("Keranjang belanjamu masih kosong.");
       return;
     }
 
@@ -384,17 +433,15 @@ export default function CheckoutPage() {
             height: item.height,
             length: item.length,
             width: item.width,
-            isPreorder: item.isPreorder || false,
-            preorderDays: item.preorderDays || 0,
           })),
           billing: {
             first_name: address.name.split(" ")[0],
             last_name: address.name.split(" ").slice(1).join(" ") || address.name.split(" ")[0],
             phone: address.phone,
-            email: `${address.phone}@shenar2168.id`,
+            email: `${address.phone}@ragamguna.id`,
             address_1: address.fullAddress,
-            city: address.fullAddress?.split(',').pop()?.trim() || "Jakarta",
-            state: address.fullAddress?.split(',').pop()?.trim() || "Jakarta",
+            city: "Jakarta",
+            state: "Jakarta",
             postcode: address.postalCode || "12345",
             country: "ID",
           },
@@ -402,8 +449,8 @@ export default function CheckoutPage() {
             first_name: address.name.split(" ")[0],
             last_name: address.name.split(" ").slice(1).join(" ") || address.name.split(" ")[0],
             address_1: address.fullAddress,
-            city: address.fullAddress?.split(',').pop()?.trim() || "Jakarta",
-            state: address.fullAddress?.split(',').pop()?.trim() || "Jakarta",
+            city: "Jakarta",
+            state: "Jakarta",
             postcode: address.postalCode || "12345",
             country: "ID",
           },
@@ -412,8 +459,7 @@ export default function CheckoutPage() {
           coupon_code: appliedCoupon?.code || undefined,
           shipping_courier: selectedShipping ? selectedShipping.split("|")[0] : undefined,
           shipping_service: selectedShipping ? selectedShipping.split("|")[1] : undefined,
-          shipping_cost: selectedRate?.price || 0,
-          shipping_method: selectedRate?.courier_code || "flat_rate",
+          shipping_cost: shipping,
         }),
       });
 
@@ -423,30 +469,89 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Gagal membuat pesanan");
       }
 
-      // Success - remove checked-out items, then redirect
-      const orderCode = data.order?.orderCode;
+      // Save address to server database for future checkouts
+      if (user?.phone) {
+        fetch('/api/profile/save-address', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: user.phone,
+            name: address.name,
+            fullAddress: address.fullAddress,
+            postalCode: address.postalCode || '',
+            note: address.note || '',
+          }),
+        }).catch(() => {});
+        // Also update AuthProvider so profile page reflects changes
+        updateProfile({ address: address.fullAddress });
+      }
+
+      // Success - save order to localStorage, remove checked-out items, then redirect
+      const orderCode = `RG${Math.floor(10000 + Math.random() * 90000)}`;
+      const orderRecord = {
+        id: String(data.order.id),
+        orderCode,
+        status: "pending" as const,
+        items: checkoutItems.map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          image: item.image,
+          price: item.price,
+          originalPrice: item.originalPrice || item.price,
+          quantity: item.quantity,
+          variationId: item.variationId,
+        })),
+        subtotal,
+        originalSubtotal,
+        productDiscount,
+        total: total,
+        date: new Date().toISOString(),
+        shipping: selectedShipping,
+        shippingCost: shipping,
+        shippingCourier: selectedRate
+          ? `${selectedRate.courier_code.toUpperCase()} ${courierServiceLabels[selectedRate.courier_service_name] || selectedRate.courier_service_name}`
+          : undefined,
+        voucherDiscount: voucherDiscount,
+        couponCode: appliedCoupon?.code || undefined,
+        trackingId: data.shipping?.tracking_id,
+        waybillId: data.shipping?.waybill_id,
+        biteshipStatus: data.shipping?.status,
+      };
+      const existingOrders = JSON.parse(localStorage.getItem("ragamguna-orders") || "[]");
+      existingOrders.unshift(orderRecord);
+      localStorage.setItem("ragamguna-orders", JSON.stringify(existingOrders));
+
+      // Save address to address book
+      try {
+        const rawBook = localStorage.getItem("ragamguna-address-book");
+        const book = rawBook ? JSON.parse(rawBook) : [];
+        const exists = book.some((a: any) =>
+          a.fullAddress === address.fullAddress && a.phone === address.phone
+        );
+        if (!exists) {
+          const newId = book.length > 0 ? Math.max(...book.map((a: any) => a.id)) + 1 : 1;
+          book.push({
+            id: newId,
+            name: address.name,
+            phone: address.phone,
+            fullAddress: address.fullAddress,
+            note: address.note || "",
+            postalCode: address.postalCode || "",
+            lat: mapLatLng?.lat,
+            lng: mapLatLng?.lng,
+            isDefault: book.length === 0,
+          });
+          localStorage.setItem("ragamguna-address-book", JSON.stringify(book));
+        }
+      } catch {
+        // ignore
+      }
 
       checkoutItems.forEach((item) => {
         removeItem(item.productId, item.variationId);
       });
-      localStorage.removeItem("shenar2168-checkout-selected");
-
-      // Auto-save checkout address to user's address book
-      if (user?.phone && address) {
-        const saved = getUserAddresses();
-        const alreadyExists = saved.some(
-          (a: any) => a.fullAddress === address.fullAddress && a.phone === address.phone
-        );
-        if (!alreadyExists) {
-          saveUserAddress({ ...address, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
-        }
-      }
-
-      if (data.midtrans_redirect_url) {
-        window.location.href = data.midtrans_redirect_url;
-      } else {
-        window.location.href = `/order-confirmed?id=${data.order.id}&code=${orderCode || ""}`;
-      }
+      localStorage.removeItem("ragamguna-checkout-selected");
+      if (data.midtrans_redirect_url) { window.location.href = data.midtrans_redirect_url; } else { window.location.href = `/order-confirmed?id=${data.order.order_number}`; }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
@@ -455,28 +560,35 @@ export default function CheckoutPage() {
   };
 
   const handleSaveAddress = () => {
-    if (!formName.trim() || !formPhone.trim() || !formAddress.trim()) {
-      alert("Harap isi nama, nomor telepon, dan alamat.");
+    if (!formName.trim()) {
+      alert("Nama lengkap wajib diisi.");
       return;
     }
-    const newAddress: AddressData = { name: formName, phone: formPhone, fullAddress: formAddress, note: formNote, postalCode: formPostalCode || mapPostalCode };
+    if (!formPhone.trim()) {
+      alert("Nomor telepon wajib diisi.");
+      return;
+    }
+    if (!formAddress.trim()) {
+      alert("Alamat lengkap wajib diisi.");
+      return;
+    }
+    const pc = formPostalCode || mapPostalCode;
+    if (!pc) {
+      alert("Kode pos wajib diisi. Pilih titik lokasi di peta terlebih dahulu.");
+      return;
+    }
+    const newAddress = { name: formName, phone: formPhone, fullAddress: formAddress, note: formNote, postalCode: pc };
     setAddress(newAddress);
     setIsEditingAddress(false);
     if (typeof window !== "undefined") {
-      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(newAddress));
+      localStorage.setItem("ragamguna-checkout-address", JSON.stringify(newAddress));
       if (mapLatLng) {
-        localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify(mapLatLng));
+        localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify(mapLatLng));
       }
-      // Also save to user's address book if logged in
-      if (user?.phone) {
-        const saved = getUserAddresses();
-        const alreadyExists = saved.some(
-          (a: any) => a.fullAddress === newAddress.fullAddress && a.phone === newAddress.phone
-        );
-        if (!alreadyExists) {
-          saveUserAddress({ ...newAddress, lat: mapLatLng?.lat, lng: mapLatLng?.lng });
-        }
-      }
+    }
+    // Update AuthProvider so profile shows the address
+    if (user?.phone) {
+      updateProfile({ address: formAddress });
     }
   };
 
@@ -505,7 +617,7 @@ export default function CheckoutPage() {
     setMapLatLng(newLatLng);
     setShowMapPicker(false);
     if (typeof window !== "undefined") {
-      localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify(newLatLng));
+      localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify(newLatLng));
     }
     // Also update address so shipping rates can be fetched immediately
     setAddress((prev) =>
@@ -538,8 +650,9 @@ export default function CheckoutPage() {
                 {isEditingAddress || !address ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs text-shopee-text-secondary mb-1">Nama Lengkap</label>
+                      <label className="block text-xs text-shopee-text-secondary mb-1">Nama Lengkap <span className="text-red-500">*</span></label>
                       <input
+                        required
                         type="text"
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
@@ -548,10 +661,11 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-shopee-text-secondary mb-1">Nomor Telepon</label>
+                      <label className="block text-xs text-shopee-text-secondary mb-1">Nomor Telepon <span className="text-red-500">*</span></label>
                       <div className="flex items-center border border-shopee-border rounded-sm overflow-hidden focus-within:border-shopee-orange">
                         <span className="px-3 py-2 bg-shopee-gray text-sm text-shopee-text border-r border-shopee-border">+62</span>
                         <input
+                          required
                           type="tel"
                           value={formPhone}
                           onChange={(e) => setFormPhone(e.target.value)}
@@ -561,7 +675,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-shopee-text-secondary mb-1">Pilih Titik Lokasi</label>
+                      <label className="block text-xs text-shopee-text-secondary mb-1">Pilih Titik Lokasi <span className="text-red-500">*</span></label>
                       <button
                         type="button"
                         onClick={() => setShowMapPicker(true)}
@@ -586,8 +700,9 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-shopee-text-secondary mb-1">Alamat Lengkap</label>
+                      <label className="block text-xs text-shopee-text-secondary mb-1">Alamat Lengkap <span className="text-red-500">*</span></label>
                       <textarea
+                        required
                         value={formAddress}
                         onChange={(e) => setFormAddress(e.target.value)}
                         placeholder="Jl. Nama Jalan No. XX, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi"
@@ -645,7 +760,7 @@ export default function CheckoutPage() {
               {/* Products grouped by shop */}
               {Object.entries(
                 checkoutItems.reduce((groups, item) => {
-                  const shop = item.shopName || "Shenar2168 Official";
+                  const shop = item.shopName || "RagamGuna Official";
                   if (!groups[shop]) groups[shop] = [];
                   groups[shop].push(item);
                   return groups;
@@ -667,13 +782,11 @@ export default function CheckoutPage() {
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm text-shopee-text line-clamp-2">{item.name}</h4>
                           {item.isPreorder && (
-                            <p className="text-xs text-blue-600 mt-0.5">Pre-Order {item.preorderDays || 7} Hari</p>
+                            <p className="text-xs text-purple-600 font-medium mt-0.5">Pre-Order (estimasi {item.preorderDays || 7} hari)</p>
                           )}
-                          {item.variantLabel ? (
-                            <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
-                          ) : item.variationId ? (
-                            <p className="text-xs text-blue-600 mt-0.5">Varian #{item.variationId}</p>
-                          ) : null}
+                          {item.variationInfo && (
+                            <p className="text-xs text-blue-600 mt-0.5">{item.variationInfo}</p>
+                          )}
                           <div className="flex items-center justify-between mt-1">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm text-shopee-orange font-medium">{formatPrice(item.price)}</span>
@@ -947,7 +1060,7 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handleCheckout}
-                  disabled={isSubmitting || checkoutItems.length === 0}
+                  disabled={isSubmitting || checkoutItems.length === 0 || !isCheckoutValid}
                   className="w-full h-11 bg-shopee-orange hover:bg-[#1A7BD4] text-white font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Memproses..." : `Buat Pesanan`}
@@ -969,7 +1082,7 @@ export default function CheckoutPage() {
         )}
         <button
           onClick={handleCheckout}
-          disabled={isSubmitting || checkoutItems.length === 0}
+          disabled={isSubmitting || checkoutItems.length === 0 || !isCheckoutValid}
           className="w-full h-10 bg-shopee-orange hover:bg-[#1A7BD4] text-white text-sm font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Memproses..." : "Buat Pesanan"}

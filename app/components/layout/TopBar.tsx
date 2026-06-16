@@ -32,9 +32,12 @@ export default function TopBar() {
           )}
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="text-shopee-text font-medium">
+              <button
+                onClick={() => window.location.href = '/profile'}
+                className="text-shopee-text font-medium hover:text-shopee-orange transition-colors cursor-pointer"
+              >
                 {user.name} ({user.phone})
-              </span>
+              </button>
               <button
                 onClick={logout}
                 className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors"

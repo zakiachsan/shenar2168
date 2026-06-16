@@ -103,6 +103,14 @@ export default function AddressPage() {
     } else {
       setAddresses((prev) => [...prev, payload]);
     }
+    // Sync default to checkout
+    if (payload.isDefault && typeof window !== "undefined") {
+      const checkoutAddr = { name: payload.name, phone: payload.phone, fullAddress: payload.fullAddress, note: payload.note || "", postalCode: payload.postalCode || "" };
+      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(checkoutAddr));
+      if (payload.lat && payload.lng) {
+        localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify({ lat: payload.lat, lng: payload.lng }));
+      }
+    }
     setShowForm(false);
   };
 
@@ -120,7 +128,24 @@ export default function AddressPage() {
   };
 
   const setDefault = (id: number) => {
-    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+    setAddresses((prev) => {
+      const updated = prev.map((a) => ({ ...a, isDefault: a.id === id }));
+      const defaultAddr = updated.find((a) => a.isDefault);
+      if (defaultAddr && typeof window !== "undefined") {
+        const checkoutAddr = {
+          name: defaultAddr.name,
+          phone: defaultAddr.phone,
+          fullAddress: defaultAddr.fullAddress,
+          note: defaultAddr.note || "",
+          postalCode: defaultAddr.postalCode || "",
+        };
+        localStorage.setItem("shenar2168-checkout-address", JSON.stringify(checkoutAddr));
+        if (defaultAddr.lat && defaultAddr.lng) {
+          localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify({ lat: defaultAddr.lat, lng: defaultAddr.lng }));
+        }
+      }
+      return updated;
+    });
   };
 
   const handleMapSelect = (addr: string, lat: number, lng: number, postalCode: string) => {

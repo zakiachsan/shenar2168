@@ -149,12 +149,13 @@ export async function getMessages(threadId: number, limit = 50, before?: number)
   const connection = await pool.getConnection();
   try {
     let query = 'SELECT * FROM chat_messages WHERE thread_id = ?';
-    const params: any[] = [threadId];
+    const params: any[] = [Number(threadId)];
     if (before) {
       query += ' AND id < ?';
-      params.push(before);
+      params.push(Number(before));
     }
-    query += ` ORDER BY created_at ASC LIMIT ${Number(limit)}`;
+    query += ' ORDER BY created_at ASC LIMIT ?';
+    params.push(String(limit));
     const [rows] = await connection.execute(query, params);
     return (rows as any[]).map(mapMessage);
   } finally {
