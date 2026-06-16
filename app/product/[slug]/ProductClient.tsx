@@ -876,7 +876,15 @@ export default function ProductClient({ id, initialProduct }: { id: number; init
                     key={tab}
                     onClick={() => {
                       if (tab === "diskusi") {
-                        router.push("/chat");
+                        if (!user) {
+                          setShowLoginModal(true);
+                          return;
+                        }
+                        if (window.innerWidth < 1024) {
+                          router.push("/chat");
+                        } else {
+                          openChat(product?.id, product?.name);
+                        }
                       } else {
                         setActiveTab(tab);
                       }
