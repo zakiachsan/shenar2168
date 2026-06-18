@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
-import { Trash2, Package, Upload, Loader2, X, ImagePlus } from 'lucide-react';
+import { Trash2, Package, Upload, Loader2, X, ImagePlus, Ruler } from 'lucide-react';
 import { NO_IMAGE_PLACEHOLDER } from '@/lib/data';
 import NumberInput from '@/app/components/ui/NumberInput';
 
@@ -13,6 +13,10 @@ export interface FormVariation {
   stock_quantity: string;
   sku: string;
   image?: string;
+  weight?: string;
+  dimensions_length?: string;
+  dimensions_width?: string;
+  dimensions_height?: string;
   _deleted?: boolean;
 }
 
@@ -205,6 +209,18 @@ export default function VariationManager({ attributes, variations, onChange }: V
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     SKU
                   </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Berat (g)
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    P (cm)
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    L (cm)
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    T (cm)
+                  </th>
                   <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Aksi
                   </th>
@@ -261,6 +277,46 @@ export default function VariationManager({ attributes, variations, onChange }: V
                           onChange={(e) => updateVariation(idx, 'sku', e.target.value)}
                           className="w-32 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="SKU"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.weight || ''}
+                          onChange={(e) => updateVariation(idx, 'weight', e.target.value)}
+                          className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_length || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_length', e.target.value)}
+                          className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_width || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_width', e.target.value)}
+                          className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_height || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_height', e.target.value)}
+                          className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
                         />
                       </td>
                       <td className="px-4 py-2.5 text-right">
@@ -349,6 +405,60 @@ export default function VariationManager({ attributes, variations, onChange }: V
                         className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="SKU"
                       />
+                    </div>
+                  </div>
+
+                  {/* Weight & Dimensions */}
+                  <div className="border-t border-gray-100 pt-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Ruler className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-xs font-medium text-gray-500">Berat & Dimensi</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Berat (g)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.weight || ''}
+                          onChange={(e) => updateVariation(idx, 'weight', e.target.value)}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Panjang (cm)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_length || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_length', e.target.value)}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Lebar (cm)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_width || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_width', e.target.value)}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Tinggi (cm)</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={v.dimensions_height || ''}
+                          onChange={(e) => updateVariation(idx, 'dimensions_height', e.target.value)}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

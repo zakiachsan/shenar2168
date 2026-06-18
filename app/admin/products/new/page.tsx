@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { categories as staticCategories } from '@/lib/data';
 import VariationManager, { FormVariation } from '../components/VariationManager';
 import ImageUpload from '@/app/components/admin/ImageUpload';
+import { Ruler } from 'lucide-react';
 import NumberInput from '@/app/components/ui/NumberInput';
 
 interface Category {
@@ -167,6 +168,10 @@ function syncVariations(
         sale_price: '',
         stock_quantity: '',
         sku: '',
+        weight: '',
+        dimensions_length: '',
+        dimensions_width: '',
+        dimensions_height: '',
       });
     }
   }
@@ -199,6 +204,10 @@ export default function NewProductPage() {
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [variations, setVariations] = useState<FormVariation[]>([]);
   const [useVariant, setUseVariant] = useState(false);
+  const [weight, setWeight] = useState('');
+  const [dimensionsLength, setDimensionsLength] = useState('');
+  const [dimensionsWidth, setDimensionsWidth] = useState('');
+  const [dimensionsHeight, setDimensionsHeight] = useState('');
 
   // Computed: does this product have active variations?
   const hasVariations = useVariant && attributes.some(
@@ -312,6 +321,14 @@ export default function NewProductPage() {
         } else {
           payload.manage_stock = false;
         }
+        // Weight & Dimensions
+        if (weight) payload.weight = weight;
+        if (dimensionsLength || dimensionsWidth || dimensionsHeight) {
+          payload.dimensions = {};
+          if (dimensionsLength) payload.dimensions.length = dimensionsLength;
+          if (dimensionsWidth) payload.dimensions.width = dimensionsWidth;
+          if (dimensionsHeight) payload.dimensions.height = dimensionsHeight;
+        }
       }
 
       if (selectedCategories.length > 0) {
@@ -341,6 +358,12 @@ export default function NewProductPage() {
           manage_stock: true,
           sku: v.sku,
           image: v.image ? { src: v.image } : undefined,
+          weight: v.weight || undefined,
+          dimensions: (v.dimensions_length || v.dimensions_width || v.dimensions_height) ? {
+            length: v.dimensions_length || undefined,
+            width: v.dimensions_width || undefined,
+            height: v.dimensions_height || undefined,
+          } : undefined,
         }));
       }
 
@@ -663,6 +686,73 @@ export default function NewProductPage() {
                     <NumberInput value={stockQuantity} onChange={setStockQuantity} placeholder="0" min={0} />
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Dimensi & Berat - Simple Product */}
+            {!useVariant && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                  <Ruler className="w-4 h-4 text-gray-500" />
+                  <h2 className="text-sm font-semibold text-gray-900">Dimensi &amp; Berat</h2>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Berat Produk (g)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Dalam satuan gram</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Panjang (cm)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={dimensionsLength}
+                      onChange={(e) => setDimensionsLength(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Lebar (cm)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={dimensionsWidth}
+                      onChange={(e) => setDimensionsWidth(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Tinggi (cm)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={dimensionsHeight}
+                      onChange={(e) => setDimensionsHeight(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 

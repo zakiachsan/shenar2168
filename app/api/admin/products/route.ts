@@ -115,6 +115,15 @@ export async function POST(req: NextRequest) {
       payload.sale_price = String(body.sale_price);
     }
 
+    // Weight & Dimensions
+    if (body.weight) payload.weight = String(body.weight);
+    if (body.dimensions && typeof body.dimensions === 'object' && (body.dimensions.length || body.dimensions.width || body.dimensions.height)) {
+      payload.dimensions = {};
+      if (body.dimensions.length) payload.dimensions.length = String(body.dimensions.length);
+      if (body.dimensions.width) payload.dimensions.width = String(body.dimensions.width);
+      if (body.dimensions.height) payload.dimensions.height = String(body.dimensions.height);
+    }
+
     if (body.categories && Array.isArray(body.categories)) {
       payload.categories = body.categories.map((id: number) => ({ id }));
     }
@@ -162,6 +171,14 @@ export async function POST(req: NextRequest) {
             }))
           : [],
         image: (() => { const s = typeof v.image === 'string' ? v.image : v.image?.src; return s ? { src: normalizeImageUrl(s, baseUrl) } : undefined; })(),
+        ...(v.weight ? { weight: String(v.weight) } : {}),
+        ...(v.dimensions && typeof v.dimensions === 'object' && (v.dimensions.length || v.dimensions.width || v.dimensions.height) ? {
+          dimensions: {
+            ...(v.dimensions.length ? { length: String(v.dimensions.length) } : {}),
+            ...(v.dimensions.width ? { width: String(v.dimensions.width) } : {}),
+            ...(v.dimensions.height ? { height: String(v.dimensions.height) } : {}),
+          }
+        } : {}),
       }));
 
       await adminBatchVariations(productId, { create: variationsToCreate });
@@ -197,6 +214,15 @@ export async function PUT(req: NextRequest) {
     if (body.status) payload.status = body.status;
     if (body.featured !== undefined) payload.featured = body.featured;
     if (body.type) payload.type = body.type;
+
+    // Weight & Dimensions
+    if (body.weight !== undefined) payload.weight = String(body.weight);
+    if (body.dimensions && typeof body.dimensions === 'object') {
+      payload.dimensions = {};
+      if (body.dimensions.length !== undefined) payload.dimensions.length = String(body.dimensions.length);
+      if (body.dimensions.width !== undefined) payload.dimensions.width = String(body.dimensions.width);
+      if (body.dimensions.height !== undefined) payload.dimensions.height = String(body.dimensions.height);
+    }
 
     if (body.manage_stock === false) {
       payload.manage_stock = false;
@@ -281,6 +307,14 @@ export async function PUT(req: NextRequest) {
         // Handle image: could be string URL or { src: "url" } object
         const imgSrc = typeof v.image === 'string' ? v.image : v.image?.src;
         if (imgSrc) variationData.image = { src: normalizeImageUrl(imgSrc, baseUrl) };
+        // Weight & Dimensions
+        if (v.weight) variationData.weight = String(v.weight);
+        if (v.dimensions && typeof v.dimensions === 'object' && (v.dimensions.length || v.dimensions.width || v.dimensions.height)) {
+          variationData.dimensions = {};
+          if (v.dimensions.length) variationData.dimensions.length = String(v.dimensions.length);
+          if (v.dimensions.width) variationData.dimensions.width = String(v.dimensions.width);
+          if (v.dimensions.height) variationData.dimensions.height = String(v.dimensions.height);
+        }
 
         if (v.id && v.id > 0 && !v._deleted) {
           toUpdate.push({ id: v.id, ...variationData });
