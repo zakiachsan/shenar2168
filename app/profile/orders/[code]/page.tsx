@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2, MapPin, CreditCard, User, MessageSquare, Download } from "lucide-react";
+import { ChevronLeft, ClipboardList, Package, Truck, CheckCircle, Star, Clock, Loader2, MapPin, CreditCard, User, MessageSquare, Download, X } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import AuthGuard from "@/app/components/layout/AuthGuard";
@@ -83,6 +83,17 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<CustomerOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelOtherText, setCancelOtherText] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const CANCEL_REASONS = [
+    { value: "change_address", label: "Ingin mengubah alamat pengiriman" },
+    { value: "seller_no_reply", label: "Penjual tidak membalas chat" },
+    { value: "change_details", label: "Ingin mengubah rincian & membuat pesanan baru" },
+    { value: "other", label: "Alasan lainnya" },
+  ];
 
   useEffect(() => {
     if (!code || !user?.phone) return;
@@ -111,6 +122,31 @@ export default function OrderDetailPage() {
 
     fetchOrder();
   }, [code, user?.phone]);
+
+  const handleCancelOrder = async () => {
+    if (!order || !cancelReason) return;
+    setCancelling(true);
+    try {
+      const reasonText = cancelReason === "other"
+        ? cancelOtherText.trim() || "Alasan lainnya"
+        : CANCEL_REASONS.find((r) => r.value === cancelReason)?.label || "";
+
+      await fetch(`/api/orders/${code}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      }).catch(() => {});
+
+      setOrder({ ...order, status: 'cancelled' });
+      setShowCancelModal(false);
+      setCancelReason("");
+      setCancelOtherText("");
+    } catch {
+      // ignore
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const currentStepIndex = statusSteps.findIndex((s) => s.key === order?.status);
 
@@ -209,6 +245,15 @@ export default function OrderDetailPage() {
                   );
                 })}
               </div>
+
+              {order.status === "processing" && (
+                <button
+                  onClick={() => { setCancelReason(""); setCancelOtherText(""); setShowCancelModal(true); }}
+                  className="mt-4 w-full py-2 border border-red-400 text-red-500 text-sm rounded-sm hover:bg-red-50 transition-colors"
+                >
+                  Batalkan Pesanan
+                </button>
+              )}
             </div>
 
             {/* Pre-order info */}
@@ -385,6 +430,77 @@ export default function OrderDetailPage() {
         </AuthGuard>
       </main>
       <BottomNav />
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCancelModal(false)} />
+          <div className="relative bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-xl max-h-[85vh] flex flex-col animate-slide-up">
+            <div className="flex justify-center pt-2 sm:hidden">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-base font-semibold text-gray-900">Batalkan Pesanan</h3>
+              <button onClick={() => setShowCancelModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4 overflow-y-auto">
+              <p className="text-sm text-gray-600">
+                Pilih alasan pembatalan pesanan <strong>{order?.code}</strong>
+              </p>
+              <div className="space-y-2">
+                {CANCEL_REASONS.map((reason) => (
+                  <label
+                    key={reason.value}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      cancelReason === reason.value
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="cancelReason"
+                      value={reason.value}
+                      checked={cancelReason === reason.value}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="mt-0.5 w-4 h-4 text-red-500 accent-red-500"
+                    />
+                    <span className="text-sm text-gray-700">{reason.label}</span>
+                  </label>
+                ))}
+              </div>
+              {cancelReason === "other" && (
+                <textarea
+                  value={cancelOtherText}
+                  onChange={(e) => setCancelOtherText(e.target.value)}
+                  placeholder="Tuliskan alasan pembatalan..."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none"
+                />
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 space-y-2">
+              <button
+                onClick={handleCancelOrder}
+                disabled={!cancelReason || cancelling}
+                className="w-full py-3 bg-red-500 text-white font-medium rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-red-600 transition-colors"
+              >
+                {cancelling ? "Membatalkan..." : "Ya, Batalkan Pesanan"}
+              </button>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Tidak, Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+

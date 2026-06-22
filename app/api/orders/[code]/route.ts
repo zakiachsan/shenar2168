@@ -65,3 +65,39 @@ export async function GET(
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  try {
+    const { code } = await params;
+    if (!code) return NextResponse.json({ error: 'Code tidak valid' }, { status: 400 });
+
+    const body = await req.json();
+    if (!body.status) return NextResponse.json({ error: 'Status diperlukan' }, { status: 400 });
+
+    const [rows] = await db.execute(
+      'SELECT woo_order_id FROM order_codes WHERE code = ?',
+      [code]
+    );
+    const records = rows as any[];
+    if (!records.length) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+
+    const { woo_order_id } = records[0];
+
+    const wc = await wcRequest('PUT', `/wp-json/wc/v3/orders/${woo_order_id}`, {
+      status: body.status,
+    });
+
+    if (wc.status >= 400) {
+      return NextResponse.json({ error: 'Failed to update order' }, { status: 502 });
+    }
+
+    return NextResponse.json({ success: true, status: body.status });
+  } catch (e: any) {
+    console.error('Cancel order error:', e.message);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+

@@ -30,7 +30,7 @@ import Footer from "@/app/components/layout/Footer";
 import AddToCartButton from "@/app/components/product/AddToCartButton";
 import BuyNowButton from "@/app/components/product/BuyNowButton";
 import { useCart } from "@/lib/cart-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { products, allProducts, formatPrice, Product, NO_IMAGE_PLACEHOLDER, stripHtml, toSlug } from "@/lib/data";
 // Local product only — no WooCommerce
 
@@ -40,6 +40,8 @@ interface VariationAttribute {
 }
 
 export default function ProductClient({ id, initialProduct, initialVariations }: { id: number; initialProduct?: Product; initialVariations?: any[] }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [product, setProduct] = useState<Product | null>(initialProduct || null);
   const [loading, setLoading] = useState(!initialProduct);
   const [notFound, setNotFound] = useState(false);
@@ -80,6 +82,28 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
     if (variationAttributes.length === 0) return true; // No variants
     return variationAttributes.every((attr) => selectedAttributes[attr.name]);
   }, [variationAttributes, selectedAttributes]);
+
+  // Auto-preselect variation from query param (from checkout click)
+  useEffect(() => {
+    if (!searchParams || !product || variations.length === 0) return;
+    const variationIdFromQuery = searchParams.get('variationId');
+    const fromCheckout = searchParams.get('fromCheckout');
+    if (variationIdFromQuery) {
+      const matched = variations.find((v) => String(v.id) === variationIdFromQuery);
+      if (matched && matched.attributes) {
+        const attrs: Record<string, string> = {};
+        matched.attributes.forEach((a: any) => {
+          if (a.name && a.option) attrs[a.name] = a.option;
+        });
+        setSelectedAttributes(attrs);
+      }
+    } else if (fromCheckout === '1' && isVariable && variationAttributes.length > 0) {
+      // Came from checkout with no variationId -> auto-open modal
+      setPendingAction('cart');
+      setShowVariantModal(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, product, variations]);
 
   // Main component add-to-cart (for modal use)
   
@@ -174,7 +198,6 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
 
   const { openChat } = useChat();
   const { user } = useAuth();
-  const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleChat = () => {
@@ -790,44 +813,63 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
 
                 {/* Actions Desktop */}
                 <div className="hidden lg:flex items-center gap-3 mt-6">
-                  <AddToCartButton
-                    productId={product.id}
-                    name={product.name}
-                    price={effectivePrice}
-                    originalPrice={effectiveOriginalPrice}
-                    image={matchedVariation?.image || product.image}
-                    sku={effectiveSku}
-                    stock={effectiveStock}
-                    quantity={qty}
-                    variationId={matchedVariation?.id}
-                    variationInfo={variationInfo}
-                    weight={productWeight}
-                    height={productHeight}
-                    length={productLength}
-                    width={productWidth}
-                    isPreorder={!!isPreorder}
-                    preorderDays={preorderDays}
-                    className="flex-1 whitespace-nowrap"
-                  />
-                  <BuyNowButton
-                    productId={product.id}
-                    name={product.name}
-                    price={effectivePrice}
-                    originalPrice={effectiveOriginalPrice}
-                    image={matchedVariation?.image || product.image}
-                    sku={effectiveSku}
-                    stock={effectiveStock}
-                    quantity={qty}
-                    variationId={matchedVariation?.id}
-                    variationInfo={variationInfo}
-                    weight={productWeight}
-                    height={productHeight}
-                    length={productLength}
-                    width={productWidth}
-                    isPreorder={!!isPreorder}
-                    preorderDays={preorderDays}
-                    className="flex-1 whitespace-nowrap"
-                  />
+                  {isVariable && !allVariantsSelected ? (
+                    <button
+                      onClick={() => { setPendingAction('cart'); setShowVariantModal(true); }}
+                      className="flex items-center justify-center gap-2 h-12 border-2 border-shopee-orange text-shopee-orange bg-shopee-orange-light rounded-sm transition-colors flex-1 whitespace-nowrap font-medium hover:bg-shopee-orange/10"
+                    >
+                      Masukkan Keranjang
+                    </button>
+                  ) : (
+                    <AddToCartButton
+                      productId={product.id}
+                      name={product.name}
+                      price={effectivePrice}
+                      originalPrice={effectiveOriginalPrice}
+                      image={matchedVariation?.image || product.image}
+                      sku={effectiveSku}
+                      stock={effectiveStock}
+                      quantity={qty}
+                      variationId={matchedVariation?.id}
+                      variationInfo={variationInfo}
+                      weight={productWeight}
+                      height={productHeight}
+                      length={productLength}
+                      width={productWidth}
+                      isPreorder={!!isPreorder}
+                      preorderDays={preorderDays}
+                      className="flex-1 whitespace-nowrap"
+                    />
+                  )}
+                  {/* Desktop: Beli Sekarang - check variant first */}
+                  {isVariable && !allVariantsSelected ? (
+                    <button
+                      onClick={() => { setPendingAction('buy'); setShowVariantModal(true); }}
+                      className="flex items-center justify-center gap-2 h-12 bg-shopee-orange hover:bg-[#d35400] text-white font-medium rounded-sm transition-colors flex-1 whitespace-nowrap"
+                    >
+                      Beli Sekarang
+                    </button>
+                  ) : (
+                    <BuyNowButton
+                      productId={product.id}
+                      name={product.name}
+                      price={effectivePrice}
+                      originalPrice={effectiveOriginalPrice}
+                      image={matchedVariation?.image || product.image}
+                      sku={effectiveSku}
+                      stock={effectiveStock}
+                      quantity={qty}
+                      variationId={matchedVariation?.id}
+                      variationInfo={variationInfo}
+                      weight={productWeight}
+                      height={productHeight}
+                      length={productLength}
+                      width={productWidth}
+                      isPreorder={!!isPreorder}
+                      preorderDays={preorderDays}
+                      className="flex-1 whitespace-nowrap"
+                    />
+                  )}
                 </div>
 
                 {/* Desktop CTAs: Chat, Wishlist, Share */}

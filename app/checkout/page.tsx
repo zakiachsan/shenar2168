@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -14,7 +14,7 @@ import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 import MapPicker from "@/app/components/MapPicker";
 import { useAuth } from "@/app/components/layout/AuthProvider";
 import LoginModal from "@/app/components/layout/LoginModal";
@@ -79,6 +79,7 @@ export default function CheckoutPage() {
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderNote, setOrderNote] = useState("");
   const [address, setAddress] = useState<AddressData | null>(null);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -92,6 +93,9 @@ export default function CheckoutPage() {
   const [pendingCheckout, setPendingCheckout] = useState(false);
 
   const { user, openLogin, closeLogin, loginOpen, updateProfile } = useAuth();
+
+  // Track whether localStorage address has been loaded on mount
+  const localLoaded = useRef(false);
 
   // Auto-resume checkout after login
   useEffect(() => {
@@ -119,11 +123,12 @@ export default function CheckoutPage() {
     } catch {
       // ignore
     }
+    localLoaded.current = true;
   }, []);
 
   // Load address from server if logged in and no local address
   useEffect(() => {
-    if (address || !user?.phone) return;
+    if (!localLoaded.current || address || !user?.phone) return;
     fetch(`/api/profile/save-address?phone=${encodeURIComponent(user.phone)}`)
       .then((r) => r.json())
       .then((data) => {
@@ -145,7 +150,7 @@ export default function CheckoutPage() {
 
   // Auto-fill address from address book if checkout address is empty
   useEffect(() => {
-    if (address) return; // already have address
+    if (!localLoaded.current || address) return; // already have address
     if (typeof window === "undefined") return;
     try {
       const rawBook = localStorage.getItem("ragamguna-address-book");
@@ -436,7 +441,7 @@ export default function CheckoutPage() {
           })),
           billing: {
             first_name: address.name.split(" ")[0],
-            last_name: address.name.split(" ").slice(1).join(" ") || address.name.split(" ")[0],
+            last_name: address.name.split(" ").slice(1).join(" ") || '',
             phone: address.phone,
             email: `${address.phone}@ragamguna.id`,
             address_1: address.fullAddress,
@@ -455,7 +460,7 @@ export default function CheckoutPage() {
             country: "ID",
           },
           payment_method: "midtrans",
-          customer_note: address.note,
+          customer_note: orderNote,
           coupon_code: appliedCoupon?.code || undefined,
           shipping_courier: selectedShipping ? selectedShipping.split("|")[0] : undefined,
           shipping_service: selectedShipping ? selectedShipping.split("|")[1] : undefined,
@@ -483,7 +488,7 @@ export default function CheckoutPage() {
           }),
         }).catch(() => {});
         // Also update AuthProvider so profile page reflects changes
-        updateProfile({ address: address.fullAddress });
+        updateProfile({ name: address.name, phone: address.phone, address: address.fullAddress });
       }
 
       // Success - save order to localStorage, remove checked-out items, then redirect
@@ -586,9 +591,9 @@ export default function CheckoutPage() {
         localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify(mapLatLng));
       }
     }
-    // Update AuthProvider so profile shows the address
+    // Update AuthProvider so profile shows the latest data
     if (user?.phone) {
-      updateProfile({ address: formAddress });
+      updateProfile({ name: formName, phone: formPhone, address: formAddress });
     }
   };
 
@@ -775,12 +780,16 @@ export default function CheckoutPage() {
                   </div>
                   <div className="space-y-3">
                     {items.map((item) => (
-                      <div key={`${item.productId}-${item.variationId || 0}`} className="flex gap-3">
+                      <Link
+                        key={`${item.productId}-${item.variationId || 0}`}
+                        href={`/product/${item.productId}-${toSlug(item.name)}?fromCheckout=1${item.variationId ? `&variationId=${item.variationId}` : ''}`}
+                        className="flex gap-3 group"
+                      >
                         <div className="w-16 h-16 flex-shrink-0 bg-shopee-gray rounded-sm overflow-hidden">
                           <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm text-shopee-text line-clamp-2">{item.name}</h4>
+                          <h4 className="text-sm text-shopee-text line-clamp-2 group-hover:text-shopee-orange transition-colors">{item.name}</h4>
                           {item.isPreorder && (
                             <p className="text-xs text-purple-600 font-medium mt-0.5">Pre-Order (estimasi {item.preorderDays || 7} hari)</p>
                           )}
@@ -800,7 +809,7 @@ export default function CheckoutPage() {
                             <span className="text-xs text-shopee-text-secondary">x{item.quantity}</span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -933,6 +942,23 @@ export default function CheckoutPage() {
                     Tidak ada layanan pengiriman tersedia untuk kode pos ini.
                   </p>
                 )}
+              </div>
+
+              {/* Pesan untuk Penjual */}
+              <div className="bg-white px-3 lg:px-4 py-3 lg:rounded-sm">
+                <div className="flex items-center gap-2 text-shopee-text mb-1">
+                  <span className="text-sm font-medium">Pesan untuk Penjual</span>
+                  <span className="text-[10px] text-shopee-text-secondary">(opsional)</span>
+                </div>
+                <textarea
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder="Contoh: Tolong dicek kondisi barang sebelum dikirim"
+                  rows={3}
+                  maxLength={500}
+                  className="w-full border border-shopee-border rounded-sm px-3 py-2 text-sm outline-none focus:border-shopee-orange text-shopee-text resize-none"
+                />
+                <p className="text-[10px] text-shopee-text-secondary text-right mt-0.5">{orderNote.length}/500</p>
               </div>
 
               {/* Voucher */}

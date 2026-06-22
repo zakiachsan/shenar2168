@@ -34,7 +34,6 @@ const NAV_ITEMS = [
   { href: '/admin/points', label: 'Poin', icon: Coins },
   { href: '/admin/customers', label: 'Pelanggan', icon: Users },
   { href: '/admin/reviews', label: 'Ulasan', icon: MessageSquare },
-  { href: '/admin/discussions', label: 'Diskusi', icon: MessageSquare },
   { href: '/admin/chat', label: 'Chat', icon: MessageSquare, badge: 'chat' },
   { href: '/admin/settings', label: 'Pengaturan', icon: Settings },
 ];

@@ -1,5 +1,6 @@
 import { allProducts } from "@/lib/data";
 import ProductClient from "./ProductClient";
+import { Suspense } from "react";
 
 const WC_URL = process.env.WC_URL || "https://api.shenar2168.com";
 const CK = process.env.WC_CONSUMER_KEY || "ck_0037912ea33eab6d8c692d89a3e05da1848220e4";
@@ -43,5 +44,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     initialProduct = allProducts.find((p) => p.id === id) || null;
   }
 
-  return <ProductClient id={id} initialProduct={initialProduct || undefined} />;
+  return (
+    <Suspense fallback={null}>
+      <ProductClient id={id} initialProduct={initialProduct || undefined} />
+    </Suspense>
+  );
 }
+

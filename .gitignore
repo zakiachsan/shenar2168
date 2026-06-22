@@ -55,3 +55,6 @@ UsersUser.npm-cache/
 
 # deploy keys
 .deploy_keys/
+
+# uploads
+public/uploads/
