@@ -65,14 +65,16 @@ export default function OrdersPage() {
     packed: "Sedang Dikemas",
     shipped: "Dalam Pengiriman",
     completed: "Pesanan Selesai",
+    cancelled: "Dibatalkan",
   };
 
   const statusColor: Record<string, string> = {
     pending: "text-orange-500 bg-orange-50",
-    processing: "text-orange-500 bg-orange-50",
+    processing: "text-blue-600 bg-blue-50",
     packed: "text-blue-500 bg-blue-50",
     shipped: "text-shopee-orange bg-shopee-orange-light",
     completed: "text-green-600 bg-green-50",
+    cancelled: "text-gray-500 bg-gray-100",
   };
 
   const formatDate = (iso: string) => {

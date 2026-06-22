@@ -74,6 +74,7 @@ const statusLabel: Record<string, string> = {
   packed: "Sedang Dikemas",
   shipped: "Dalam Pengiriman",
   completed: "Pesanan Selesai",
+  cancelled: "Dibatalkan",
 };
 
 export default function OrderDetailPage() {
