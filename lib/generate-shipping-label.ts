@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface ShippingLabelData {
   storeName: string;
@@ -27,88 +26,99 @@ interface ShippingLabelData {
   }[];
 }
 
-const COURIER_COLORS: Record<string, [number, number, number]> = {
-  jne: [0, 108, 183],
-  jnt: [255, 0, 0],
-  sicepat: [255, 107, 0],
-  anteraja: [0, 166, 81],
-  ninja: [61, 61, 61],
-  idexpress: [0, 61, 165],
+// ─── Code 128B encoder ────────────────────────────────────────────
+const CODE128B: Record<number, string> = {
+  32:'11011001100',33:'11001101100',34:'11001100110',35:'10010011000',36:'10010001100',
+  37:'10001001100',38:'10011001000',39:'10011000100',40:'10001100100',41:'11001001000',
+  42:'11001000100',43:'11000100100',44:'10110011100',45:'10011011100',46:'10011001110',
+  47:'10111001100',48:'10011101100',49:'10011100110',50:'11001110010',51:'11001011100',
+  52:'11001001110',53:'11011100100',54:'11001110100',55:'11101101110',56:'11101001100',
+  57:'11100101100',58:'11100100110',59:'11101100100',60:'11100110100',61:'11100110010',
+  62:'11011011000',63:'11011000110',64:'11000110110',65:'10100011000',66:'10001011000',
+  67:'10001000110',68:'10110001000',69:'10001101000',70:'10001100010',71:'11010001000',
+  72:'11000101000',73:'11000100010',74:'10110111000',75:'10110001110',76:'10001101110',
+  77:'10111011000',78:'10111000110',79:'10001110110',80:'11101110110',81:'11010001110',
+  82:'11000101110',83:'11011101000',84:'11011100010',85:'11011101110',86:'11101011000',
+  87:'11101000110',88:'11100010110',89:'11101101000',90:'11101100010',91:'11100011010',
+  92:'11101111010',93:'11001000010',94:'11110001010',95:'10100110000',96:'10100001100',
+  97:'10010110000',98:'10010000110',99:'10000101100',100:'10000100110',101:'10110010000',
+  102:'10110000100',103:'10011010000',104:'10011000010',105:'10000110100',106:'10000110010',
+  107:'11000010010',108:'11001010000',109:'11110111010',110:'11000010100',111:'10001111010',
+  112:'10100111100',113:'10010111100',114:'10010011110',115:'10111100100',116:'10011110100',
+  117:'10011110010',118:'11110100100',119:'11110010100',120:'11110010010',121:'11011011110',
+  122:'11011110110',123:'11110110110',124:'10101111000',125:'10100011110',126:'10001011110',
 };
+const START_B = '11010010000';
+const STOP = '1100011101011';
 
-// Code 128B encoding tables
-const CODE128B_PATTERNS: Record<number, string> = {
-  32: '11011001100', 33: '11001101100', 34: '11001100110', 35: '10010011000',
-  36: '10010001100', 37: '10001001100', 38: '10011001000', 39: '10011000100',
-  40: '10001100100', 41: '11001001000', 42: '11001000100', 43: '11000100100',
-  44: '10110011100', 45: '10011011100', 46: '10011001110', 47: '10111001100',
-  48: '10011101100', 49: '10011100110', 50: '11001110010', 51: '11001011100',
-  52: '11001001110', 53: '11011100100', 54: '11001110100', 55: '11101101110',
-  56: '11101001100', 57: '11100101100', 58: '11100100110', 59: '11101100100',
-  60: '11100110100', 61: '11100110010', 62: '11011011000', 63: '11011000110',
-  64: '11000110110', 65: '10100011000', 66: '10001011000', 67: '10001000110',
-  68: '10110001000', 69: '10001101000', 70: '10001100010', 71: '11010001000',
-  72: '11000101000', 73: '11000100010', 74: '10110111000', 75: '10110001110',
-  76: '10001101110', 77: '10111011000', 78: '10111000110', 79: '10001110110',
-  80: '11101110110', 81: '11010001110', 82: '11000101110', 83: '11011101000',
-  84: '11011100010', 85: '11011101110', 86: '11101011000', 87: '11101000110',
-  88: '11100010110', 89: '11101101000', 90: '11101100010', 91: '11100011010',
-  92: '11101111010', 93: '11001000010', 94: '11110001010', 95: '10100110000',
-  96: '10100001100', 97: '10010110000', 98: '10010000110', 99: '10000101100',
-  100: '10000100110', 101: '10110010000', 102: '10110000100', 103: '10011010000',
-  104: '10011000010', 105: '10000110100', 106: '10000110010', 107: '11000010010',
-  108: '11001010000', 109: '11110111010', 110: '11000010100', 111: '10001111010',
-  112: '10100111100', 113: '10010111100', 114: '10010011110', 115: '10111100100',
-  116: '10011110100', 117: '10011110010', 118: '11110100100', 119: '11110010100',
-  120: '11110010010', 121: '11011011110', 122: '11011110110', 123: '11110110110',
-  124: '10101111000', 125: '10100011110', 126: '10001011110', 127: '10111101000',
-  128: '10111100010', 129: '11110101000', 130: '11110100010', 131: '10111011110',
-  132: '10111101110', 133: '11101011110', 134: '11110101110', 135: '11010000100',
-  136: '11010010000', 137: '11010011100', 138: '11000111010',
-};
-
-// Start Code B, Stop, checksum
-const START_CODE_B = '11010010000';
-const STOP_PATTERN = '1100011101011';
-
-function code128Encode(text: string): string {
-  let bits = START_CODE_B;
-  let checksum = 104; // Start Code B value
-
+function code128(text: string): string {
+  let bits = START_B;
+  let sum = 104;
   for (let i = 0; i < text.length; i++) {
-    const charCode = text.charCodeAt(i);
-    const pattern = CODE128B_PATTERNS[charCode];
-    if (!pattern) continue; // skip unsupported chars
-    bits += pattern;
-    checksum += charCode * (i + 1);
+    const c = text.charCodeAt(i);
+    const p = CODE128B[c];
+    if (!p) continue;
+    bits += p;
+    sum += c * (i + 1);
   }
-
-  checksum = checksum % 103;
-  bits += CODE128B_PATTERNS[checksum] || '';
-  bits += STOP_PATTERN;
-
+  bits += CODE128B[sum % 103] || '';
+  bits += STOP;
   return bits;
 }
 
-function drawBarcode(doc: jsPDF, x: number, y: number, value: string, width: number, height: number) {
-  const bits = code128Encode(value);
-  const barWidth = width / bits.length;
-
+function drawBarcode(
+  doc: jsPDF, x: number, y: number,
+  value: string, w: number, h: number
+) {
+  const bits = code128(value);
+  const bw = w / bits.length;
   doc.setFillColor(0, 0, 0);
   for (let i = 0; i < bits.length; i++) {
     if (bits[i] === '1') {
-      doc.rect(x + i * barWidth, y, Math.max(barWidth, 0.2), height, 'F');
+      doc.rect(x + i * bw, y, Math.max(bw, 0.12), h, 'F');
     }
   }
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+function drawQR(doc: jsPDF, x: number, y: number, sz: number, seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  const c = sz / 21;
+  // finder patterns
+  const drawFinder = (fx: number, fy: number) => {
+    doc.setFillColor(0, 0, 0);
+    doc.rect(x + fx * c, y + fy * c, 7 * c, 7 * c, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(x + (fx + 1) * c, y + (fy + 1) * c, 5 * c, 5 * c, 'F');
+    doc.setFillColor(0, 0, 0);
+    doc.rect(x + (fx + 2) * c, y + (fy + 2) * c, 3 * c, 3 * c, 'F');
+  };
+  drawFinder(0, 0);
+  drawFinder(14, 0);
+  drawFinder(0, 14);
+  // data dots
+  doc.setFillColor(0, 0, 0);
+  for (let r = 0; r < 21; r++) {
+    for (let cc = 0; cc < 21; cc++) {
+      if ((r < 7 && cc < 7) || (r < 7 && cc > 13) || (r > 13 && cc < 7)) continue;
+      h = ((h << 5) - h + (r * 21 + cc)) | 0;
+      if (Math.abs(h) % 4 === 0) {
+        doc.rect(x + cc * c, y + r * c, c, c, 'F');
+      }
+    }
+  }
+}
+
+function maskPhone(p: string): string {
+  if (!p) return '';
+  const c = p.replace(/\D/g, '');
+  if (c.length <= 6) return p;
+  return `${c.slice(0, 2)}********${c.slice(-2)}`;
+}
+
+function maskName(n: string): string {
+  if (!n || n.length <= 2) return n;
+  return n.split('').map((ch, i) => (i > 0 && i < n.length - 1) ? '*' : ch).join('');
 }
 
 export function generateShippingLabelPDF(data: ShippingLabelData) {
@@ -118,214 +128,228 @@ export function generateShippingLabelPDF(data: ShippingLabelData) {
     format: [80, 150],
   });
 
-  const pageWidth = 80;
-  const margin = 4;
-  const contentWidth = pageWidth - margin * 2;
-  let y = margin;
+  const PW = 80;
+  const M = 2;
+  const CW = PW - M * 2;
+  let y = M;
+  const GAP = 1;
 
-  // === HEADER ===
+  // ════════════════════════════════════════════════════════════
+  // SECTION 1 — HEADER  (3 columns with vertical dividers)
+  // ════════════════════════════════════════════════════════════
+  const c1 = CW * 0.30;
+  const c2 = CW * 0.34;
+  const c3 = CW - c1 - c2;
+  const HH = 14;
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(M, y, CW, HH);
+
+  // Vertical dividers
+  doc.line(M + c1, y, M + c1, y + HH);
+  doc.line(M + c1 + c2, y, M + c1 + c2, y + HH);
+
+  // ── Left column: R icon + storeName ──
+  const isz = 5;
   doc.setFillColor(37, 99, 235);
-  doc.roundedRect(margin, y, 6, 6, 1, 1, 'F');
+  doc.roundedRect(M + (c1 - isz) / 2, y + 2, isz, isz, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
   doc.setTextColor(255, 255, 255);
-  doc.text('R', margin + 3, y + 4.2, { align: 'center' });
+  doc.text('R', M + c1 / 2, y + 2 + isz / 2 + 1.2, { align: 'center' });
 
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(0, 0, 0);
+  doc.text(data.storeName || 'RagamGuna', M + c1 / 2, y + 10, { align: 'center' });
+
+  // ── Middle column: Courier ──
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(data.storeName, margin + 8, y + 2.5);
+  const courierRaw = data.courierName || 'GOJEK';
+  const courierOnly = courierRaw.split(/[|\s]/)[0].toUpperCase();
+  doc.text(courierOnly, M + c1 + c2 / 2, y + HH / 2 + 1.5, { align: 'center' });
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5);
-  doc.setTextColor(150, 150, 150);
-  doc.text('Resi Pengiriman', margin + 8, y + 5.5);
-
-  const courierColor = COURIER_COLORS[data.courierName.toLowerCase()] || [100, 100, 100];
-  doc.setFillColor(courierColor[0], courierColor[1], courierColor[2]);
-  doc.roundedRect(pageWidth - margin - 22, y, 22, 6, 1, 1, 'F');
+  // ── Right column: Service ──
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
-  doc.setTextColor(255, 255, 255);
-  doc.text(data.courierName.toUpperCase(), pageWidth - margin - 11, y + 4.2, { align: 'center' });
+  doc.setFontSize(8);
+  const serviceRaw = data.courierService || 'INSTANT';
+  const serviceOnly = serviceRaw.toUpperCase();
+  doc.text(serviceOnly, M + c1 + c2 + c3 / 2, y + HH / 2 + 1.5, { align: 'center' });
 
-  y += 10;
+  y += HH + GAP;
 
-  // === ORDER NUMBER + BARCODE ===
+  // ════════════════════════════════════════════════════════════
+  // SECTION 2 — BARCODE + Tracking
+  // ════════════════════════════════════════════════════════════
+  const barcodeH = 10;
+  drawBarcode(doc, M, y, data.waybillId || data.orderNumber, CW, barcodeH);
+  y += barcodeH + 2.5;
+
+  // Tracking number (below barcode, with more space)
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(0, 0, 0);
+  doc.text(data.waybillId || data.orderNumber, PW / 2, y, { align: 'center' });
+  y += 2.5;
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 3 — SENDER / RECEIVER + QR CODE
+  // ════════════════════════════════════════════════════════════
+  const qrSz = 20;
+  const qrX = PW - M - qrSz;
+  const leftW = CW - qrSz - 1;
+
+  // ── Sender (Pengirim) box ──
+  const sAddr = `${data.senderAddress}${data.senderCity ? ', ' + data.senderCity : ''}${data.senderPostalCode ? ' ' + data.senderPostalCode : ''}`;
+  const sLines = doc.splitTextToSize(sAddr, leftW - 3);
+  const sLineCount = Math.min(sLines.length, 3);
+  const sndH = 7 + sLineCount * 3;
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(M, y, leftW, sndH);
+
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(5.5);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`No. Pesanan: ${data.orderNumber}`, margin, y + 2);
-  y += 4;
-
-  drawBarcode(doc, margin, y, data.orderNumber, contentWidth, 8);
-  y += 11;
-
-  // === DIVIDER ===
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.2);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 3;
-
-  // === RECIPIENT & SENDER ===
-  const halfWidth = contentWidth / 2 - 1;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(4.5);
-  doc.setTextColor(150, 150, 150);
-  doc.text('PENERIMA', margin, y + 1);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
   doc.setTextColor(0, 0, 0);
-  doc.text(data.recipientName, margin, y + 4);
+  doc.text('Pengirim', M + 1.5, y + 3);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(data.recipientPhone, margin, y + 7);
-
   doc.setFontSize(4.5);
-  doc.setTextColor(100, 100, 100);
-  const recipientAddrLines = doc.splitTextToSize(data.recipientAddress, halfWidth);
-  doc.text(recipientAddrLines.slice(0, 3), margin, y + 10);
-
-  const cityY = y + 10 + Math.min(recipientAddrLines.length, 3) * 2.5 + 1;
-  const cityText = `${data.recipientCity}${data.recipientPostalCode ? ' ' + data.recipientPostalCode : ''}`;
-  doc.setFillColor(240, 240, 240);
-  const cityTextWidth = doc.getTextWidth(cityText) + 3;
-  doc.roundedRect(margin, cityY, Math.min(cityTextWidth, halfWidth), 4, 0.5, 0.5, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(4);
-  doc.setTextColor(60, 60, 60);
-  doc.text(cityText, margin + 1.5, cityY + 2.8);
-
-  const senderX = margin + halfWidth + 2;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(4.5);
-  doc.setTextColor(150, 150, 150);
-  doc.text('PENGIRIM', senderX, y + 1);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6);
   doc.setTextColor(0, 0, 0);
-  doc.text(data.senderName, senderX, y + 4);
+  doc.text(maskPhone(data.senderPhone), M + leftW - 1.5, y + 3, { align: 'right' });
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(data.senderPhone, senderX, y + 7);
-
-  doc.setFontSize(4.5);
-  doc.setTextColor(100, 100, 100);
-  const senderAddrLines = doc.splitTextToSize(data.senderAddress, halfWidth);
-  doc.text(senderAddrLines.slice(0, 3), senderX, y + 10);
-
-  const senderCityY = y + 10 + Math.min(senderAddrLines.length, 3) * 2.5 + 1;
-  const senderCityText = `${data.senderCity}${data.senderPostalCode ? ' ' + data.senderPostalCode : ''}`;
-  doc.setFillColor(240, 240, 240);
-  const senderCityWidth = doc.getTextWidth(senderCityText) + 3;
-  doc.roundedRect(senderX, senderCityY, Math.min(senderCityWidth, halfWidth), 4, 0.5, 0.5, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(4);
-  doc.setTextColor(60, 60, 60);
-  doc.text(senderCityText, senderX + 1.5, senderCityY + 2.8);
-
-  y = Math.max(cityY + 6, senderCityY + 6);
-
-  // === DIVIDER ===
-  doc.setDrawColor(220, 220, 220);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 3;
-
-  // === SHIPPING DETAILS ===
-  doc.setFillColor(248, 248, 248);
-  doc.rect(margin, y, contentWidth, 8, 'F');
-  y += 2;
+  doc.setFontSize(5.5);
+  doc.text(data.senderName.toUpperCase(), M + 1.5, y + 6);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5);
-  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(4.5);
+  doc.text(sLines.slice(0, 3), M + 1.5, y + 9);
 
-  if (data.weight > 0) {
-    const weightText = data.weight >= 1000 ? `${(data.weight / 1000).toFixed(1)} kg` : `${data.weight} gr`;
-    doc.text(`Berat: ${weightText}`, margin + 2, y + 2);
-  }
+  y += sndH;
+
+  // ── Receiver (Penerima) box ──
+  const rAddr = `${data.recipientAddress}${data.recipientCity ? ', ' + data.recipientCity : ''}${data.recipientPostalCode ? ' ' + data.recipientPostalCode : ''}`;
+  const rLines = doc.splitTextToSize(rAddr, leftW - 3);
+  const rLineCount = Math.min(rLines.length, 4);
+  const rcvH = 7 + rLineCount * 3;
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(M, y, leftW, rcvH);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5.5);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Penerima', M + 1.5, y + 3);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.text(maskPhone(data.recipientPhone), M + leftW - 1.5, y + 3, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5.5);
+  doc.text(maskName(data.recipientName), M + 1.5, y + 6);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.text(rLines.slice(0, 4), M + 1.5, y + 9);
+
+  // COD label
   if (data.codAmount > 0) {
-    doc.text(`COD: ${formatCurrency(data.codAmount)}`, margin + 25, y + 2);
-  }
-  if (data.courierService) {
-    doc.text(`Layanan: ${data.courierService}`, margin + 50, y + 2);
-  }
-
-  y += 5;
-
-  // Waybill barcode
-  if (data.waybillId) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(5);
-    doc.setTextColor(120, 120, 120);
-    doc.text('No. Resi:', margin + 2, y + 1);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
     doc.setTextColor(0, 0, 0);
-    doc.text(data.waybillId, margin + 2, y + 4.5);
-
-    drawBarcode(doc, margin + 2, y + 6, data.waybillId, contentWidth - 4, 6);
-    y += 14;
+    doc.text('COD:', M + leftW - 1.5, y + rcvH - 2, { align: 'right' });
   }
 
-  y += 2;
+  // ── QR code (right side, spans both boxes) ──
+  const totalH = sndH + rcvH;
+  const qrY = y + rcvH - totalH;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(qrX, qrY, qrSz, totalH);
+  drawQR(doc, qrX + 1, qrY + 1, qrSz - 2, data.waybillId || data.orderNumber);
 
-  // === DIVIDER ===
-  doc.setDrawColor(220, 220, 220);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 3;
+  y += rcvH + GAP;
 
-  // === ITEMS TABLE ===
-  if (data.items.length > 0) {
-    const tableData = data.items.map((item, idx) => [
-      String(idx + 1),
-      item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name,
-      item.variation || '-',
-      String(item.quantity),
-    ]);
+  // ════════════════════════════════════════════════════════════
+  // SECTION 4 — Print Time & Order ID (boxed)
+  // ════════════════════════════════════════════════════════════
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(M, y, PW - M, y);
+  y += 0.5;
 
-    autoTable(doc, {
-      startY: y,
-      margin: { left: margin, right: margin },
-      head: [['#', 'Nama Produk', 'Variasi', 'Qty']],
-      body: tableData,
-      theme: 'plain',
-      styles: {
-        fontSize: 4.5,
-        cellPadding: 1,
-        textColor: [60, 60, 60],
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: false,
-        textColor: [150, 150, 150],
-        fontStyle: 'bold',
-        fontSize: 4,
-      },
-      columnStyles: {
-        0: { cellWidth: 6, halign: 'center' },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 18 },
-        3: { cellWidth: 8, halign: 'center' },
-      },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 3;
-  }
-
-  // === FOOTER ===
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(3.5);
-  doc.setTextColor(180, 180, 180);
-  doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, pageWidth / 2, y + 2, { align: 'center' });
+  doc.setFontSize(5);
+  doc.setTextColor(0, 0, 0);
+  const now = new Date();
+  const pt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const rowH = 4;
+
+  // Print Time box
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.2);
+  doc.rect(M, y, CW, rowH);
+  doc.text(`Print Time : ${pt}`, M + 1, y + 2.8);
+  y += rowH;
+
+  // TT Order ID box
+  doc.rect(M, y, CW, rowH);
+  doc.text(`TT Order ID : ${data.orderNumber}`, M + 1, y + 2.8);
+  y += rowH + GAP;
+
+  // ════════════════════════════════════════════════════════════
+  // SECTION 5 — PRODUCT TABLE
+  // ════════════════════════════════════════════════════════════
+  if (data.items.length > 0) {
+    // Draw items table manually (no autoTable dependency)
+    const rowH = 5;
+    const colW = [CW * 0.45, CW * 0.18, CW * 0.22, CW * 0.15];
+    const headers = ['Product Name', 'SKU', 'VARIASI', 'Qty'];
+
+    // Header row
+    doc.setFillColor(255, 255, 255);
+    doc.rect(M, y, CW, rowH, 'F');
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.rect(M, y, CW, rowH);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(4.5);
+    doc.setTextColor(0, 0, 0);
+    let x = M;
+    for (let i = 0; i < headers.length; i++) {
+      doc.text(headers[i], x + 1, y + 3.5);
+      x += colW[i];
+      if (i < headers.length - 1) doc.line(x, y, x, y + rowH);
+    }
+    y += rowH;
+
+    // Data rows
+    for (const it of data.items) {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(M, y, CW, rowH, 'F');
+      doc.rect(M, y, CW, rowH);
+      doc.setFont('helvetica', 'normal');
+      const name = it.name.length > 40 ? it.name.substring(0, 40) + '…' : it.name;
+      const cells = [name, it.sku || '-', it.variation || '-', String(it.quantity)];
+      x = M;
+      for (let i = 0; i < cells.length; i++) {
+        const align = i === 3 ? 'center' : 'left';
+        const tx = align === 'center' ? x + colW[i] / 2 : x + 1;
+        doc.text(cells[i], tx, y + 3.5, { align });
+        x += colW[i];
+        if (i < cells.length - 1) doc.line(x, y, x, y + rowH);
+      }
+      y += rowH;
+    }
+  }
 
   doc.save(`resi-${data.orderNumber}.pdf`);
 }

@@ -292,7 +292,7 @@ export default function OrderDetailPage() {
                       <p className="text-xs text-orange-600 mt-0.5">{item.variation_info}</p>
                     )}
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Qty: {item.quantity}
+                      {item.sku && item.sku !== '-' ? `SKU: ${item.sku} · Qty: ${item.quantity}` : `Qty: ${item.quantity}`}
                     </p>
                   </div>
                   <div className="text-right">
@@ -460,12 +460,17 @@ export default function OrderDetailPage() {
             {order.status === "shipped" && (order as any).waybill_id && (
             <button
               onClick={() => {
-                const courierName = order.shipping_lines?.[0]?.method_title || '';
+                const shippingLine = order.shipping_lines?.[0];
+                const methodTitle = shippingLine?.method_title || 'GOJEK INSTANT';
+                const courierName = methodTitle.split(/[|\s]/)[0] || 'GOJEK';
+                const courierService = methodTitle.includes('|') 
+                  ? methodTitle.split('|').slice(1).join('|').trim()
+                  : methodTitle.split(/\s+/).slice(1).join(' ') || 'INSTANT';
                 generateShippingLabelPDF({
                   storeName: 'Shenar2168',
                   orderNumber: order.number || String(order.id),
                   courierName: courierName,
-                  courierService: courierName,
+                  courierService: courierService,
                   waybillId: (order as any).waybill_id || '',
                   recipientName: order.shipping?.first_name ? `${order.shipping.first_name} ${order.shipping.last_name || ''}`.trim() : order.billing?.first_name ? `${order.billing.first_name} ${order.billing.last_name || ''}`.trim() : 'Pembeli',
                   recipientPhone: order.billing?.phone || '',
