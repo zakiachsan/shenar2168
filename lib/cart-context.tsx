@@ -36,6 +36,7 @@ interface CartContextType {
   removeItem: (productId: number, variationId?: number) => void;
   updateQuantity: (productId: number, quantity: number, variationId?: number) => void;
   clearCart: () => void;
+  updateItem: (productId: number, variationId: number | undefined, updates: Partial<CartItem>) => void;
   getItemCount: () => number;
   getSubtotal: () => number;
   isInCart: (productId: number, variationId?: number) => boolean;
@@ -188,6 +189,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
   }, []);
 
+  const updateItem = useCallback((productId: number, variationId: number | undefined, updates: Partial<CartItem>) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.productId === productId && item.variationId === variationId
+          ? { ...item, ...updates }
+          : item
+      )
+    );
+  }, []);
+
   const getItemCount = useCallback(() => {
     return items.reduce((sum, item) => sum + item.quantity, 0);
   }, [items]);
@@ -209,11 +220,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      updateItem,
       getItemCount,
       getSubtotal,
       isInCart,
     }),
-    [items, addItem, removeItem, updateQuantity, clearCart, getItemCount, getSubtotal, isInCart]
+    [items, addItem, removeItem, updateQuantity, clearCart, updateItem, getItemCount, getSubtotal, isInCart]
   );
 
   return (

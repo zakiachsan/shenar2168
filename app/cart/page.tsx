@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Minus, Plus, Trash2, Truck, ChevronRight, ShoppingCart } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Trash2, Truck, ChevronRight, ShoppingCart, X, Loader2 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
@@ -12,8 +12,31 @@ import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart, getItemCount, getSubtotal } = useCart();
+  const { items, removeItem, updateQuantity, clearCart, getItemCount, getSubtotal, updateItem } = useCart();
+    // Variant change modal state
+  const [variantModalItem, setVariantModalItem] = useState<{ productId: number; variationId?: number; name: string; image: string; price: number } | null>(null);
+  const [variations, setVariations] = useState<any[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [variationAttributes, setVariationAttributes] = useState<{ name: string; options: string[] }[]>([]);
+  const [variantLoading, setVariantLoading] = useState(false);
+
   const [selected, setSelected] = useState<string[]>([]);
+  
+  const matchedVariation = useMemo(() => {
+    if (variations.length === 0) return null;
+    const selectedCount = Object.keys(selectedAttributes).length;
+    if (selectedCount === 0) return null;
+    return variations.find((v) => {
+      const vAttrs = v.attributes || [];
+      if (vAttrs.length === 0) return false;
+      return vAttrs.every((a: any) => selectedAttributes[a.name] === a.option);
+    }) || null;
+  }, [variations, selectedAttributes]);
+
+  const allVariantsSelected = useMemo(() => {
+    if (variationAttributes.length === 0) return true;
+    return variationAttributes.every((attr) => selectedAttributes[attr.name]);
+  }, [variationAttributes, selectedAttributes]);
   const [loading, setLoading] = useState(true);
 
   // Generate unique key for cart item
@@ -21,6 +44,70 @@ export default function CartPage() {
     `${item.productId}-${item.variationId || 0}`;
 
   const router = useRouter();
+
+  const openVariantModal = async (item: any) => {
+    setVariantLoading(true);
+    setVariantModalItem(item);
+    try {
+      const res = await fetch(`/api/products/${item.productId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const prod = data.product;
+        const vars = data.variations || [];
+        setVariations(vars);
+        
+        const vAttrs = (prod.attributes || [])
+          .filter((a: any) => a.variation && a.name && a.options?.length > 0)
+          .map((a: any) => ({ name: a.name, options: a.options }));
+        setVariationAttributes(vAttrs);
+        
+        if (item.variationId && vars.length > 0) {
+          const currentVariant = vars.find((v: any) => String(v.id) === String(item.variationId));
+          if (currentVariant?.attributes) {
+            const attrs: Record<string, string> = {};
+            currentVariant.attributes.forEach((a: any) => {
+              if (a.name && a.option) attrs[a.name] = a.option;
+            });
+            setSelectedAttributes(attrs);
+          } else {
+            setSelectedAttributes({});
+          }
+        } else {
+          setSelectedAttributes({});
+        }
+      }
+    } catch {
+      // ignore
+    } finally {
+      setVariantLoading(false);
+    }
+  };
+
+  const handleVariantConfirm = () => {
+    if (!variantModalItem || !matchedVariation) return;
+    const newPrice = parseInt(matchedVariation.sale_price || matchedVariation.price || "0") || parseInt(matchedVariation.regular_price || "0");
+    const newOriginalPrice = parseInt(matchedVariation.regular_price || "0") || newPrice;
+    
+    const entries = Object.entries(selectedAttributes);
+    const newVariationInfo = entries.length > 0
+      ? entries.map(([, v]) => v).join(', ')
+      : '';
+    
+    updateItem(variantModalItem.productId, variantModalItem.variationId, {
+      variationId: matchedVariation.id,
+      variationInfo: newVariationInfo,
+      price: newPrice || variantModalItem.price,
+      originalPrice: newOriginalPrice || variantModalItem.price,
+      image: matchedVariation.image || variantModalItem.image,
+      sku: matchedVariation.sku || '',
+      stock: matchedVariation.stock_quantity ?? null,
+    });
+    
+    setVariantModalItem(null);
+    setVariations([]);
+    setSelectedAttributes({});
+    setVariationAttributes([]);
+  };
 
   const goToCheckout = useCallback(() => {
     if (selected.length === 0) return;
@@ -153,7 +240,15 @@ export default function CartPage() {
                             <p className="text-xs text-blue-600 mt-0.5">Pre-Order {item.preorderDays || 7} Hari</p>
                           )}
                           {item.variationId && item.variantLabel && (
-                            <p className="text-xs text-blue-600 mt-0.5">{item.variantLabel}</p>
+                            <p className="text-xs text-blue-600 mt-0.5">
+                              {item.variantLabel}
+                              <button
+                                onClick={ (e) => { e.preventDefault(); openVariantModal(item); } }
+                                className="ml-1.5 text-shopee-orange hover:underline font-medium"
+                              >
+                                [Ganti]
+                              </button>
+                            </p>
                           )}
                           <div className="flex items-end justify-between mt-2">
                             <div>
@@ -269,6 +364,71 @@ export default function CartPage() {
           >
             Checkout
           </button>
+        </div>
+      )}
+
+      {variantModalItem && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setVariantModalItem(null); setVariations([]); setSelectedAttributes({}); }} />
+          <div className="relative bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-xl max-h-[80vh] flex flex-col animate-slide-up">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-base font-semibold text-gray-900">Pilih Varian</h3>
+              <button onClick={() => { setVariantModalItem(null); setVariations([]); setSelectedAttributes({}); }} className="p-1 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+              <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                <img src={matchedVariation?.image || variantModalItem.image || ''} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-shopee-orange">
+                  {formatPrice(matchedVariation ? (parseInt(matchedVariation.sale_price || matchedVariation.price || "0") || parseInt(matchedVariation.regular_price || "0")) : variantModalItem.price)}
+                </p>
+              </div>
+            </div>
+            {variantLoading ? (
+              <div className="flex-1 flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-shopee-orange" />
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {variationAttributes.map((attr) => (
+                  <div key={attr.name}>
+                    <p className="text-sm font-medium text-gray-900 mb-2">
+                      Pilih {attr.name}: <span className="text-shopee-orange">{selectedAttributes[attr.name] || '-'}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {attr.options.map((opt: string) => (
+                        <button
+                          key={opt}
+                          onClick={() => setSelectedAttributes((prev) => ({ ...prev, [attr.name]: opt }))}
+                          className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
+                            selectedAttributes[attr.name] === opt
+                              ? 'border-shopee-orange bg-shopee-orange text-white font-medium'
+                              : 'border-gray-200 text-gray-700 hover:border-shopee-orange'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!variantLoading && (
+              <div className="p-4 border-t border-gray-100">
+                <button
+                  onClick={handleVariantConfirm}
+                  disabled={!allVariantsSelected}
+                  className="w-full py-3 bg-[#EE4D2D] text-white font-semibold rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {allVariantsSelected ? 'Simpan' : 'Pilih Varian'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
