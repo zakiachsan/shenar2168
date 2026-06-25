@@ -8,7 +8,7 @@ import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, NO_IMAGE_PLACEHOLDER } from "@/lib/data";
+import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 
 
 export default function CartPage() {
@@ -131,11 +131,21 @@ export default function CartPage() {
                           onChange={() => toggleSelect(item.productId, item.variationId)}
                           className="w-4 h-4 accent-shopee-orange mt-6 lg:mt-8 flex-shrink-0"
                         />
-                        <div className="w-20 h-20 lg:w-24 lg:h-24 flex-shrink-0 bg-shopee-gray rounded-sm overflow-hidden">
-                          <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
+                        <Link
+                          href={`/product/${item.productId}-${toSlug(item.name)}?fromCheckout=1${item.variationId ? `&variationId=${item.variationId}` : ''}`}
+                          className="block w-20 h-20 lg:w-24 lg:h-24 flex-shrink-0"
+                        >
+                          <div className="w-full h-full bg-shopee-gray rounded-sm overflow-hidden">
+                            <img src={item.image || NO_IMAGE_PLACEHOLDER} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                        </Link>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm text-shopee-text line-clamp-2">{item.name}</h4>
+                          <Link
+                            href={`/product/${item.productId}-${toSlug(item.name)}?fromCheckout=1${item.variationId ? `&variationId=${item.variationId}` : ''}`}
+                            className="group"
+                          >
+                            <h4 className="text-sm text-shopee-text line-clamp-2 group-hover:text-shopee-orange transition-colors">{item.name}</h4>
+                          </Link>
                           {item.sku && (
                             <p className="text-xs text-shopee-text-secondary mt-0.5">SKU: {item.sku}</p>
                           )}

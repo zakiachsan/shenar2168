@@ -97,6 +97,11 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
         });
         setSelectedAttributes(attrs);
       }
+      // Auto-open variant modal with pre-selected variant
+      if (isVariable && variationAttributes.length > 0) {
+        setPendingAction('cart');
+        setShowVariantModal(true);
+      }
     } else if (fromCheckout === '1' && isVariable && variationAttributes.length > 0) {
       // Came from checkout with no variationId -> auto-open modal
       setPendingAction('cart');
