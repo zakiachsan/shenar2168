@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import https from 'https';
 import { randomBytes } from 'crypto';
-import { earnCoins } from '@/lib/coins-store';
+import { earnCoins, spendCoins, getUserCoins } from '@/lib/coins-store';
 import { getStoreSettings } from '@/lib/store-settings';
 import db from '@/lib/db';
 import { normalizePhone } from '@/lib/phone';
@@ -245,6 +245,19 @@ export async function POST(req: NextRequest) {
 
     // 3. Create Biteship shipping order (non-blocking)
     const biteshipData = await createBiteshipOrder(body, finalOrder.id);
+
+    // Deduct coins used (spend)
+    if (body.coins_used && body.coins_used > 0 && body.billing?.phone) {
+      try {
+        const userCoins = await getUserCoins(body.billing.phone);
+        const spendAmount = Math.min(body.coins_used, userCoins.balance);
+        if (spendAmount > 0) {
+          await spendCoins(body.billing.phone, spendAmount, `Pembayaran pesanan #${finalOrder.id}`);
+        }
+      } catch (e) {
+        console.error('Failed to spend coins:', e);
+      }
+    }
 
     // Earn coins based on store points settings
     if (body.billing?.phone) {

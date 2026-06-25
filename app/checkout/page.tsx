@@ -9,6 +9,7 @@ import {
   Tag,
   ShieldCheck,
   Navigation,
+  Coins,
 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
@@ -92,10 +93,19 @@ export default function CheckoutPage() {
   const [mapPostalCode, setMapPostalCode] = useState("");
   const [pendingCheckout, setPendingCheckout] = useState(false);
 
+  // Coins state
+  const [coinsBalance, setCoinsBalance] = useState(0);
+  const [coinsEarnInfo, setCoinsEarnInfo] = useState<{ amount: number; caption: string } | null>(null);
+  const [useCoins, setUseCoins] = useState(false);
+  const [coinsToUse, setCoinsToUse] = useState(0);
+  const [coinsLoading, setCoinsLoading] = useState(false);
+
   const { user, openLogin, closeLogin, loginOpen, updateProfile } = useAuth();
 
   // Track whether localStorage address has been loaded on mount
   const localLoaded = useRef(false);
+
+
 
   // Auto-resume checkout after login
   useEffect(() => {
@@ -305,6 +315,46 @@ export default function CheckoutPage() {
 
   // Calculate totals from checkout items only
   const subtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Fetch user coins balance & points config
+  useEffect(() => {
+    if (!user?.phone) return;
+    const phone = user.phone;
+    let cancelled = false;
+    async function load() {
+      try {
+        setCoinsLoading(true);
+        const [statsRes, settingsRes] = await Promise.all([
+          fetch(`/api/user-stats?phone=${encodeURIComponent(phone)}`),
+          fetch("/api/settings"),
+        ]);
+        const [statsData, settingsData] = await Promise.all([
+          statsRes.json(),
+          settingsRes.json(),
+        ]);
+        if (!cancelled) {
+          setCoinsBalance(statsData.coins || 0);
+          if (settingsData.points?.enabled) {
+            const earned = settingsData.points.type === 'percent'
+              ? Math.floor(subtotal * (settingsData.points.value / 100))
+              : settingsData.points.value;
+            setCoinsEarnInfo({
+              amount: earned,
+              caption: settingsData.points.caption || 'Dapatkan cashback dari pembelian ini',
+            });
+          } else {
+            setCoinsEarnInfo(null);
+          }
+        }
+      } catch {
+        if (!cancelled) setCoinsBalance(0);
+      } finally {
+        if (!cancelled) setCoinsLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user?.phone, subtotal]);
   const originalSubtotal = checkoutItems.reduce(
     (sum, item) => sum + (item.originalPrice || item.price) * item.quantity, 0
   );
@@ -322,7 +372,8 @@ export default function CheckoutPage() {
       voucherDiscount = Math.floor(parseFloat(appliedCoupon.amount) || 0);
     }
   }
-  const total = subtotal + shipping - voucherDiscount;
+  const coinsDiscount = useCoins ? Math.min(coinsToUse, Math.max(0, subtotal - voucherDiscount)) : 0;
+  const total = subtotal + shipping - voucherDiscount - coinsDiscount;
 
   // Form validation for disabling the submit button
   const isCheckoutValid = (() => {
@@ -428,6 +479,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          coins_used: coinsDiscount > 0 ? coinsDiscount : 0,
           items: checkoutItems.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -509,7 +561,7 @@ export default function CheckoutPage() {
         subtotal,
         originalSubtotal,
         productDiscount,
-        total: total,
+        total: subtotal + shipping - voucherDiscount - coinsDiscount,
         date: new Date().toISOString(),
         shipping: selectedShipping,
         shippingCost: shipping,
@@ -517,6 +569,7 @@ export default function CheckoutPage() {
           ? `${selectedRate.courier_code.toUpperCase()} ${courierServiceLabels[selectedRate.courier_service_name] || selectedRate.courier_service_name}`
           : undefined,
         voucherDiscount: voucherDiscount,
+        coinsDiscount: coinsDiscount,
         couponCode: appliedCoupon?.code || undefined,
         trackingId: data.shipping?.tracking_id,
         waybillId: data.shipping?.waybill_id,
@@ -1010,6 +1063,81 @@ export default function CheckoutPage() {
                 )}
               </div>
 
+              {/* Coins */}
+              {user && (
+                <div className="bg-white px-3 lg:px-4 py-3 lg:rounded-sm">
+                  <div className="flex items-center gap-2 text-shopee-text mb-3">
+                    <Coins className="w-4 h-4 text-shopee-orange" />
+                    <span className="text-sm font-medium">Koin Saya</span>
+                  </div>
+
+                  {coinsLoading ? (
+                    <p className="text-xs text-shopee-text-secondary py-2">Memuat koin...</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-shopee-text-secondary">Saldo Koin</span>
+                        <span className="text-sm font-medium text-shopee-text">{coinsBalance.toLocaleString("id-ID")} <Coins className="w-3.5 h-3.5 inline text-shopee-orange" /></span>
+                      </div>
+
+                      {coinsEarnInfo && coinsEarnInfo.amount > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-sm px-3 py-2 mb-3">
+                          <p className="text-xs text-green-700 flex items-center gap-1">
+                            <Coins className="w-3.5 h-3.5" />
+                            Dapatkan <strong>+{coinsEarnInfo.amount.toLocaleString("id-ID")} koin</strong> dari pesanan ini
+                          </p>
+                        </div>
+                      )}
+
+                      {coinsBalance > 0 && (
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={useCoins}
+                              onChange={(e) => {
+                                setUseCoins(e.target.checked);
+                                if (!e.target.checked) setCoinsToUse(0);
+                              }}
+                              className="w-4 h-4 accent-shopee-orange rounded"
+                            />
+                            <span className="text-xs text-shopee-text">Gunakan Koin sebagai diskon</span>
+                          </label>
+
+                          {useCoins && (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min={0}
+                                max={Math.min(coinsBalance, subtotal)}
+                                value={coinsToUse}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  setCoinsToUse(Math.min(val, coinsBalance, subtotal));
+                                }}
+                                className="flex-1 border border-shopee-border rounded-sm px-3 py-2 text-sm outline-none focus:border-shopee-orange"
+                                placeholder="Jumlah koin"
+                              />
+                              <button
+                                onClick={() => setCoinsToUse(Math.min(coinsBalance, subtotal))}
+                                className="px-3 py-2 text-xs text-shopee-orange border border-shopee-orange rounded-sm hover:bg-shopee-orange-light/50 transition-colors"
+                              >
+                                Maksimal
+                              </button>
+                            </div>
+                          )}
+                          {useCoins && coinsToUse > 0 && (
+                            <p className="text-xs text-shopee-text-secondary">
+                              Potongan: <span className="text-red-500 font-medium">-Rp {coinsToUse.toLocaleString("id-ID")}</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Payment Summary */}
               <div className="bg-white px-3 lg:px-4 py-3 lg:rounded-sm">
                 <h3 className="text-sm font-medium text-shopee-text mb-3">Ringkasan Pembayaran</h3>
@@ -1032,6 +1160,12 @@ export default function CheckoutPage() {
                     <div className="flex justify-between">
                       <span className="text-shopee-text-secondary">Potongan Voucher</span>
                       <span className="text-red-500">-{formatPrice(voucherDiscount)}</span>
+                    </div>
+                  )}
+                  {coinsDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-shopee-text-secondary">Potongan Koin</span>
+                      <span className="text-red-500">-{formatPrice(coinsDiscount)}</span>
                     </div>
                   )}
                 </div>
@@ -1062,6 +1196,12 @@ export default function CheckoutPage() {
                     <div className="flex justify-between">
                       <span className="text-shopee-text-secondary">Potongan Voucher</span>
                       <span className="text-red-500">-{formatPrice(voucherDiscount)}</span>
+                    </div>
+                  )}
+                  {coinsDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-shopee-text-secondary">Potongan Koin</span>
+                      <span className="text-red-500">-{formatPrice(coinsDiscount)}</span>
                     </div>
                   )}
                 </div>
