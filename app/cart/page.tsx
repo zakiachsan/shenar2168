@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Minus, Plus, Trash2, Truck, ChevronRight, ShoppingCart, X, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronDown, Minus, Plus, Trash2, Truck, ChevronRight, ShoppingCart, X, Loader2 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
@@ -240,15 +240,13 @@ export default function CartPage() {
                             <p className="text-xs text-blue-600 mt-0.5">Pre-Order {item.preorderDays || 7} Hari</p>
                           )}
                           {item.variationId && item.variantLabel && (
-                            <p className="text-xs text-blue-600 mt-0.5">
+                            <button
+                              onClick={ (e) => { e.preventDefault(); openVariantModal(item); } }
+                              className="flex items-center gap-1 mt-0.5 text-xs text-shopee-text border border-shopee-border rounded-sm px-2 py-1 hover:border-shopee-orange transition-colors"
+                            >
                               {item.variantLabel}
-                              <button
-                                onClick={ (e) => { e.preventDefault(); openVariantModal(item); } }
-                                className="ml-1.5 text-shopee-orange hover:underline font-medium"
-                              >
-                                [Ganti]
-                              </button>
-                            </p>
+                              <ChevronDown className="w-3.5 h-3.5 text-shopee-text-secondary" />
+                            </button>
                           )}
                           <div className="flex items-end justify-between mt-2">
                             <div>
