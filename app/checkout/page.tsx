@@ -511,7 +511,7 @@ export default function CheckoutPage() {
             postcode: address.postalCode || "12345",
             country: "ID",
           },
-          payment_method: "midtrans",
+          payment_method: "doku_checkout",
           customer_note: orderNote,
           coupon_code: appliedCoupon?.code || undefined,
           shipping_courier: selectedShipping ? selectedShipping.split("|")[0] : undefined,
@@ -605,11 +605,27 @@ export default function CheckoutPage() {
         // ignore
       }
 
-      checkoutItems.forEach((item) => {
-        removeItem(item.productId, item.variationId);
-      });
-      localStorage.removeItem("ragamguna-checkout-selected");
-      if (data.midtrans_redirect_url) { window.location.href = data.midtrans_redirect_url; } else { window.location.href = `/order-confirmed?id=${data.order.order_number}`; }
+      // Call DOKU checkout API to get payment URL BEFORE clearing cart
+      try {
+        const dokuRes = await fetch("/api/doku/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_id: data.order.id }),
+        });
+        const dokuData = await dokuRes.json();
+        // Clear cart directly in localStorage (skip React state to avoid flash)
+        try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
+        localStorage.removeItem("ragamguna-checkout-selected");
+        if (dokuData.checkout_url) {
+          window.location.href = dokuData.checkout_url;
+        } else {
+          window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
+        }
+      } catch {
+        try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
+        localStorage.removeItem("ragamguna-checkout-selected");
+        window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
@@ -630,9 +646,17 @@ export default function CheckoutPage() {
       alert("Alamat lengkap wajib diisi.");
       return;
     }
-    const pc = formPostalCode || mapPostalCode;
+    // Auto-extract postal code from address text if not set via map
+    let pc = formPostalCode || mapPostalCode;
     if (!pc) {
-      alert("Kode pos wajib diisi. Pilih titik lokasi di peta terlebih dahulu.");
+      const postalMatch = formAddress.match(/\b(\d{5})\b/);
+      if (postalMatch) {
+        pc = postalMatch[1];
+        setMapPostalCode(pc);
+      }
+    }
+    if (!pc) {
+      alert("Kode pos wajib diisi. Masukkan kode pos di alamat atau pilih titik lokasi di peta.");
       return;
     }
     const newAddress = { name: formName, phone: formPhone, fullAddress: formAddress, note: formNote, postalCode: pc };
@@ -762,7 +786,14 @@ export default function CheckoutPage() {
                       <textarea
                         required
                         value={formAddress}
-                        onChange={(e) => setFormAddress(e.target.value)}
+                        onChange={(e) => {
+                        setFormAddress(e.target.value);
+                        // Auto-extract 5-digit postal code from address text
+                        const match = e.target.value.match(/\b(\d{5})\b/);
+                        if (match && !formPostalCode && !mapPostalCode) {
+                          setMapPostalCode(match[1]);
+                        }
+                      }}
                         placeholder="Jl. Nama Jalan No. XX, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi"
                         rows={3}
                         className="w-full border border-shopee-border rounded-sm px-3 py-2 text-sm outline-none focus:border-shopee-orange text-shopee-text resize-none"

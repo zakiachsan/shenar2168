@@ -124,7 +124,7 @@ export default function Header() {
           <Link href="/" className="flex-shrink-0 cursor-pointer">
             <svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <text x="0" y="28" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="22" fill="#F97316">
-                RAGAMGUNA
+                SHENAR2168
               </text>
               <text x="0" y="38" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="8" fill="#757575" letterSpacing="2">
                 MARKETPLACE

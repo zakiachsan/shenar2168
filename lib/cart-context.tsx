@@ -187,6 +187,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
+    // Also sync localStorage immediately (useEffect may not run before redirect)
+    try {
+      localStorage.setItem('shenar2168-cart', JSON.stringify([]));
+    } catch {}
   }, []);
 
   const updateItem = useCallback((productId: number, variationId: number | undefined, updates: Partial<CartItem>) => {
