@@ -914,16 +914,24 @@ export default function CheckoutPage() {
 
                 {/* Address Book Modal */}
                 {showAddressList && (
-                  <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowAddressList(false)} />
-                    <div className="relative bg-white w-full lg:max-w-lg lg:rounded-sm max-h-[80vh] overflow-y-auto">
-                      <div className="sticky top-0 bg-white border-b border-shopee-border px-4 py-3 flex items-center justify-between z-10">
+                  <>
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowAddressList(false)} />
+                    {/* Sheet */}
+                    <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[85vh] lg:max-h-[80vh] bg-white lg:relative lg:inset-auto lg:max-w-lg lg:rounded-sm lg:z-50">
+                      {/* Handle bar (mobile) */}
+                      <div className="lg:hidden flex justify-center pt-2 pb-1">
+                        <div className="w-8 h-1 bg-gray-300 rounded-full" />
+                      </div>
+                      {/* Header */}
+                      <div className="flex-shrink-0 border-b border-shopee-border px-4 py-3 flex items-center justify-between">
                         <h3 className="text-sm font-medium text-shopee-text">Pilih Alamat Pengiriman</h3>
-                        <button onClick={() => setShowAddressList(false)} className="text-shopee-text-secondary hover:text-shopee-text p-1">
+                        <button onClick={() => setShowAddressList(false)} className="text-shopee-text-secondary hover:text-shopee-text p-1 text-xl leading-none">
                           ✕
                         </button>
                       </div>
-                      <div className="p-3 space-y-2">
+                      {/* List */}
+                      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-2 space-y-2 min-h-0">
                         {addressBook.map((addr) => {
                           const isSelected = address?.fullAddress === addr.fullAddress && address?.phone === addr.phone;
                           return (
@@ -969,7 +977,7 @@ export default function CheckoutPage() {
                         </Link>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
               </div>
