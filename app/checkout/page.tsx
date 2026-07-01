@@ -972,6 +972,8 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+              </div>
+
               {/* Products grouped by shop */}
               {Object.entries(
                 checkoutItems.reduce((groups, item) => {
