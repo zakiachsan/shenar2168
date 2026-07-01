@@ -10,6 +10,8 @@ import {
   ShieldCheck,
   Navigation,
   Coins,
+  Check,
+  BookUser,
 } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
@@ -92,6 +94,8 @@ export default function CheckoutPage() {
   const [mapLatLng, setMapLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [mapPostalCode, setMapPostalCode] = useState("");
   const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [showAddressList, setShowAddressList] = useState(false);
+  const [addressBook, setAddressBook] = useState<any[]>([]);
 
   // Coins state
   const [coinsBalance, setCoinsBalance] = useState(0);
@@ -114,6 +118,46 @@ export default function CheckoutPage() {
       handleCheckout();
     }
   }, [user]);
+
+  // Load address book from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("ragamguna-address-book");
+      if (raw) {
+        const book = JSON.parse(raw);
+        if (Array.isArray(book)) setAddressBook(book);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Select address from address book
+  const selectAddressFromBook = (addr: any) => {
+    const newAddress = {
+      name: addr.name || "",
+      phone: addr.phone || "",
+      fullAddress: addr.fullAddress || "",
+      note: addr.note || "",
+      postalCode: addr.postalCode || "",
+    };
+    setAddress(newAddress);
+    setFormName(addr.name || "");
+    setFormPhone(addr.phone || "");
+    setFormAddress(addr.fullAddress || "");
+    setFormNote(addr.note || "");
+    setFormPostalCode(addr.postalCode || "");
+    if (addr.lat && addr.lng) {
+      setMapLatLng({ lat: addr.lat, lng: addr.lng });
+      localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify({ lat: addr.lat, lng: addr.lng }));
+    }
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ragamguna-checkout-address", JSON.stringify(newAddress));
+    }
+    setShowAddressList(false);
+    setIsEditingAddress(false);
+  };
 
   // Load address + latlng from localStorage on mount
   useEffect(() => {
@@ -825,6 +869,18 @@ export default function CheckoutPage() {
                         Simpan Alamat
                       </button>
                     </div>
+                    {/* Address book CTA */}
+                    {addressBook.length > 0 && (
+                      <div className="pt-1 border-t border-shopee-border">
+                        <button
+                          onClick={() => setShowAddressList(true)}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-xs text-shopee-orange hover:bg-shopee-orange-light/30 rounded-sm transition-colors"
+                        >
+                          <BookUser className="w-3.5 h-3.5" />
+                          Pilih dari Daftar Alamat
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="pl-6">
@@ -836,15 +892,85 @@ export default function CheckoutPage() {
                     {address.note && (
                       <p className="text-xs text-shopee-text-secondary mt-1 italic">Catatan: {address.note}</p>
                     )}
-                    <button
-                      onClick={startEditAddress}
-                      className="mt-2 text-xs text-shopee-orange border border-shopee-orange px-3 py-1 rounded-sm hover:bg-shopee-orange-light"
-                    >
-                      Ubah Alamat
-                    </button>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        onClick={startEditAddress}
+                        className="text-xs text-shopee-orange border border-shopee-orange px-3 py-1 rounded-sm hover:bg-shopee-orange-light"
+                      >
+                        Ubah Alamat
+                      </button>
+                      {addressBook.length > 0 && (
+                        <button
+                          onClick={() => setShowAddressList(true)}
+                          className="text-xs text-shopee-orange border border-shopee-orange px-3 py-1 rounded-sm hover:bg-shopee-orange-light flex items-center gap-1"
+                        >
+                          <BookUser className="w-3 h-3" />
+                          Pilih Alamat Lain
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
-              </div>
+
+                {/* Address Book Modal */}
+                {showAddressList && (
+                  <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowAddressList(false)} />
+                    <div className="relative bg-white w-full lg:max-w-lg lg:rounded-sm max-h-[80vh] overflow-y-auto">
+                      <div className="sticky top-0 bg-white border-b border-shopee-border px-4 py-3 flex items-center justify-between z-10">
+                        <h3 className="text-sm font-medium text-shopee-text">Pilih Alamat Pengiriman</h3>
+                        <button onClick={() => setShowAddressList(false)} className="text-shopee-text-secondary hover:text-shopee-text p-1">
+                          ✕
+                        </button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {addressBook.map((addr) => {
+                          const isSelected = address?.fullAddress === addr.fullAddress && address?.phone === addr.phone;
+                          return (
+                            <button
+                              key={addr.id}
+                              onClick={() => selectAddressFromBook(addr)}
+                              className={`w-full text-left p-3 border rounded-sm transition-colors ${
+                                isSelected
+                                  ? "border-shopee-orange bg-shopee-orange-light/30"
+                                  : "border-shopee-border hover:border-shopee-orange/50"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-shopee-text">{addr.name}</span>
+                                    <span className="text-xs text-shopee-text-secondary">{addr.phone}</span>
+                                    {addr.isDefault && (
+                                      <span className="text-[10px] text-shopee-orange border border-shopee-orange px-1 py-0.5 rounded-sm flex-shrink-0">
+                                        Utama
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-shopee-text-secondary mt-0.5 line-clamp-2">{addr.fullAddress}</p>
+                                  {addr.postalCode && (
+                                    <p className="text-[10px] text-shopee-text-secondary mt-0.5">Kode Pos: {addr.postalCode}</p>
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <Check className="w-5 h-5 text-shopee-orange flex-shrink-0 mt-0.5" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="sticky bottom-0 bg-white border-t border-shopee-border px-4 py-2">
+                        <Link
+                          href="/profile/address"
+                          className="block text-center text-xs text-shopee-orange py-2 hover:underline"
+                        >
+                          + Tambah Alamat Baru
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               {/* Products grouped by shop */}
               {Object.entries(

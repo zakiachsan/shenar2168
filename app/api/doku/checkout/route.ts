@@ -43,6 +43,18 @@ function formatPhoneNumber(phone: string): string {
   return formatted;
 }
 
+/**
+ * Sanitize text for DOKU: only a-z A-Z 0-9 . - / + , = _ : ' @ %
+ * Replace invalid chars with space, then collapse multiple spaces.
+ */
+function sanitizeDokuText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[^a-zA-Z0-9.\-/+,\=_:'@%\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function wcRequest(method: string, path: string, body?: any): Promise<{ status: number; data: any }> {
   return new Promise((resolve, reject) => {
     const https = require('https');
@@ -105,7 +117,7 @@ export async function POST(req: NextRequest) {
     // Build line items for DOKU
     const lineItems = (order.line_items || []).map((item: any) => ({
       id: item.sku || `item-${item.id}`,
-      name: item.name,
+      name: sanitizeDokuText(item.name),
       price: item.price ? parseFloat(item.price) : 0,
       quantity: item.quantity || 1,
     }));
@@ -144,29 +156,29 @@ export async function POST(req: NextRequest) {
       },
       customer: {
         id: order.customer_id || 0,
-        name: order.billing?.first_name || 'Customer',
-        last_name: order.billing?.last_name || '',
+        name: sanitizeDokuText(order.billing?.first_name || 'Customer'),
+        last_name: sanitizeDokuText(order.billing?.last_name || ''),
         email: order.billing?.email || '',
         phone: formattedPhone,
         country: order.billing?.country || 'ID',
         postcode: order.billing?.postcode || '12345',
         state: order.billing?.state || '',
         city: order.billing?.city || 'Jakarta',
-        address: order.billing?.address_1 || '',
+        address: sanitizeDokuText(order.billing?.address_1 || ''),
       },
       shipping_address: {
-        first_name: order.shipping?.first_name || order.billing?.first_name || 'Customer',
-        last_name: order.shipping?.last_name || order.billing?.last_name || '',
-        address: order.shipping?.address_1 || order.billing?.address_1 || '',
+        first_name: sanitizeDokuText(order.shipping?.first_name || order.billing?.first_name || 'Customer'),
+        last_name: sanitizeDokuText(order.shipping?.last_name || order.billing?.last_name || ''),
+        address: sanitizeDokuText(order.shipping?.address_1 || order.billing?.address_1 || ''),
         city: order.shipping?.city || order.billing?.city || 'Jakarta',
         postal_code: order.shipping?.postcode || order.billing?.postcode || '12345',
         phone: formattedPhone,
         country_code: 'IDN',
       },
       billing_address: {
-        first_name: order.billing?.first_name || 'Customer',
-        last_name: order.billing?.last_name || '',
-        address: order.billing?.address_1 || '',
+        first_name: sanitizeDokuText(order.billing?.first_name || 'Customer'),
+        last_name: sanitizeDokuText(order.billing?.last_name || ''),
+        address: sanitizeDokuText(order.billing?.address_1 || ''),
         city: order.billing?.city || 'Jakarta',
         postal_code: order.billing?.postcode || '12345',
         phone: formattedPhone,
@@ -211,8 +223,12 @@ export async function POST(req: NextRequest) {
     const dokuData = await dokuResponse.json();
     console.log('DOKU response:', JSON.stringify(dokuData));
 
-    if (dokuData.status?.code === '200' || dokuData.response?.payment?.url) {
-      const checkoutUrl = dokuData.response.payment.url;
+    if (dokuData.response?.payment?.url || dokuData.message?.[0] === 'SUCCESS') {
+      const checkoutUrl = dokuData.response?.payment?.url;
+      if (!checkoutUrl) {
+        console.error('DOKU missing URL:', dokuData);
+        return NextResponse.json({ error: 'DOKU response missing payment URL', details: dokuData }, { status: 500 });
+      }
 
       // Update order meta with DOKU info
       await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {

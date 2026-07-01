@@ -23,12 +23,14 @@ interface RateItem {
 }
 
 export async function POST(req: NextRequest) {
+  let items: RateItem[] = [];
   try {
     const body = await req.json();
-    const { destination_postal_code, items } = body as {
+    const { destination_postal_code, items: bodyItems } = body as {
       destination_postal_code: string;
       items: RateItem[];
     };
+    items = bodyItems;
 
     if (!destination_postal_code) {
       return NextResponse.json(
@@ -88,12 +90,19 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    // Safe JSON parse — Biteship may return empty response
+    let data: any = {};
+    try {
+      const text = await res.text();
+      data = text ? JSON.parse(text) : {};
+    } catch (parseErr) {
+      console.error("Biteship rates parse error:", parseErr);
+      data = { error: "Invalid response from Biteship" };
+    }
 
-    if (!res.ok) {
-      console.error("Biteship rates error:", data);
-      // Fallback to mock rates for all Biteship errors (auth, balance, downtime, etc.)
-      // so checkout is never blocked by courier API issues.
+    if (!res.ok || data.error) {
+      console.error("Biteship rates error:", JSON.stringify({ status: res.status, data }).slice(0, 500));
+      // Fallback to mock rates so checkout never breaks
       const totalWeight = items.reduce((s, i) => s + i.weight * i.quantity, 0);
       const basePrice = (w: number) => Math.max(8000, Math.round(w * 0.04));
       const mockRates = [
@@ -105,15 +114,24 @@ export async function POST(req: NextRequest) {
         { courier_code: "gojek", courier_service_name: "instant", duration: "1-3 jam", price: basePrice(totalWeight) + 25000, service_type: "instant" },
         { courier_code: "grab", courier_service_name: "sameday", duration: "8-12 jam", price: basePrice(totalWeight) + 18000, service_type: "sameday" },
       ];
-      return NextResponse.json({ pricing: mockRates });
+      return NextResponse.json({ pricing: mockRates, _fallback: true });
     }
 
     return NextResponse.json(data);
   } catch (e) {
     console.error("Biteship rates exception:", e);
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    );
+    // Fallback to mock rates even on exception
+    const totalWeight = items.reduce((s, i) => s + i.weight * i.quantity, 0);
+    const basePrice = (w: number) => Math.max(8000, Math.round(w * 0.04));
+    const mockRates = [
+      { courier_code: "jne", courier_service_name: "Reguler", duration: "2-3", price: basePrice(totalWeight) + 4000, service_type: "standard" },
+      { courier_code: "jnt", courier_service_name: "EZ", duration: "2-3", price: basePrice(totalWeight) + 3000, service_type: "standard" },
+      { courier_code: "sicepat", courier_service_name: "REG", duration: "2-3", price: basePrice(totalWeight) + 2000, service_type: "standard" },
+      { courier_code: "anteraja", courier_service_name: "Next Day", duration: "1-2", price: basePrice(totalWeight) + 7000, service_type: "overnight" },
+      { courier_code: "ninja", courier_service_name: "Standard", duration: "3-4", price: basePrice(totalWeight) + 5000, service_type: "standard" },
+      { courier_code: "gojek", courier_service_name: "instant", duration: "1-3 jam", price: basePrice(totalWeight) + 25000, service_type: "instant" },
+      { courier_code: "grab", courier_service_name: "sameday", duration: "8-12 jam", price: basePrice(totalWeight) + 18000, service_type: "sameday" },
+    ];
+    return NextResponse.json({ pricing: mockRates, _fallback: true });
   }
 }

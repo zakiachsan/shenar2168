@@ -38,7 +38,8 @@ function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
   const orderCode = searchParams.get("code");
-  // Read Midtrans redirect params
+  // Legacy Midtrans redirect params (kept for backward compatibility)
+  // DOKU uses webhook notification, not URL params
   const transactionStatus = searchParams.get("transaction_status");
   const statusCode = searchParams.get("status_code");
 
@@ -56,14 +57,15 @@ function OrderConfirmedContent() {
     if (!orderId) return;
     setPaying(true);
     try {
-      const res = await fetch('/api/midtrans/token', {
+      // Use DOKU checkout instead of Midtrans
+      const res = await fetch('/api/doku/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, grossAmount: order?.total }),
+        body: JSON.stringify({ order_id: parseInt(orderId) }),
       });
       const data = await res.json();
-      if (data.redirect_url) {
-        window.location.href = data.redirect_url;
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
       } else {
         alert('Gagal membuat link pembayaran. Silakan coba lagi.');
       }

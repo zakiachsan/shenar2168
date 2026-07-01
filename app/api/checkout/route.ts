@@ -235,9 +235,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Auto-advance order to processing (payment gateway integration pending)
+    // 2. Set order to pending payment (will be updated after DOKU payment)
     const updateResult = await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-      status: 'processing',
+      status: 'pending',
       transaction_id: `ORDER-${order.id}`,
     });
 
