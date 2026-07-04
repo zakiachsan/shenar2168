@@ -80,6 +80,9 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [voucherError, setVoucherError] = useState("");
   const [voucherLoading, setVoucherLoading] = useState(false);
+  const [showVoucherList, setShowVoucherList] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderNote, setOrderNote] = useState("");
@@ -336,27 +339,6 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableTypes.join(",")]);
 
-  // Redirect to home if checkout is empty
-  if (checkoutItems.length === 0) {
-    return (
-      <>
-        <Header />
-        <main className="flex-1 bg-shopee-gray pb-36 lg:pb-8">
-          <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-8">
-            <div className="bg-white py-16 text-center rounded-sm">
-              <p className="text-shopee-text-secondary text-lg mb-2">Keranjang belanjamu masih kosong</p>
-              <p className="text-shopee-text-secondary text-sm mb-4">Tambahkan produk dulu ya sebelum checkout</p>
-              <Link href="/" className="inline-block px-6 py-2 bg-shopee-orange text-white text-sm rounded-sm hover:bg-[#1A7BD4]">
-                Mulai Belanja
-              </Link>
-            </div>
-          </div>
-        </main>
-        <BottomNav />
-      </>
-    );
-  }
-
   // Calculate totals from checkout items only
   const subtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -462,12 +444,37 @@ export default function CheckoutPage() {
             amount: String(data.discount),
           });
         }
+        setShowVoucherList(false);
       }
     } catch {
       setVoucherError("Terjadi kesalahan. Coba lagi.");
     } finally {
       setVoucherLoading(false);
     }
+  };
+
+  // Load all available coupons with eligibility info
+  const loadAvailableCoupons = async () => {
+    setCouponsLoading(true);
+    setShowVoucherList(true);
+    try {
+      const res = await fetch(`/api/coupons?total=${subtotal}`);
+      const data = await res.json();
+      setAvailableCoupons(Array.isArray(data.coupons) ? data.coupons : []);
+    } catch {
+      setAvailableCoupons([]);
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
+
+  // Select a coupon from the list
+  const selectCouponFromList = async (coupon: any) => {
+    if (!coupon.eligible) return;
+    setShowVoucherList(false);
+    setAppliedCoupon(coupon);
+    setVoucher(coupon.code);
+    setVoucherError("");
   };
 
   const handleCheckout = async () => {
@@ -750,6 +757,27 @@ export default function CheckoutPage() {
       prev ? { ...prev, fullAddress: addr, postalCode } : null
     );
   };
+
+  // Redirect to home if checkout is empty
+  if (checkoutItems.length === 0) {
+    return (
+      <>
+        <Header />
+        <main className="flex-1 bg-shopee-gray pb-36 lg:pb-8">
+          <div className="max-w-[1200px] mx-auto px-0 lg:px-4 py-8">
+            <div className="bg-white py-16 text-center rounded-sm">
+              <p className="text-shopee-text-secondary text-lg mb-2">Keranjang belanjamu masih kosong</p>
+              <p className="text-shopee-text-secondary text-sm mb-4">Tambahkan produk dulu ya sebelum checkout</p>
+              <Link href="/" className="inline-block px-6 py-2 bg-shopee-orange text-white text-sm rounded-sm hover:bg-[#1A7BD4]">
+                Mulai Belanja
+              </Link>
+            </div>
+          </div>
+        </main>
+        <BottomNav />
+      </>
+    );
+  }
 
   return (
     <>
@@ -1183,9 +1211,17 @@ export default function CheckoutPage() {
 
               {/* Voucher */}
               <div className="bg-white px-3 lg:px-4 py-3 lg:rounded-sm">
-                <div className="flex items-center gap-2 text-shopee-text mb-3">
-                  <Tag className="w-4 h-4 text-shopee-orange" />
-                  <span className="text-sm font-medium">Voucher</span>
+                <div className="flex items-center justify-between text-shopee-text mb-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-shopee-orange" />
+                    <span className="text-sm font-medium">Voucher</span>
+                  </div>
+                  <button
+                    onClick={loadAvailableCoupons}
+                    className="text-xs text-shopee-orange hover:text-[#1A7BD4] hover:underline transition-colors"
+                  >
+                    Lihat Semua Voucher
+                  </button>
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -1229,6 +1265,105 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
+
+              {/* Voucher List Modal */}
+              {showVoucherList && (
+                <div className="fixed inset-0 z-50 flex items-stretch lg:items-center justify-center">
+                  <div className="absolute inset-0 bg-black/40" onClick={() => setShowVoucherList(false)} />
+                  <div className="relative bg-white w-full lg:max-w-lg lg:rounded-sm h-full lg:h-auto lg:max-h-[80vh] flex flex-col overflow-hidden">
+                    <div className="flex-shrink-0 border-b border-shopee-border px-4 py-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-shopee-text">Pilih Voucher</h3>
+                        <p className="text-[10px] text-shopee-text-secondary mt-0.5">
+                          Total belanja: {formatPrice(subtotal)}
+                        </p>
+                      </div>
+                      <button onClick={() => setShowVoucherList(false)} className="text-shopee-text-secondary hover:text-shopee-text p-1 text-lg">
+                        ✕
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-2 space-y-2">
+                      {couponsLoading ? (
+                        <div className="py-8 text-center">
+                          <p className="text-xs text-shopee-text-secondary">Memuat voucher...</p>
+                        </div>
+                      ) : availableCoupons.length === 0 ? (
+                        <div className="py-8 text-center">
+                          <Tag className="w-8 h-8 text-shopee-text-secondary mx-auto mb-2" />
+                          <p className="text-xs text-shopee-text-secondary">Belum ada voucher tersedia</p>
+                        </div>
+                      ) : (
+                        availableCoupons.map((c: any) => {
+                          const isApplied = appliedCoupon?.code?.toUpperCase() === c.code?.toUpperCase();
+                          return (
+                            <button
+                              key={c.id || c.code}
+                              onClick={() => selectCouponFromList(c)}
+                              disabled={!c.eligible}
+                              className={`w-full text-left p-3 border rounded-sm transition-colors ${
+                                isApplied
+                                  ? "border-shopee-orange bg-shopee-orange-light/30"
+                                  : c.eligible
+                                    ? "border-shopee-border hover:border-shopee-orange/70 cursor-pointer"
+                                    : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-70"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Tag className={`w-4 h-4 flex-shrink-0 ${c.eligible ? "text-shopee-orange" : "text-gray-400"}`} />
+                                    <span className={`text-sm font-medium ${c.eligible ? "text-shopee-text" : "text-gray-500"}`}>
+                                      {c.code}
+                                    </span>
+                                    {isApplied && (
+                                      <span className="text-[10px] text-shopee-orange font-medium flex-shrink-0">✓ Dipakai</span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-shopee-text-secondary mt-0.5">
+                                    {c.discount_type === "percent"
+                                      ? `Diskon ${c.amount}% • Maks Rp${formatPrice(c.maximum_amount)}`
+                                      : `Potongan Rp${formatPrice(c.amount)}`}
+                                  </p>
+                                  {c.minimum_amount && parseFloat(c.minimum_amount) > 0 && (
+                                    <p className="text-[10px] text-shopee-text-secondary mt-0.5">
+                                      Min. belanja Rp {parseInt(c.minimum_amount).toLocaleString("id-ID")}
+                                    </p>
+                                  )}
+                                </div>
+                                {!c.eligible && (
+                                  <div className="flex-shrink-0">
+                                    {c.missingAmount ? (
+                                      <span className="text-[10px] text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded-sm">
+                                        {c.message}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-1 rounded-sm">
+                                        {c.message || "Tidak tersedia"}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {c.eligible && !isApplied && (
+                                  <div className="flex-shrink-0">
+                                    <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 px-2 py-1 rounded-sm">
+                                      Bisa dipakai
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              {!c.eligible && c.missingAmount && (
+                                <p className="text-[10px] text-orange-600 mt-2 bg-orange-50/50 px-2 py-1 rounded-sm">
+                                  Tambah belanja senilai <strong>Rp {c.missingAmount.toLocaleString("id-ID")}</strong> untuk bisa pakai voucher ini
+                                </p>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Coins */}
               {user && (

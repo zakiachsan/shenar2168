@@ -20,8 +20,47 @@ function getCouponStatus(c: any): 'active' | 'expired' | 'depleted' {
   return 'active';
 }
 
+function computeEligibility(c: any, orderTotal: number): {
+  eligible: boolean;
+  discount: number;
+  message?: string;
+  missingAmount?: number;
+} {
+  const status = getCouponStatus(c);
+  if (status === 'expired') return { eligible: false, discount: 0, message: 'Expired' };
+  if (status === 'depleted') return { eligible: false, discount: 0, message: 'Kuota habis' };
+
+  // Check minimum amount
+  const minAmount = parseFloat(c.minimum_amount || '0');
+  if (minAmount > 0 && orderTotal < minAmount) {
+    const gap = minAmount - orderTotal;
+    return {
+      eligible: false,
+      discount: 0,
+      missingAmount: gap,
+      message: `Kurang Rp ${gap.toLocaleString('id-ID')} lagi`,
+    };
+  }
+
+  // Calculate discount
+  let discount = 0;
+  if (c.discount_type === 'percent') {
+    discount = Math.floor(orderTotal * (parseFloat(c.amount) / 100));
+    const maxAmount = parseFloat(c.maximum_amount || '0');
+    if (maxAmount > 0) discount = Math.min(discount, maxAmount);
+  } else {
+    discount = parseFloat(c.amount) || 0;
+  }
+
+  return { eligible: true, discount };
+}
+
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const code = searchParams.get('code');
+    const totalParam = searchParams.get('total');
+
     const wcUrl = new URL(`${WC_URL}/wp-json/wc/v3/coupons`);
     wcUrl.searchParams.set('per_page', '100');
 
@@ -39,7 +78,7 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await res.json();
-    const coupons = Array.isArray(data)
+    const coupons: any[] = Array.isArray(data)
       ? data.map((c: any) => ({
           id: c.id,
           code: c.code,
@@ -57,10 +96,30 @@ export async function GET(req: NextRequest) {
         }))
       : [];
 
-    return NextResponse.json({
-      count: coupons.length,
-      coupons,
-    });
+    // Single coupon validation by code
+    if (code) {
+      const total = parseInt(totalParam || '0');
+      const found = coupons.find((c: any) => c.code.toUpperCase() === code.toUpperCase());
+      if (!found) return NextResponse.json({ valid: false, discount: 0, message: 'Kupon tidak ditemukan' });
+      const eligibility = computeEligibility(found, total);
+      return NextResponse.json({
+        valid: eligibility.eligible,
+        discount: eligibility.discount,
+        message: eligibility.message,
+      });
+    }
+
+    // If total is provided, enrich with eligibility info
+    const orderTotal = totalParam ? parseInt(totalParam) : null;
+    if (orderTotal !== null) {
+      const enriched = coupons.map((c: any) => ({
+        ...c,
+        ...computeEligibility(c, orderTotal),
+      }));
+      return NextResponse.json({ coupons: enriched, count: enriched.length });
+    }
+
+    return NextResponse.json({ count: coupons.length, coupons });
   } catch (e) {
     console.error('Coupons API error:', e);
     return NextResponse.json({ count: 0, coupons: [] });
