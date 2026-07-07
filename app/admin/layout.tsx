@@ -25,7 +25,7 @@ import {
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Produk', icon: Package },
-  { href: '/admin/orders', label: 'Pesanan', icon: ShoppingCart, badge: 'processing' },
+  { href: '/admin/orders', label: 'Pesanan', icon: ShoppingCart, badge: 'pending' },
   { href: '/admin/categories', label: 'Kategori', icon: Tags },
   { href: '/admin/banners', label: 'Banner', icon: Image },
   { href: '/admin/etalase', label: 'Etalase', icon: Store },
@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [username, setUsername] = useState('Admin');
-  const [processingCount, setProcessingCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
@@ -71,13 +71,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch processing orders count
+  // Fetch pending orders count (sidebar badge)
   useEffect(() => {
     const fetchCount = () => {
-      fetch('/api/admin/orders?status=processing&per_page=1')
+      fetch('/api/admin/orders/count')
         .then((res) => res.json())
         .then((data) => {
-          setProcessingCount(data.total || 0);
+          setPendingCount(data.pending || 0);
         })
         .catch(() => {});
     };
@@ -157,8 +157,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            const showBadge = (item.badge === 'processing' && processingCount > 0) || (item.badge === 'chat' && unreadChatCount > 0);
-            const badgeCount = item.badge === 'processing' ? processingCount : item.badge === 'chat' ? unreadChatCount : 0;
+            const showBadge = (item.badge === 'pending' && pendingCount > 0) || (item.badge === 'chat' && unreadChatCount > 0);
+            const badgeCount = item.badge === 'pending' ? pendingCount : item.badge === 'chat' ? unreadChatCount : 0;
             return (
               <a
                 key={item.href}

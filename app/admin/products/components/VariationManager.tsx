@@ -248,7 +248,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
                           prefix="Rp"
                           placeholder="0"
                           min={0}
-                          className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-36 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-2.5">
@@ -258,7 +258,7 @@ export default function VariationManager({ attributes, variations, onChange }: V
                           prefix="Rp"
                           placeholder="0"
                           min={0}
-                          className="w-28 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-36 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-2.5">

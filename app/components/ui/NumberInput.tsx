@@ -60,8 +60,12 @@ export default function NumberInput({
     onChange(final);
   };
 
+  const hasWidthClass = className.includes('w-');
+
   const baseClasses =
-    'w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+    `px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`;
+
+  const widthClass = hasWidthClass ? '' : 'w-full';
 
   return (
     <div className="relative">
@@ -80,7 +84,7 @@ export default function NumberInput({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        className={`${baseClasses} ${className} ${prefix ? 'pl-10' : ''} ${suffix ? 'pr-10' : ''}`}
+        className={`${widthClass} ${baseClasses} ${className} ${prefix ? 'pl-10' : ''} ${suffix ? 'pr-10' : ''}`}
       />
       {suffix && (
         <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
