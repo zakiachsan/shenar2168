@@ -111,10 +111,6 @@ const TRANSITIONS: Record<string, string[]> = {
   completed: ['refunded'],
   cancelled: [],
   refunded: [],
-  return_requested: ['return_shipped'],
-  return_shipped: ['return_received'],
-  return_received: ['return_completed'],
-  return_completed: [],
   failed: ['pending', 'cancelled'],
 };
 
