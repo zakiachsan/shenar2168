@@ -106,7 +106,7 @@ const STATUS_LABELS: Record<string, string> = {
 const TRANSITIONS: Record<string, string[]> = {
   pending: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['completed'],
+  shipped: ['completed', 'cancelled'],
   'on-hold': ['processing', 'cancelled'],
   completed: ['refunded'],
   cancelled: [],
@@ -159,6 +159,7 @@ export default function OrderDetailPage() {
   const [returnData, setReturnData] = useState<any>(null);
   const [refundAmount, setRefundAmount] = useState('');
   const [adminNote, setAdminNote] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     loadOrder();
@@ -203,10 +204,14 @@ export default function OrderDetailPage() {
     setUpdating(true);
     setError('');
     try {
+      const body: any = { status: newStatus };
+      if (newStatus === 'cancelled' && cancelReason.trim()) {
+        body.note = cancelReason.trim();
+      }
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -608,9 +613,21 @@ export default function OrderDetailPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     Batalkan Pesanan?
                   </h3>
-                  <p className="text-sm text-gray-500 mb-6">
+                  <p className="text-sm text-gray-500 mb-4">
                     Tindakan ini tidak dapat dibatalkan.
                   </p>
+                  <div className="text-left mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Alasan Pembatalan <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Tuliskan alasan pembatalan pesanan..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                    />
+                  </div>
                 </>
               ) : confirmStatus === 'shipped' ? (
                 <>
@@ -643,7 +660,7 @@ export default function OrderDetailPage() {
               )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setConfirmStatus(null)}
+                  onClick={() => { setConfirmStatus(null); setCancelReason(''); }}
                   disabled={updating}
                   className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
@@ -653,8 +670,9 @@ export default function OrderDetailPage() {
                   onClick={() => {
                     updateStatus(confirmStatus);
                     setConfirmStatus(null);
+                    setCancelReason('');
                   }}
-                  disabled={updating}
+                  disabled={updating || (confirmStatus === 'cancelled' && !cancelReason.trim())}
                   className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                     confirmStatus === 'cancelled'
                       ? 'bg-red-600 text-white hover:bg-red-700'
