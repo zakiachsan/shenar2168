@@ -381,7 +381,7 @@ export default function NewProductPage() {
         return;
       }
 
-      router.push('/admin/products');
+      router.push('/admin/products?toast=' + encodeURIComponent('Produk "' + (name || 'Produk') + '" berhasil dibuat'));
     } catch (err: any) {
       setError('Terjadi kesalahan: ' + err.message);
       setSaving(false);

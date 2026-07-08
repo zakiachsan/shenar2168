@@ -97,6 +97,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(href);
   };
 
+  // Scroll to top on every page navigation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   // Login page: render without sidebar
   if (pathname === '/admin/login') {
     return <>{children}</>;

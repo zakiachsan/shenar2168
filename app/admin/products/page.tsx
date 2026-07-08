@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -14,6 +14,7 @@ import {
   EyeOff,
   X,
   Check,
+  CheckCircle,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -172,18 +173,20 @@ export default function AdminProductsPage() {
   const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
   const [toggling, setToggling] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showSavedNotification, setShowSavedNotification] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    // Check for toast message from redirect (e.g. after product save)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('saved') === '1') {
-      setShowSavedNotification(true);
-      // Scroll to top — prevent browser scroll restoration
+    const toastMsg = params.get('toast');
+    if (toastMsg) {
+      setToast(decodeURIComponent(toastMsg));
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      // Clean up the URL param without full reload
+      // Clean URL
       const newUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', newUrl);
+      setTimeout(() => setToast(null), 4000);
     }
   }, []);
 
@@ -321,18 +324,15 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {showSavedNotification && (
-        <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center justify-between">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-5 py-3 rounded-lg shadow-lg max-w-sm">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4" />
-            Produk berhasil disimpan
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <span className="text-sm font-medium">{toast}</span>
+            <button onClick={() => setToast(null)} className="ml-auto p-1 hover:bg-green-100 rounded">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowSavedNotification(false)}
-            className="p-1 hover:bg-green-100 rounded transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
         </div>
       )}
 

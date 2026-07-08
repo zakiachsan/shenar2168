@@ -478,7 +478,9 @@ export default function EditProductPage() {
         return;
       }
 
-      router.push('/admin/products?saved=1');
+      const productName = name || 'Produk';
+      const toastMsg = encodeURIComponent('Produk "' + productName + '" berhasil disimpan');
+      router.push('/admin/products?toast=' + toastMsg);
     } catch (err: any) {
       setError('Terjadi kesalahan: ' + err.message);
       setSaving(false);
