@@ -142,7 +142,7 @@ export default function ReturnStatusCard({ returnData, onRefresh, orderId }: Ret
       )}
 
       {/* Returned Items */}
-      {returnData.items.length > 0 && (
+      {returnData.items?.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-500 mb-2">Produk Diretur</p>
           <div className="space-y-1.5">
