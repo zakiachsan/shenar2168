@@ -49,6 +49,10 @@ export default function ReturnStatusCard({ returnData, onRefresh, orderId }: Ret
       setError('Nomor resi diperlukan');
       return;
     }
+    if (!courier.trim()) {
+      setError('Nama ekspedisi diperlukan');
+      return;
+    }
     setUpdating(true);
     setError('');
     try {
@@ -57,7 +61,7 @@ export default function ReturnStatusCard({ returnData, onRefresh, orderId }: Ret
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           returnTrackingNumber: trackingNumber.trim(),
-          returnCourier: courier.trim() || undefined,
+          returnCourier: courier.trim(),
         }),
       });
       if (res.ok) {
@@ -174,7 +178,7 @@ export default function ReturnStatusCard({ returnData, onRefresh, orderId }: Ret
           <p className="text-xs text-blue-600 font-medium mb-1">Resi Pengiriman Balik</p>
           <p className="text-sm text-blue-800 font-mono">{returnData.returnTrackingNumber}</p>
           {returnData.returnCourier && (
-            <p className="text-xs text-blue-600 mt-0.5">Kurir: {returnData.returnCourier}</p>
+            <p className="text-xs text-blue-600 mt-0.5">Ekspedisi: {returnData.returnCourier}</p>
           )}
         </div>
       )}
@@ -209,7 +213,7 @@ export default function ReturnStatusCard({ returnData, onRefresh, orderId }: Ret
               type="text"
               value={courier}
               onChange={(e) => setCourier(e.target.value)}
-              placeholder="Nama kurir (opsional)"
+              placeholder="Nama Ekspedisi"
               className="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
             />
           </div>
