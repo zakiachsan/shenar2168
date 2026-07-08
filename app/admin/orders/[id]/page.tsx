@@ -81,6 +81,10 @@ const STATUS_BADGES: Record<string, string> = {
   completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   cancelled: 'bg-red-100 text-red-800 ring-1 ring-red-300',
   refunded: 'bg-purple-100 text-purple-800 ring-1 ring-purple-300',
+  return_requested: 'bg-orange-100 text-orange-800 ring-1 ring-orange-300',
+  return_shipped: 'bg-blue-100 text-blue-800 ring-1 ring-blue-300',
+  return_received: 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300',
+  return_completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   failed: 'bg-gray-100 text-gray-800 ring-1 ring-gray-300',
 };
 
@@ -92,6 +96,10 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
   refunded: 'Dikembalikan',
+  return_requested: 'Retur Diajukan',
+  return_shipped: 'Retur Dikirim',
+  return_received: 'Retur Diterima',
+  return_completed: 'Retur Selesai',
   failed: 'Gagal',
 };
 
@@ -103,6 +111,10 @@ const TRANSITIONS: Record<string, string[]> = {
   completed: ['refunded'],
   cancelled: [],
   refunded: [],
+  return_requested: ['return_shipped'],
+  return_shipped: ['return_received'],
+  return_received: ['return_completed'],
+  return_completed: [],
   failed: ['pending', 'cancelled'],
 };
 
@@ -148,6 +160,9 @@ export default function OrderDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
+  const [returnData, setReturnData] = useState<any>(null);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [adminNote, setAdminNote] = useState('');
 
   useEffect(() => {
     loadOrder();
@@ -168,6 +183,25 @@ export default function OrderDetailPage() {
       setLoading(false);
     }
   };
+
+  const loadReturnData = async () => {
+    try {
+      const res = await fetch(`/api/admin/returns?orderId=${orderId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const ret = data.returns?.find((r: any) => r.orderId === Number(orderId));
+        setReturnData(ret || null);
+        if (ret) {
+          setRefundAmount(String(ret.refundAmount || ''));
+          setAdminNote(ret.adminNotes || '');
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    if (order) loadReturnData();
+  }, [order]);
 
   const updateStatus = async (newStatus: string) => {
     setUpdating(true);
@@ -422,6 +456,45 @@ export default function OrderDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Return Management */}
+          {returnData && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Manajemen Retur
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGES['return_' + returnData.status] || 'bg-gray-100 text-gray-800'}`}>
+                    {returnData.status === 'requested' ? 'Retur Diajukan' : returnData.status === 'shipped' ? 'Retur Dikirim' : returnData.status === 'received' ? 'Retur Diterima' : returnData.status === 'completed' ? 'Retur Selesai' : returnData.status === 'rejected' ? 'Retur Ditolak' : returnData.status}
+                  </span>
+                </div>
+                <div className="text-sm space-y-1.5">
+                  <div><span className="text-gray-400 text-xs">Alasan</span><p className="text-gray-700">{returnData.reason}</p></div>
+                  {returnData.unboxingVideoUrl && <div><span className="text-gray-400 text-xs">Video Unboxing</span><a href={returnData.unboxingVideoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs break-all block hover:underline">{returnData.unboxingVideoUrl}</a></div>}
+                  {returnData.returnTrackingNumber && <div><span className="text-gray-400 text-xs">Resi Balik</span><p className="text-gray-700 font-mono text-xs">{returnData.returnTrackingNumber}</p>{returnData.returnCourier && <p className="text-gray-500 text-xs">Kurir: {returnData.returnCourier}</p>}</div>}
+                </div>
+                {returnData.items?.length > 0 && <div className="border-t border-gray-100 pt-2"><span className="text-gray-400 text-xs">Produk Diretur</span><div className="mt-1 space-y-1">{returnData.items.map((item: any, idx: number) => <div key={idx} className="flex justify-between text-xs"><span className="text-gray-700">{item.productName} ×{item.quantity}</span><span className="text-gray-600">{formatCurrency(String(item.price * item.quantity))}</span></div>)}</div></div>}
+                <div className="border-t border-gray-100 pt-3 space-y-2">
+                  {returnData.status === 'requested' && <div className="space-y-2">
+                    <button onClick={async () => { setUpdating(true); try { const res = await fetch('/api/admin/returns/' + returnData.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'shipped' }) }); if (res.ok) { await loadReturnData(); await loadOrder(); } } catch {} finally { setUpdating(false); } }} disabled={updating} className="w-full px-3 py-2 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100 disabled:opacity-50">Konfirmasi Telah Dikirim</button>
+                    <button onClick={async () => { setUpdating(true); try { const res = await fetch('/api/admin/returns/' + returnData.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'rejected', adminNotes: adminNote || 'Retur ditolak oleh admin' }) }); if (res.ok) { await loadReturnData(); await loadOrder(); } } catch {} finally { setUpdating(false); } }} disabled={updating} className="w-full px-3 py-2 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 disabled:opacity-50">Tolak Retur</button>
+                  </div>}
+                  {returnData.status === 'shipped' && <button onClick={async () => { setUpdating(true); try { const res = await fetch('/api/admin/returns/' + returnData.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'received' }) }); if (res.ok) { await loadReturnData(); await loadOrder(); } } catch {} finally { setUpdating(false); } }} disabled={updating} className="w-full px-3 py-2 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100 disabled:opacity-50">Barang Telah Diterima</button>}
+                  {returnData.status === 'received' && <div className="space-y-2">
+                    <div><label className="text-xs text-gray-500">Jumlah Refund (Rp)</label><input type="number" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" className="w-full mt-1 px-2 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500" /></div>
+                    <div><label className="text-xs text-gray-500">Catatan (opsional)</label><input type="text" value={adminNote} onChange={(e) => setAdminNote(e.target.value)} placeholder="Catatan refund..." className="w-full mt-1 px-2 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500" /></div>
+                    <button onClick={async () => { setUpdating(true); try { const res = await fetch('/api/admin/returns/' + returnData.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'completed', refundAmount: parseInt(refundAmount) || 0, adminNotes: adminNote || undefined }) }); if (res.ok) { await loadReturnData(); await loadOrder(); } } catch {} finally { setUpdating(false); } }} disabled={updating} className="w-full px-3 py-2 bg-green-50 text-green-600 text-xs font-medium rounded-lg hover:bg-green-100 disabled:opacity-50">Proses Refund & Selesaikan Retur</button>
+                  </div>}
+                  {returnData.status === 'rejected' && <div className="bg-red-50 rounded p-2 text-xs text-red-600">Retur telah ditolak. {returnData.adminNotes && <span>Catatan: {returnData.adminNotes}</span>}</div>}
+                  {returnData.status === 'completed' && <div className="bg-green-50 rounded p-2 text-xs text-green-600">Retur selesai. Refund: {formatCurrency(String(returnData.refundAmount || 0))}</div>}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Shipping */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">

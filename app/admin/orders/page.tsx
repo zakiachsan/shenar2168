@@ -28,6 +28,7 @@ const STATUS_TABS = [
   { value: 'processing', label: 'Diproses' },
   { value: 'completed', label: 'Selesai' },
   { value: 'cancelled', label: 'Dibatalkan' },
+  { value: 'return', label: 'Retur' },
 ];
 
 const STATUS_BADGES: Record<string, string> = {
@@ -36,6 +37,10 @@ const STATUS_BADGES: Record<string, string> = {
   'on-hold': 'bg-orange-100 text-orange-800 ring-1 ring-orange-300',
   completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   cancelled: 'bg-red-100 text-red-800 ring-1 ring-red-300',
+  return_requested: 'bg-orange-100 text-orange-800 ring-1 ring-orange-300',
+  return_shipped: 'bg-blue-100 text-blue-800 ring-1 ring-blue-300',
+  return_received: 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300',
+  return_completed: 'bg-green-100 text-green-800 ring-1 ring-green-300',
   failed: 'bg-gray-100 text-gray-800 ring-1 ring-gray-300',
 };
 
@@ -45,6 +50,10 @@ const STATUS_LABELS: Record<string, string> = {
   'on-hold': 'Ditahan',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
+  return_requested: 'Retur Diajukan',
+  return_shipped: 'Retur Dikirim',
+  return_received: 'Retur Diterima',
+  return_completed: 'Retur Selesai',
   failed: 'Gagal',
 };
 
