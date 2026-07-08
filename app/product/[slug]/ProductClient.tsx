@@ -46,7 +46,14 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
   const [loading, setLoading] = useState(!initialProduct);
   const [notFound, setNotFound] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [qty, setQty] = useState(1);
+  const metaData = (product as any)?.meta_data || [];
+  const minQuantity = parseInt(metaData.find((m: any) => m.key === '_min_quantity')?.value || '1') || 1;
+  const [qty, setQty] = useState(minQuantity);
+
+  // Sync qty when minQuantity changes (after API fetch)
+  useEffect(() => {
+    setQty((prev) => Math.max(prev, minQuantity));
+  }, [minQuantity]);
   const [activeTab, setActiveTab] = useState("deskripsi");
   const [discussions, setDiscussions] = useState<any[]>([]);
   const [discussionsLoading, setDiscussionsLoading] = useState(false);
@@ -129,6 +136,9 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
       height: productHeight,
       length: productLength,
       width: productWidth,
+      isPreorder: isPreorder,
+      preorderDays: preorderDays,
+      minQuantity: minQuantity,
     });
   };
 
@@ -766,7 +776,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                     <span className="text-sm text-shopee-text-secondary block mb-2">Kuantitas</span>
                     <div className="flex items-center gap-0">
                       <button
-                        onClick={() => setQty(Math.max(1, qty - 1))}
+                        onClick={() => setQty(Math.max(minQuantity, qty - 1))}
                         className="w-8 h-8 border border-shopee-border flex items-center justify-center hover:bg-shopee-gray transition-colors rounded-l-sm"
                       >
                         <Minus className="w-3.5 h-3.5" />
@@ -843,6 +853,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                       width={productWidth}
                       isPreorder={!!isPreorder}
                       preorderDays={preorderDays}
+                      minQuantity={minQuantity}
                       className="flex-1 whitespace-nowrap"
                     />
                   )}
@@ -872,6 +883,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                       width={productWidth}
                       isPreorder={!!isPreorder}
                       preorderDays={preorderDays}
+                      minQuantity={minQuantity}
                       className="flex-1 whitespace-nowrap"
                     />
                   )}

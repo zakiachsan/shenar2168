@@ -148,6 +148,21 @@ export async function POST(req: NextRequest) {
       }));
     }
 
+    // Meta data
+    const meta_data: any[] = [];
+    if (body.is_preorder !== undefined) {
+      meta_data.push({ key: 'is_preorder', value: body.is_preorder ? '1' : '0' });
+    }
+    if (body.preorder_days !== undefined) {
+      meta_data.push({ key: 'preorder_days', value: String(body.preorder_days || '7') });
+    }
+    if (body.min_quantity !== undefined) {
+      meta_data.push({ key: 'min_quantity', value: String(body.min_quantity || '1') });
+    }
+    if (meta_data.length > 0) {
+      payload.meta_data = meta_data;
+    }
+
     // Create parent product
     const result = await adminCreateProduct(payload);
     if (result.status >= 400) {

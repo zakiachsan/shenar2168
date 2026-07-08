@@ -23,6 +23,7 @@ interface BuyNowButtonProps {
   width?: number;
   isPreorder?: boolean;
   preorderDays?: number;
+  minQuantity?: number;
   className?: string;
 }
 
@@ -43,6 +44,7 @@ export default function BuyNowButton({
   width,
   isPreorder,
   preorderDays,
+  minQuantity,
   className = "",
 }: BuyNowButtonProps) {
   const { addItem } = useCart();
@@ -69,6 +71,7 @@ export default function BuyNowButton({
       width,
       isPreorder,
       preorderDays,
+      minQuantity,
     });
     // Set this single item as selected for checkout
     const selectedKey = `${productId}-${variationId || 0}`;

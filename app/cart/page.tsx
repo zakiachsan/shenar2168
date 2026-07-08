@@ -265,7 +265,7 @@ export default function CartPage() {
                               )}
                             </div>
                             <div className="flex items-center gap-0">
-                              {item.quantity === 1 ? (
+                              {item.quantity <= (item.minQuantity ?? 1) ? (
                                 <button
                                   onClick={() => removeItem(item.productId, item.variationId)}
                                   className="w-7 h-7 border border-shopee-border flex items-center justify-center rounded-l-sm text-shopee-text-secondary hover:text-red-500 hover:border-red-300 transition-colors"

@@ -202,6 +202,7 @@ export default function EditProductPage() {
   const [manageStock, setManageStock] = useState(true);
   const [isPreorder, setIsPreorder] = useState(false);
   const [preorderDays, setPreorderDays] = useState('7');
+  const [minQuantity, setMinQuantity] = useState('1');
   const [status, setStatus] = useState('draft');
   const [featured, setFeatured] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -256,6 +257,8 @@ export default function EditProductPage() {
           const preorderDaysMeta = metaData.find((m: any) => m.key === '_preorder_days');
           setIsPreorder(isPreorderMeta?.value === 'yes');
           setPreorderDays(preorderDaysMeta?.value || '7');
+          const minQuantityMeta = metaData.find((m: any) => m.key === '_min_quantity');
+          setMinQuantity(minQuantityMeta?.value || '1');
           setStatus(
             product.status === 'active' ? 'publish' :
             product.status === 'archived' ? 'pending' :
@@ -397,6 +400,7 @@ export default function EditProductPage() {
         meta_data: [
           { key: '_is_preorder', value: isPreorder ? 'yes' : 'no' },
           { key: '_preorder_days', value: isPreorder ? preorderDays : '0' },
+          { key: '_min_quantity', value: minQuantity || '1' },
         ],
       };
 
@@ -819,6 +823,18 @@ export default function EditProductPage() {
                     />
                   </div>
                 )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Minimal Pembelian
+                  </label>
+                  <NumberInput
+                    value={minQuantity}
+                    onChange={setMinQuantity}
+                    placeholder="1"
+                    min={1}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Jumlah minimal yang harus dibeli customer dalam satu kali pembelian</p>
+                </div>
               </div>
             )}
 

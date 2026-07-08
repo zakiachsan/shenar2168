@@ -28,6 +28,7 @@ export interface CartItem {
   width?: number;  // in cm
   isPreorder?: boolean;
   preorderDays?: number;
+  minQuantity?: number;
 }
 
 interface CartContextType {
@@ -99,7 +100,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Load cart from localStorage on mount
   useEffect(() => {
-    setItems(loadCart());
+    const saved = loadCart();
+    // Clamp existing items to their minQuantity
+    const clamped = saved.map((item) => ({
+      ...item,
+      quantity: Math.max(item.quantity, item.minQuantity ?? 1),
+    }));
+    setItems(clamped);
     setIsLoaded(true);
   }, []);
 
@@ -144,6 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             width: newItem.width,
             isPreorder: newItem.isPreorder || false,
             preorderDays: newItem.preorderDays || 0,
+            minQuantity: newItem.minQuantity ?? 1,
           },
         ];
       }
@@ -167,22 +175,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((productId: number, quantity: number, variationId?: number) => {
-    if (quantity < 1) {
-      setItems((prev) =>
-        prev.filter(
-          (item) =>
-            !(item.productId === productId && item.variationId === variationId)
-        )
+    setItems((prev) => {
+      const item = prev.find(
+        (i) => i.productId === productId && i.variationId === variationId
       );
-      return;
-    }
-    setItems((prev) =>
-      prev.map((item) =>
-        item.productId === productId && item.variationId === variationId
-          ? { ...item, quantity }
-          : item
-      )
-    );
+      const minQty = item?.minQuantity ?? 1;
+      
+      if (quantity < minQty) {
+        if (quantity <= 0) {
+          return prev.filter(
+            (i) => !(i.productId === productId && i.variationId === variationId)
+          );
+        }
+        return prev; // clamp at minQty
+      }
+      return prev.map((i) =>
+        i.productId === productId && i.variationId === variationId
+          ? { ...i, quantity }
+          : i
+      );
+    });
   }, []);
 
   const clearCart = useCallback(() => {
