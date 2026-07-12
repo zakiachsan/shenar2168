@@ -3,8 +3,8 @@ import ProductClient from "./ProductClient";
 import { Suspense } from "react";
 
 const WC_URL = process.env.WC_URL || "https://api.shenar2168.com";
-const CK = process.env.WC_CONSUMER_KEY || "ck_0037912ea33eab6d8c692d89a3e05da1848220e4";
-const CS = process.env.WC_CONSUMER_SECRET || "cs_7a3e75a2f15707384215b3c87872ed881494024a";
+const CK = process.env.WC_CONSUMER_KEY || "ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1";
+const CS = process.env.WC_CONSUMER_SECRET || "cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64";
 const BASIC_AUTH = "Basic " + Buffer.from(CK + ":" + CS).toString("base64");
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const id = Number(slug.split("-")[0]);
 
   let initialProduct: any = null;
+  let initialVariations: any[] = [];
   try {
     const res = await fetch(WC_URL + "/wp-json/wc/v3/products/" + id, {
       headers: { Authorization: BASIC_AUTH, Accept: "application/json" },
@@ -24,6 +25,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       initialProduct = {
         id: wc.id,
         name: wc.name,
+        type: wc.type,
         price: parseInt(wc.price || "0"),
         originalPrice: parseInt(wc.regular_price || "0"),
         image: wc.images && wc.images[0] ? wc.images[0].src : "",
@@ -37,6 +39,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         description: wc.description || "",
         shortDescription: wc.short_description || "",
       };
+      // Fetch variations for variable products
+      if (wc.type === "variable" && wc.variations?.length > 0) {
+        try {
+          const varRes = await fetch(WC_URL + "/wp-json/wc/v3/products/" + id + "/variations", {
+            headers: { Authorization: BASIC_AUTH, Accept: "application/json" },
+            next: { revalidate: 60 },
+          });
+          if (varRes.ok) {
+            initialVariations = await varRes.json();
+          }
+        } catch { /* variations not critical */ }
+      }
     }
   } catch { /* fall through to static */ }
 
@@ -46,7 +60,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <Suspense fallback={null}>
-      <ProductClient id={id} initialProduct={initialProduct || undefined} />
+      <ProductClient id={id} initialProduct={initialProduct || undefined} initialVariations={initialVariations} />
     </Suspense>
   );
 }

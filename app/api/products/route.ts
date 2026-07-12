@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProductImageUrl } from '@/lib/data';
 
 const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_0037912ea33eab6d8c692d89a3e05da1848220e4';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_7a3e75a2f15707384215b3c87872ed881494024a';
+const CK = process.env.WC_CONSUMER_KEY || 'ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1';
+const CS = process.env.WC_CONSUMER_SECRET || 'cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64';
 
 const BASIC_AUTH = 'Basic ' + Buffer.from(CK + ':' + CS).toString('base64');
 

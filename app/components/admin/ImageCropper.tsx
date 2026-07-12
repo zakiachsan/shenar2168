@@ -227,15 +227,34 @@ export default function ImageCropper({
 
         {/* Center crop overlay */}
         <div
-          className="absolute border-2 border-white/80 shadow-lg pointer-events-none"
+          className="absolute pointer-events-none"
           style={{
             left: cropX,
             top: cropY,
             width: cropW,
             height: cropH,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+            boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
           }}
-        />
+        >
+          {/* Crop border - vibrant purple */}
+          <div className="absolute inset-0 border-[2.5px] border-violet-500" />
+          {/* Rule of thirds grid */}
+          <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="border border-violet-400/25" />
+            ))}
+          </div>
+          {/* Corner handles - white square with black outline */}
+          <div className="absolute -top-[5px] -left-[5px] w-[10px] h-[10px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute -top-[5px] -right-[5px] w-[10px] h-[10px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute -bottom-[5px] -left-[5px] w-[10px] h-[10px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute -bottom-[5px] -right-[5px] w-[10px] h-[10px] bg-white border border-black/60 shadow-sm" />
+          {/* Edge midpoint handles */}
+          <div className="absolute -top-[4px] left-1/2 -translate-x-1/2 w-[10px] h-[6px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[10px] h-[6px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute top-1/2 -left-[4px] -translate-y-1/2 w-[6px] h-[10px] bg-white border border-black/60 shadow-sm" />
+          <div className="absolute top-1/2 -right-[4px] -translate-y-1/2 w-[6px] h-[10px] bg-white border border-black/60 shadow-sm" />
+        </div>
 
         {!img && (
           <div className="absolute inset-0 flex items-center justify-center text-white/60 text-sm">

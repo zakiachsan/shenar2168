@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useChat } from "@/lib/chat-context";
 import { useAuth } from "@/app/components/layout/AuthProvider";
+import { isFavorite, toggleFavorite, type FavoriteItem } from "@/lib/favorites";
 import LoginModal from "@/app/components/layout/LoginModal";
 import Link from "next/link";
 import {
@@ -54,6 +55,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
   useEffect(() => {
     setQty((prev) => Math.max(prev, minQuantity));
   }, [minQuantity]);
+
   const [activeTab, setActiveTab] = useState("deskripsi");
   const [discussions, setDiscussions] = useState<any[]>([]);
   const [discussionsLoading, setDiscussionsLoading] = useState(false);
@@ -163,6 +165,15 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
     if (idx >= 0) setSelectedImage(idx);
   }, [matchedVariation?.image]);
 
+  // Reset qty when variation changes
+  const prevVariationIdRef = useRef(matchedVariation?.id);
+  useEffect(() => {
+    if (prevVariationIdRef.current !== matchedVariation?.id) {
+      prevVariationIdRef.current = matchedVariation?.id;
+      setQty(minQuantity);
+    }
+  }, [matchedVariation?.id, minQuantity]);
+
   // Effective price
   const effectivePrice = matchedVariation
     ? parseInt(matchedVariation.sale_price || matchedVariation.price || "0") || parseInt(matchedVariation.regular_price || "0")
@@ -172,6 +183,9 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
     : product?.originalPrice || 0;
   const effectiveSku = matchedVariation?.sku || '';
   const effectiveStock = matchedVariation?.stock_quantity ?? null;
+  // Total stock across all variations (for display when no variant selected)
+  const totalVariationStock = variations.reduce((sum: number, v: any) => sum + (v.stock_quantity || 0), 0);
+  const displayStock = effectiveStock ?? (totalVariationStock > 0 ? totalVariationStock : null);
   const isVariable = product?.type === 'variable';
   const isPreorder = (product as any)?.isPreorder;
   const preorderDays = (product as any)?.preorderDays || 7;
@@ -204,11 +218,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   useEffect(() => {
-    // Check if product is already wishlisted
-    try {
-      const favs = JSON.parse(localStorage.getItem('ragamguna-favorites') || '[]');
-      setIsWishlisted(favs.includes(product?.id));
-    } catch {}
+    if (product?.id) setIsWishlisted(isFavorite(product.id));
   }, [product?.id]);
 
   const { openChat } = useChat();
@@ -234,20 +244,14 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
 
   const handleWishlist = () => {
     if (!product) return;
-    let favs: number[];
-    try {
-      favs = JSON.parse(localStorage.getItem('ragamguna-favorites') || '[]');
-    } catch {
-      favs = [];
-    }
-    const idx = favs.indexOf(product.id);
-    if (idx >= 0) {
-      favs.splice(idx, 1);
-    } else {
-      favs.push(product.id);
-    }
-    localStorage.setItem('ragamguna-favorites', JSON.stringify(favs));
-    setIsWishlisted(!isWishlisted);
+    const item: FavoriteItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    };
+    const added = toggleFavorite(item);
+    setIsWishlisted(added);
   };
 
   const handleShare = async () => {
@@ -702,10 +706,19 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                         Varian: {selectedAttributes[attr.name] || '-'}
                       </span>
                       <div className="flex flex-wrap gap-2">
-                        {attr.options.map((opt: string) => (
+                        {attr.options.map((opt: string) => {
+                          // Check stock for this option
+                          const matchingVar = variations.find((v: any) =>
+                            v.attributes?.some((a: any) => a.name === attr.name && a.option === opt)
+                          );
+                          const optStock = matchingVar?.stock_quantity;
+                          const isOutOfStock = optStock !== null && optStock !== undefined && optStock <= 0;
+                          return (
                           <button
                             key={opt}
+                            disabled={isOutOfStock}
                             onClick={() => {
+                              if (isOutOfStock) return;
                               setSelectedAttributes((prev) => {
                                 const next = { ...prev };
                                 if (next[attr.name] === opt) {
@@ -717,14 +730,18 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                               });
                             }}
                             className={`px-3 py-1.5 text-xs border rounded-sm transition-all duration-150 ${
-                              selectedAttributes[attr.name] === opt
-                                ? "border-shopee-orange text-shopee-orange bg-shopee-orange-light font-medium ring-1 ring-shopee-orange/30 shadow-sm"
-                                : "border-shopee-border text-shopee-text-secondary hover:border-shopee-orange/40 hover:text-shopee-text"
+                              isOutOfStock
+                                ? "border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed line-through"
+                                : selectedAttributes[attr.name] === opt
+                                  ? "border-shopee-orange text-shopee-orange bg-shopee-orange-light font-medium ring-1 ring-shopee-orange/30 shadow-sm"
+                                  : "border-shopee-border text-shopee-text-secondary hover:border-shopee-orange/40 hover:text-shopee-text"
                             }`}
                           >
                             {opt}
+                            {isOutOfStock && <span className="ml-1 text-[10px]">(Habis)</span>}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -787,14 +804,16 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                       <button
                         onClick={() => setQty(qty + 1)}
                         className="w-8 h-8 border border-shopee-border flex items-center justify-center hover:bg-shopee-gray transition-colors rounded-r-sm"
-                        disabled={effectiveStock !== null && effectiveStock !== undefined && qty >= effectiveStock}
+                        disabled={displayStock !== null && displayStock !== undefined && qty >= displayStock}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                       <span className="ml-3 text-xs text-shopee-text-secondary">
-                        {effectiveStock !== null && effectiveStock !== undefined
-                          ? `Tersedia ${effectiveStock} stok`
-                          : 'Tersedia 150 stok'}
+                        {displayStock !== null && displayStock !== undefined
+                          ? displayStock <= 0
+                            ? 'Stok Habis'
+                            : `Tersedia ${displayStock} stok`
+                          : 'Stok Tidak Diketahui'}
                       </span>
                     </div>
                   </div>
@@ -835,6 +854,13 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                     >
                       Masukkan Keranjang
                     </button>
+                  ) : displayStock !== null && displayStock !== undefined && displayStock <= 0 ? (
+                    <button
+                      disabled
+                      className="flex items-center justify-center gap-2 h-12 border-2 border-gray-300 text-gray-400 bg-gray-100 rounded-sm flex-1 whitespace-nowrap font-medium cursor-not-allowed"
+                    >
+                      Stok Habis
+                    </button>
                   ) : (
                     <AddToCartButton
                       productId={product.id}
@@ -864,6 +890,13 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                       className="flex items-center justify-center gap-2 h-12 bg-shopee-orange hover:bg-[#d35400] text-white font-medium rounded-sm transition-colors flex-1 whitespace-nowrap"
                     >
                       Beli Sekarang
+                    </button>
+                  ) : displayStock !== null && displayStock !== undefined && displayStock <= 0 ? (
+                    <button
+                      disabled
+                      className="flex items-center justify-center gap-2 h-12 bg-gray-400 text-white font-medium rounded-sm flex-1 whitespace-nowrap cursor-not-allowed"
+                    >
+                      Stok Habis
                     </button>
                   ) : (
                     <BuyNowButton
@@ -1203,6 +1236,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
         productImage={matchedVariation?.image || product.image}
         effectiveSku={effectiveSku}
         effectiveStock={effectiveStock}
+        displayStock={displayStock}
         qty={qty}
         matchedVariationId={matchedVariation?.id}
         variationInfo={variationInfo}
@@ -1242,7 +1276,9 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
             {/* Product Preview */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
               <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                <img src={matchedVariation?.image || product?.image || ''} alt="" className="w-full h-full object-cover" />
+                {matchedVariation?.image || product?.image ? (
+                  <img src={matchedVariation?.image || product?.image} alt="" className="w-full h-full object-cover" />
+                ) : null}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-shopee-orange">
@@ -1320,6 +1356,7 @@ interface MobileStickyBarProps {
   productImage: string;
   effectiveSku: string;
   effectiveStock: number | null;
+  displayStock: number | null;
   qty: number;
   matchedVariationId?: number;
   variationInfo: string;
@@ -1341,6 +1378,7 @@ function MobileStickyBar({
   productImage,
   effectiveSku,
   effectiveStock,
+  displayStock,
   qty,
   matchedVariationId,
   variationInfo,
@@ -1407,6 +1445,15 @@ function MobileStickyBar({
       </button>
 
       {/* Masukkan Keranjang */}
+      {displayStock !== null && displayStock !== undefined && displayStock <= 0 ? (
+        <button
+          disabled
+          className="flex flex-col items-center justify-center gap-0.5 flex-1 bg-gray-400 text-white cursor-not-allowed border-l border-white/30 min-w-0"
+        >
+          <ShoppingCart className="w-5 h-5" />
+          <span className="text-[10px] font-semibold leading-tight">Stok Habis</span>
+        </button>
+      ) : (
       <button
         onClick={handleAddToCart}
         className="flex flex-col items-center justify-center gap-0.5 flex-1 bg-[#00A19B] text-white active:bg-[#008B85] transition-colors border-l border-white/30 min-w-0"
@@ -1414,11 +1461,12 @@ function MobileStickyBar({
         <ShoppingCart className="w-5 h-5" />
         <span className="text-[10px] font-semibold leading-tight">Masukkan Keranjang</span>
       </button>
+      )}
 
       {/* Beli Dengan Voucher */}
       <button
         onClick={handleBuyWithVoucher}
-        disabled={buyLoading}
+        disabled={buyLoading || (displayStock !== null && displayStock !== undefined && displayStock <= 0)}
         className="flex flex-col items-center justify-center flex-1 bg-[#EE4D2D] text-white active:bg-[#D63F21] transition-colors disabled:opacity-70"
       >
         {buyLoading ? (

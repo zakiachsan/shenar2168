@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   turbopack: {
-    root: ".",
+    root: "C:\\Projects\\shenar2168",
   },
 };
 
