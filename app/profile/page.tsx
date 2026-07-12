@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const router = useRouter();
 const { user, logout, openLogin, updateProfile } = useAuth();
   const [voucherCount, setVoucherCount] = useState(0);
+  const [notifUnread, setNotifUnread] = useState(0);
   const [displayAddress, setDisplayAddress] = useState("");
   // Always load address from address book (preferred) or user profile
   useEffect(() => {
@@ -113,6 +114,18 @@ const { user, logout, openLogin, updateProfile } = useAuth();
         }
       })
       .catch(() => {});
+
+    // Fetch notification unread count
+    const fetchNotifCount = () => {
+      fetch('/api/notifications', { headers: { 'X-Customer-Phone': user.phone } })
+        .then((r) => r.json())
+        .then((data) => setNotifUnread(data.unreadCount || 0))
+        .catch(() => setNotifUnread(0));
+    };
+    fetchNotifCount();
+    const handleNotifRead = () => fetchNotifCount();
+    window.addEventListener('notifications-read', handleNotifRead);
+    return () => window.removeEventListener('notifications-read', handleNotifRead);
   }, [user]);
 
   const handleMenuClick = (item: MenuItem) => {
@@ -191,7 +204,14 @@ const { user, logout, openLogin, updateProfile } = useAuth();
                         onClick={() => handleMenuClick(item)}
                         className="flex flex-col items-center gap-1 py-3 hover:bg-shopee-gray transition-colors cursor-pointer"
                       >
+                      <div className="relative">
                         <Icon className="w-5 h-5 text-shopee-text-secondary" strokeWidth={1.5} />
+                        {item.label === 'Notifikasi' && notifUnread > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-shopee-orange text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                            {notifUnread > 9 ? '9+' : notifUnread}
+                          </span>
+                        )}
+                      </div>
                         <span className="text-[10px] text-shopee-text text-center leading-tight px-1">
                           {item.label}
                         </span>

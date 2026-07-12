@@ -126,7 +126,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const raw = localStorage.getItem("ragamguna-address-book");
+      const raw = localStorage.getItem("shenar2168-address-book");
       if (raw) {
         const book = JSON.parse(raw);
         if (Array.isArray(book)) setAddressBook(book);
@@ -153,10 +153,10 @@ export default function CheckoutPage() {
     setFormPostalCode(addr.postalCode || "");
     if (addr.lat && addr.lng) {
       setMapLatLng({ lat: addr.lat, lng: addr.lng });
-      localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify({ lat: addr.lat, lng: addr.lng }));
+      localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify({ lat: addr.lat, lng: addr.lng }));
     }
     if (typeof window !== "undefined") {
-      localStorage.setItem("ragamguna-checkout-address", JSON.stringify(newAddress));
+      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(newAddress));
     }
     setShowAddressList(false);
     setIsEditingAddress(false);
@@ -166,13 +166,13 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const rawAddr = localStorage.getItem("ragamguna-checkout-address");
+      const rawAddr = localStorage.getItem("shenar2168-checkout-address");
       if (rawAddr) {
         const parsed = JSON.parse(rawAddr);
         setAddress(parsed);
         if (parsed.postalCode) setMapPostalCode(parsed.postalCode);
       }
-      const rawLatLng = localStorage.getItem("ragamguna-checkout-latlng");
+      const rawLatLng = localStorage.getItem("shenar2168-checkout-latlng");
       if (rawLatLng) {
         const parsed = JSON.parse(rawLatLng);
         setMapLatLng(parsed);
@@ -199,7 +199,7 @@ export default function CheckoutPage() {
           };
           setAddress(serverAddr);
           if (serverAddr.postalCode) setMapPostalCode(serverAddr.postalCode);
-          localStorage.setItem("ragamguna-checkout-address", JSON.stringify(serverAddr));
+          localStorage.setItem("shenar2168-checkout-address", JSON.stringify(serverAddr));
         }
       })
       .catch(() => {});
@@ -210,7 +210,7 @@ export default function CheckoutPage() {
     if (!localLoaded.current || address) return; // already have address
     if (typeof window === "undefined") return;
     try {
-      const rawBook = localStorage.getItem("ragamguna-address-book");
+      const rawBook = localStorage.getItem("shenar2168-address-book");
       if (rawBook) {
         const book = JSON.parse(rawBook);
         if (Array.isArray(book) && book.length > 0) {
@@ -252,7 +252,7 @@ export default function CheckoutPage() {
   const [selectedKeys, setSelectedKeys] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      const raw = localStorage.getItem("ragamguna-checkout-selected");
+      const raw = localStorage.getItem("shenar2168-checkout-selected");
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -546,7 +546,7 @@ export default function CheckoutPage() {
             first_name: address.name.split(" ")[0],
             last_name: address.name.split(" ").slice(1).join(" ") || '',
             phone: address.phone,
-            email: `${address.phone}@ragamguna.id`,
+            email: `${address.phone}@shenar2168.id`,
             address_1: address.fullAddress,
             city: "Jakarta",
             state: "Jakarta",
@@ -626,13 +626,13 @@ export default function CheckoutPage() {
         waybillId: data.shipping?.waybill_id,
         biteshipStatus: data.shipping?.status,
       };
-      const existingOrders = JSON.parse(localStorage.getItem("ragamguna-orders") || "[]");
+      const existingOrders = JSON.parse(localStorage.getItem("shenar2168-orders") || "[]");
       existingOrders.unshift(orderRecord);
-      localStorage.setItem("ragamguna-orders", JSON.stringify(existingOrders));
+      localStorage.setItem("shenar2168-orders", JSON.stringify(existingOrders));
 
       // Save address to address book
       try {
-        const rawBook = localStorage.getItem("ragamguna-address-book");
+        const rawBook = localStorage.getItem("shenar2168-address-book");
         const book = rawBook ? JSON.parse(rawBook) : [];
         const exists = book.some((a: any) =>
           a.fullAddress === address.fullAddress && a.phone === address.phone
@@ -650,7 +650,7 @@ export default function CheckoutPage() {
             lng: mapLatLng?.lng,
             isDefault: book.length === 0,
           });
-          localStorage.setItem("ragamguna-address-book", JSON.stringify(book));
+          localStorage.setItem("shenar2168-address-book", JSON.stringify(book));
         }
       } catch {
         // ignore
@@ -666,7 +666,7 @@ export default function CheckoutPage() {
         const dokuData = await dokuRes.json();
         // Clear cart directly in localStorage (skip React state to avoid flash)
         try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
-        localStorage.removeItem("ragamguna-checkout-selected");
+        localStorage.removeItem("shenar2168-checkout-selected");
         if (dokuData.checkout_url) {
           window.location.href = dokuData.checkout_url;
         } else {
@@ -674,7 +674,7 @@ export default function CheckoutPage() {
         }
       } catch {
         try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
-        localStorage.removeItem("ragamguna-checkout-selected");
+        localStorage.removeItem("shenar2168-checkout-selected");
         window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
       }
     } catch (err) {
@@ -714,9 +714,9 @@ export default function CheckoutPage() {
     setAddress(newAddress);
     setIsEditingAddress(false);
     if (typeof window !== "undefined") {
-      localStorage.setItem("ragamguna-checkout-address", JSON.stringify(newAddress));
+      localStorage.setItem("shenar2168-checkout-address", JSON.stringify(newAddress));
       if (mapLatLng) {
-        localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify(mapLatLng));
+        localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify(mapLatLng));
       }
     }
     // Update AuthProvider so profile shows the latest data
@@ -750,7 +750,7 @@ export default function CheckoutPage() {
     setMapLatLng(newLatLng);
     setShowMapPicker(false);
     if (typeof window !== "undefined") {
-      localStorage.setItem("ragamguna-checkout-latlng", JSON.stringify(newLatLng));
+      localStorage.setItem("shenar2168-checkout-latlng", JSON.stringify(newLatLng));
     }
     // Also update address so shipping rates can be fetched immediately
     setAddress((prev) =>
@@ -1013,7 +1013,7 @@ export default function CheckoutPage() {
               {/* Products grouped by shop */}
               {Object.entries(
                 checkoutItems.reduce((groups, item) => {
-                  const shop = item.shopName || "RagamGuna Official";
+                  const shop = item.shopName || "Shenar2168 Official";
                   if (!groups[shop]) groups[shop] = [];
                   groups[shop].push(item);
                   return groups;

@@ -9,6 +9,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  timezone: '+00:00',
 });
 
 // Auto-migrate: ensure tables exist
@@ -39,9 +40,6 @@ const pool = mysql.createPool({
   } catch (e) {
     console.error('DB auto-migrate search_logs error:', e);
   }
-})();
-
-
   try {
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS chat_settings (
@@ -60,5 +58,6 @@ const pool = mysql.createPool({
   } catch (e) {
     console.error('DB auto-migrate chat_settings error:', e);
   }
+})();
 
 export default pool;

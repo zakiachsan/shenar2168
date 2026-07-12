@@ -85,6 +85,7 @@ export async function GET(req: NextRequest) {
       badgeColor: p.total_sales > 100 ? 'bg-yellow-400' : undefined,
       categories: p.categories.map((c: any) => c.slug),
       stock: p.stock_quantity,
+      stockStatus: p.stock_status || 'instock',
       slug: p.slug,
       sku: p.sku,
       description: p.short_description || p.description,

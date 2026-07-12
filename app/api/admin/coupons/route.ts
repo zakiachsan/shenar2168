@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { notifyNewCoupon } from '@/lib/notifications';
 import {
   adminGetCoupons,
   adminCreateCoupon,
@@ -55,6 +56,8 @@ export async function POST(req: NextRequest) {
     if (result.status >= 400) {
       return NextResponse.json({ error: result.data.message || 'Gagal membuat kupon' }, { status: result.status });
     }
+    // Notify new coupon created
+    notifyNewCoupon(payload.code, payload.discount_type, payload.amount).catch(console.error);
     return NextResponse.json(result.data, { status: 201 });
   } catch (e: any) {
     if (e.message === 'Unauthorized') {

@@ -19,5 +19,12 @@
     "alt": "Fashion Sale",
     "link": "",
     "active": true
+  },
+  {
+    "id": 4,
+    "image": "/uploads/banners/banners-1783848341681-banner.jpg",
+    "alt": "Tes banner",
+    "link": "Google.com",
+    "active": true
   }
 ]

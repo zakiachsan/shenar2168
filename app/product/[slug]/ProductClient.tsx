@@ -256,7 +256,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = product?.name || 'Produk RagamGuna';
+    const title = product?.name || 'Produk Shenar2168';
     if (navigator.share) {
       try {
         await navigator.share({ title, url, text: `Cek produk ini: ${title}` });
@@ -414,7 +414,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
         const res = await fetch('/api/settings');
         if (res.ok) {
           const data = await res.json();
-          setStoreSettings({ storeName: data.storeName || 'RagamGuna Official Store', storeLogo: data.storeLogo || '' });
+          setStoreSettings({ storeName: data.storeName || 'Shenar2168 Official Store', storeLogo: data.storeLogo || '' });
         }
       } catch { /* ignore */ }
     }
@@ -983,7 +983,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-shopee-text">{storeSettings?.storeName || 'RagamGuna Official Store'}</p>
+                    <p className="text-sm font-medium text-shopee-text">{storeSettings?.storeName || 'Shenar2168 Official Store'}</p>
                     <p className="text-xs text-shopee-text-secondary">Aktif 5 menit lalu</p>
                   </div>
                 </div>
@@ -1029,11 +1029,10 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
               </div>
               <div className="p-3 lg:p-6 min-h-[200px]">
                 {activeTab === "deskripsi" && (
-                  <div className="space-y-3 text-sm text-shopee-text whitespace-pre-line">
-                    <p>
-                      {product.description || product.name}
-                    </p>
-                  </div>
+                  <div
+                    className="text-sm text-shopee-text leading-relaxed [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1 [&_strong]:font-semibold [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded"
+                    dangerouslySetInnerHTML={{ __html: product.description || product.name }}
+                  />
                 )}
                 {activeTab === "ulasan" && (
                   <div className="space-y-4">
@@ -1162,7 +1161,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-sm font-medium text-shopee-text">Lainnya dari Toko Ini</h2>
-                  <p className="text-[11px] text-shopee-text-secondary">{storeSettings?.storeName || 'RagamGuna Official Store'}</p>
+                  <p className="text-[11px] text-shopee-text-secondary">{storeSettings?.storeName || 'Shenar2168 Official Store'}</p>
                 </div>
                 <Link href="/shop" className="text-xs text-shopee-orange hover:underline flex items-center gap-0.5">
                   Lihat Semua <ChevronRight className="w-3 h-3" />
@@ -1300,21 +1299,34 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                     Pilih {attr.name}: <span className="text-shopee-orange">{selectedAttributes[attr.name] || '-'}</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {attr.options.map((opt: string) => (
+                    {attr.options.map((opt: string) => {
+                      // Check stock for this option
+                      const matchingVar = variations.find((v: any) =>
+                        v.attributes?.some((a: any) => a.name === attr.name && a.option === opt)
+                      );
+                      const optStock = matchingVar?.stock_quantity;
+                      const isOutOfStock = optStock !== null && optStock !== undefined && optStock <= 0;
+                      return (
                       <button
                         key={opt}
+                        disabled={isOutOfStock}
                         onClick={() => {
+                          if (isOutOfStock) return;
                           setSelectedAttributes((prev) => ({ ...prev, [attr.name]: opt }));
                         }}
                         className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
-                          selectedAttributes[attr.name] === opt
-                            ? 'border-shopee-orange bg-shopee-orange text-white font-medium'
-                            : 'border-gray-200 text-gray-700 hover:border-shopee-orange'
+                          isOutOfStock
+                            ? "border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed line-through"
+                            : selectedAttributes[attr.name] === opt
+                              ? 'border-shopee-orange bg-shopee-orange text-white font-medium'
+                              : 'border-gray-200 text-gray-700 hover:border-shopee-orange'
                         }`}
                       >
                         {opt}
+                        {isOutOfStock && <span className="ml-1 text-[10px]">(Habis)</span>}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -1328,7 +1340,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                   if (pendingAction === 'buy') {
                     doAddToCart();
                     const selectedKey = `${product.id}-${matchedVariation?.id || 0}`;
-                    localStorage.setItem("ragamguna-checkout-selected", JSON.stringify([selectedKey]));
+                    localStorage.setItem("shenar2168-checkout-selected", JSON.stringify([selectedKey]));
                     router.push("/checkout");
                   } else {
                     doAddToCart();
@@ -1429,7 +1441,7 @@ function MobileStickyBar({
     setBuyLoading(true);
     handleAddToCart();
     const selectedKey = `${productId}-${matchedVariationId || 0}`;
-    localStorage.setItem("ragamguna-checkout-selected", JSON.stringify([selectedKey]));
+    localStorage.setItem("shenar2168-checkout-selected", JSON.stringify([selectedKey]));
     router.push("/checkout");
   };
 

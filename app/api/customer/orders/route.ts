@@ -3,8 +3,8 @@ import db from '@/lib/db';
 import { normalizePhone } from '@/lib/phone';
 
 const WC_URL = 'https://api.shenar2168.com';
-const CK = 'ck_3bb9651a765d8f556452b2bd291a499d2e19a7e7';
-const CS = 'cs_1675e16a5610a557a662bbfc09af36c6bd5177f0';
+const CK = 'ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1';
+const CS = 'cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64';
 
 function getAuthHeader(): string {
   const token = Buffer.from(`${CK}:${CS}`).toString('base64');

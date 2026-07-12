@@ -65,7 +65,7 @@ function formatTime(dateStr: string) {
 }
 
 function formatFullTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
 }
 
 export default function AdminChatPage() {

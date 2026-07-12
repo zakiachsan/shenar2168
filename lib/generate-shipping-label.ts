@@ -162,7 +162,7 @@ export function generateShippingLabelPDF(data: ShippingLabelData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.5);
   doc.setTextColor(0, 0, 0);
-  doc.text(data.storeName || 'RagamGuna', M + c1 / 2, y + 10, { align: 'center' });
+  doc.text(data.storeName || 'Shenar2168', M + c1 / 2, y + 10, { align: 'center' });
 
   // ── Middle column: Courier ──
   doc.setFont('helvetica', 'bold');

@@ -3,8 +3,8 @@ import https from 'https';
 import pool from '@/lib/db';
 
 const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_CKHQ83CpRU9Y75Q2sMSqge1Ma4J3Ozpt4wATPxq8';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_Uu641i6QalcTuvSnZ0LZbH3CJhW8IaagIbH4Hi0i';
+const CK = process.env.WC_CONSUMER_KEY || 'ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1';
+const CS = process.env.WC_CONSUMER_SECRET || 'cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64';
 const PRE = '/wp-json/wc/v3';
 
 function wcRequest(
@@ -58,11 +58,15 @@ export async function GET() {
 
     const categories = Array.isArray(result.data) ? result.data : [];
 
-    // Fetch banners from local DB
-    const [bannerRows] = await pool.execute('SELECT * FROM category_banners');
-    const banners: Record<number, string> = {};
-    for (const row of bannerRows as any[]) {
-      banners[row.category_id] = row.banner;
+    // Fetch banners from local DB (handle gracefully if table doesn't exist)
+    let banners: Record<number, string> = {};
+    try {
+      const [bannerRows] = await pool.execute('SELECT * FROM category_banners');
+      for (const row of bannerRows as any[]) {
+        banners[row.category_id] = row.banner;
+      }
+    } catch {
+      // Table may not exist in local dev
     }
 
     // Merge banner into categories

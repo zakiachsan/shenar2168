@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { notifyNewOrder, notifyOrderStatus, notifyCustomerOrderStatus } from '@/lib/notifications';
 import { adminGetOrders, adminGetOrder, adminUpdateOrderStatus } from '@/lib/admin-api';
 import db from '@/lib/db';
 
@@ -127,6 +128,13 @@ export async function PUT(req: NextRequest) {
     const result = await adminUpdateOrderStatus(body.id, body.status);
     if (result.status >= 400) {
       return NextResponse.json({ error: result.data.message || 'Gagal mengupdate status pesanan' }, { status: result.status });
+    }
+    // Notify admin about order status change
+    notifyOrderStatus(body.id, body.status).catch(console.error);
+    // Also notify the specific customer
+    const customerPhone = result.data?.shipping?.phone || result.data?.billing?.phone;
+    if (customerPhone) {
+      notifyCustomerOrderStatus(body.id, body.status, customerPhone).catch(console.error);
     }
     // Enrich with order code so UI doesn't lose it after update
     const order = result.data;

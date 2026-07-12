@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, ShoppingBag } from "lucide-react";
 import { formatPrice, NO_IMAGE_PLACEHOLDER, toSlug } from "@/lib/data";
 interface ProductCardProps {
   product: {
@@ -13,6 +13,7 @@ interface ProductCardProps {
     discount?: number;
     badge?: string;
     badgeColor?: string;
+    stockStatus?: string;
     rating: number;
     sold: string;
     location: string;
@@ -22,6 +23,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const isOutOfStock = product.stockStatus === 'outofstock';
+
   return (
     <Link
       href={`/product/${product.id}-${toSlug(product.name)}`}
@@ -33,12 +36,23 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         <img
           src={product.image || NO_IMAGE_PLACEHOLDER}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className={`w-full h-full object-cover transition-transform duration-300 ${
+            isOutOfStock ? ' grayscale' : ' group-hover:scale-105'
+          }`}
           loading="lazy"
           onError={(e) => {
             (e.target as HTMLImageElement).src = NO_IMAGE_PLACEHOLDER;
           }}
         />
+        {/* Out of Stock Overlay */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-10 bg-black/30 flex items-center justify-center">
+            <div className="bg-gray-900/80 text-white text-xs font-bold px-3 py-1.5 rounded-sm flex items-center gap-1.5">
+              <ShoppingBag className="w-3.5 h-3.5" />
+              Habis
+            </div>
+          </div>
+        )}
         {product.discount && (
           <div className="absolute top-0 right-0 bg-shopee-orange text-white text-[10px] font-bold px-1.5 py-0.5">
             <span className="block leading-tight">{product.discount}%</span>
@@ -59,13 +73,13 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       {/* Content */}
       <div className="p-2 md:p-2.5">
         {/* Title */}
-        <h3 className="text-xs md:text-sm text-shopee-text leading-[1.4] line-clamp-2 min-h-[2.8em]">
+        <h3 className={`text-xs md:text-sm leading-[1.4] line-clamp-2 min-h-[2.8em] ${isOutOfStock ? 'text-gray-400' : 'text-shopee-text'}`}>
           {product.name}
         </h3>
 
         {/* Price */}
         <div className="mt-1.5">
-          <p className="text-shopee-orange font-medium text-sm md:text-base leading-tight">
+          <p className={`font-medium text-sm md:text-base leading-tight ${isOutOfStock ? 'text-gray-400' : 'text-shopee-orange'}`}>
             {formatPrice(product.price)}
           </p>
           {product.originalPrice > product.price && (
@@ -73,7 +87,9 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               <p className="text-[11px] text-shopee-text-secondary line-through leading-tight">
                 {formatPrice(product.originalPrice)}
               </p>
-              <span className="text-[10px] text-shopee-orange font-medium">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
+              {!isOutOfStock && (
+                <span className="text-[10px] text-shopee-orange font-medium">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>
+              )}
             </div>
           )}
         </div>

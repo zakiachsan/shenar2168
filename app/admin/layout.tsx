@@ -20,6 +20,7 @@ import {
   X,
   Coins,
   Truck,
+  Bell,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { href: '/admin/coupons', label: 'Kupon', icon: TicketPercent },
   { href: '/admin/points', label: 'Poin', icon: Coins },
   { href: '/admin/customers', label: 'Pelanggan', icon: Users },
+  { href: '/admin/notifications', label: 'Notifikasi', icon: Bell, badge: 'notifications' },
   { href: '/admin/reviews', label: 'Ulasan', icon: MessageSquare },
   { href: '/admin/chat', label: 'Chat', icon: MessageSquare, badge: 'chat' },
   { href: '/admin/settings', label: 'Pengaturan', icon: Settings },
@@ -46,6 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [username, setUsername] = useState('Admin');
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/admin/me')
@@ -85,6 +88,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetchCount();
     const interval = setInterval(fetchCount, 30000); // Refresh every 30s
     return () => clearInterval(interval);
+  }, []);
+
+  // Fetch unread notifications count (sidebar badge)
+  useEffect(() => {
+    const fetchNotifCount = () => {
+      fetch('/api/admin/notifications?unread=1&per_page=1')
+        .then((res) => res.json())
+        .then((data) => {
+          setUnreadNotifCount(data.unreadCount || 0);
+        })
+        .catch(() => {});
+    };
+    fetchNotifCount();
+    const interval = setInterval(fetchNotifCount, 30000);
+    // Listen for notification read events from other pages
+    const handleNotifRead = () => fetchNotifCount();
+    window.addEventListener('notifications-read', handleNotifRead);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notifications-read', handleNotifRead);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -134,7 +158,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 RG
               </div>
               <div>
-                <h1 className="text-sm font-semibold text-white">RagamGuna</h1>
+                <h1 className="text-sm font-semibold text-white">Shenar2168</h1>
                 <p className="text-[10px] text-gray-400 -mt-0.5">Admin Panel</p>
               </div>
             </div>
@@ -162,8 +186,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            const showBadge = (item.badge === 'pending' && pendingCount > 0) || (item.badge === 'chat' && unreadChatCount > 0);
-            const badgeCount = item.badge === 'pending' ? pendingCount : item.badge === 'chat' ? unreadChatCount : 0;
+            const showBadge = (item.badge === 'pending' && pendingCount > 0) || (item.badge === 'chat' && unreadChatCount > 0) || (item.badge === 'notifications' && unreadNotifCount > 0);
+            const badgeCount = item.badge === 'pending' ? pendingCount : item.badge === 'chat' ? unreadChatCount : item.badge === 'notifications' ? unreadNotifCount : 0;
             return (
               <a
                 key={item.href}

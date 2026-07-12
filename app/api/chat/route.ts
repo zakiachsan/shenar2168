@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get user's threads
-    const threads = await getUserThreads(Number(userId));
+    const threads = await getUserThreads(userId);
     return NextResponse.json({ threads });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -47,12 +47,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if this is a new thread
-    const existingThread = await findThread(Number(userId), productId ? Number(productId) : null);
+    const existingThread = await findThread(userId, productId ? Number(productId) : null);
     const isNewThread = !existingThread;
 
     // Get or create thread
     const thread = await getOrCreateThread({
-      userId: Number(userId),
+      userId: userId,
       userName,
       userPhone,
       productId: productId ? Number(productId) : undefined,

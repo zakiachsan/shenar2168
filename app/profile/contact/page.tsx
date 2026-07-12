@@ -6,7 +6,7 @@ import { ChevronLeft, MessageCircle, Phone, Mail, MapPin } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 
-const WHATSAPP_NUMBER = "6285176818101";
+const WHATSAPP_NUMBER = "6288297206269";
 const WHATSAPP_MESSAGE = "Halo Shenar2168, saya ingin bertanya tentang...";
 
 export default function ContactPage() {
@@ -62,7 +62,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-xs text-shopee-text-secondary">WhatsApp</p>
-                  <p className="text-sm text-shopee-text font-medium">+62 851-7681-8101</p>
+                  <p className="text-sm text-shopee-text font-medium">+62 882-9720-6269</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

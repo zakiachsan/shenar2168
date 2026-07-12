@@ -1,16 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: "dist",
   images: {
     unoptimized: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  turbopack: {
-    root: "C:\\Projects\\shenar2168",
-  },
+  allowedDevOrigins: ['100.120.173.50'],
 };
 
 export default nextConfig;

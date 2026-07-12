@@ -108,6 +108,7 @@ export default function SearchClient() {
                       discount: product.discount,
                       badge: product.badge,
                       badgeColor: product.badgeColor,
+                      stockStatus: product.stockStatus,
                       categories: product.categories,
                     }}
                     index={idx}

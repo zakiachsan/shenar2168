@@ -15,8 +15,8 @@ const DOKU_BASE_URL = process.env.DOKU_ENVIRONMENT === 'production'
 const DOKU_TARGET_PATH = '/checkout/v1/payment';
 
 const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
-const CK = process.env.WC_CONSUMER_KEY || 'ck_3bb9651a765d8f556452b2bd291a499d2e19a7e7';
-const CS = process.env.WC_CONSUMER_SECRET || 'cs_1675e16a5610a557a662bbfc09af36c6bd5177f0';
+const CK = process.env.WC_CONSUMER_KEY || 'ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1';
+const CS = process.env.WC_CONSUMER_SECRET || 'cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64';
 
 function generateSignature(
   clientId: string,

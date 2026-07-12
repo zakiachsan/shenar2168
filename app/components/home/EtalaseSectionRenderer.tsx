@@ -50,6 +50,7 @@ interface ProductData {
   discount?: number;
   badge?: string;
   badgeColor?: string;
+  stockStatus?: string;
   rating: number;
   sold: string;
   location: string;

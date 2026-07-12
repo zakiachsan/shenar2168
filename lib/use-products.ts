@@ -22,6 +22,7 @@ export interface ProductData {
   badgeColor?: string;
   categories?: string[];
   stock?: number | null;
+  stockStatus?: string;
   slug?: string;
   sku?: string;
   description?: string;

@@ -3,7 +3,7 @@ import mysql from 'mysql2';
 
 export interface ChatThread {
   id: number;
-  userId: number | null;
+  userId: string;
   userName: string;
   userPhone: string | null;
   productId: number | null;
@@ -58,7 +58,7 @@ function mapMessage(row: any): ChatMessage {
 }
 
 // Find existing thread for a user+product combo (or general chat if no product)
-export async function findThread(userId: number, productId?: number | null): Promise<ChatThread | null> {
+export async function findThread(userId: string, productId?: number | null): Promise<ChatThread | null> {
   const connection = await pool.getConnection();
   try {
     let query = 'SELECT * FROM chat_threads WHERE user_id = ?';
@@ -80,7 +80,7 @@ export async function findThread(userId: number, productId?: number | null): Pro
 
 // Create a new thread
 export async function createThread(data: {
-  userId: number;
+  userId: string;
   userName: string;
   userPhone?: string;
   productId?: number;
@@ -103,7 +103,7 @@ export async function createThread(data: {
 
 // Get or create thread
 export async function getOrCreateThread(data: {
-  userId: number;
+  userId: string;
   userName: string;
   userPhone?: string;
   productId?: number;
@@ -202,7 +202,7 @@ export async function getAdminThreads(filters?: {
 }
 
 // Get threads for a user
-export async function getUserThreads(userId: number): Promise<(ChatThread & { unreadCount: number })[]> {
+export async function getUserThreads(userId: string): Promise<(ChatThread & { unreadCount: number })[]> {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.execute(
