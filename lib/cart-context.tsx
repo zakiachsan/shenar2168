@@ -161,8 +161,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined' && (window as any).showCartToast) {
       (window as any).showCartToast(newItem.name, newItem.price);
     }
-    // Fire-and-forget sync to WooCommerce (non-blocking)
-    syncCartWithServer(nextItems);
+    // Cart sync disabled: checkout creates order directly (no pending pre-order)
+    // syncCartWithServer(nextItems);
   }, []);
 
   const removeItem = useCallback((productId: number, variationId?: number) => {

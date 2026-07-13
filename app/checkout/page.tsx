@@ -568,6 +568,9 @@ export default function CheckoutPage() {
           shipping_courier: selectedShipping ? selectedShipping.split("|")[0] : undefined,
           shipping_service: selectedShipping ? selectedShipping.split("|")[1] : undefined,
           shipping_cost: shipping,
+          cart_order_id: (() => {
+            try { return localStorage.getItem("shenar2168-cart-order-id") || undefined; } catch { return undefined; }
+          })(),
         }),
       });
 
@@ -659,6 +662,7 @@ export default function CheckoutPage() {
       // Skip DOKU for now — auto succeed payment
       try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
       localStorage.removeItem("shenar2168-checkout-selected");
+      localStorage.removeItem("shenar2168-cart-order-id");
       window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");

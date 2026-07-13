@@ -82,8 +82,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: result.data.message || 'Gagal mengambil pesanan' }, { status: result.status });
     }
 
-    const orders = (Array.isArray(result.data) ? result.data : [])
-      .filter((o: any) => o.status !== 'pending');
+    const orders = (Array.isArray(result.data) ? result.data : []);
 
     // Enrich with order codes from local DB
     if (orders.length > 0) {

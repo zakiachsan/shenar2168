@@ -300,6 +300,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 5. Clean up pending cart-sync order to prevent double orders
+    if (body.cart_order_id) {
+      try {
+        await wcRequest('DELETE', `/wp-json/wc/v3/orders/${body.cart_order_id}?force=true`);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
+
     return NextResponse.json({
       success: true,
       order: {

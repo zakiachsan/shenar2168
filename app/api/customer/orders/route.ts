@@ -127,8 +127,7 @@ export async function GET(req: NextRequest) {
 
     const orders = wooOrders
       .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
-      .map((r) => r.value)
-      .filter((o: any) => o.status !== 'pending');
+      .map((r) => r.value);
 
     return NextResponse.json({ orders });
   } catch (e: any) {

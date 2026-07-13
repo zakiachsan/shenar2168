@@ -24,6 +24,7 @@ interface Order {
 
 const STATUS_TABS = [
   { value: '', label: 'Semua' },
+  { value: 'pending', label: 'Pending' },
   { value: 'processing', label: 'Diproses' },
   { value: 'completed', label: 'Selesai' },
   { value: 'cancelled', label: 'Dibatalkan' },

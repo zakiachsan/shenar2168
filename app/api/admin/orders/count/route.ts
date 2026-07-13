@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await requireAdmin();
 
-    const statuses = ['processing', 'completed', 'cancelled', 'refunded', 'failed'];
+    const statuses = ['pending', 'processing', 'completed', 'cancelled', 'refunded', 'failed'];
 
     const [allRes, ...statusRes] = await Promise.all([
       adminGetOrders({ per_page: 1 }),
