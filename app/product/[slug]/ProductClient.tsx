@@ -243,6 +243,10 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
   };
 
   const handleWishlist = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     if (!product) return;
     const item: FavoriteItem = {
       id: product.id,
@@ -560,17 +564,6 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                       ))}
                     </div>
                   )}
-                </div>
-                <div className="hidden lg:flex items-center justify-between mt-4 px-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-shopee-text-secondary">Bagikan:</span>
-                    <button className="flex items-center gap-1 text-xs text-shopee-text hover:text-shopee-orange">
-                      <Heart className="w-4 h-4" /> Favorit
-                    </button>
-                    <button className="flex items-center gap-1 text-xs text-shopee-text hover:text-shopee-orange">
-                      <Share2 className="w-4 h-4" /> Share
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -1099,7 +1092,7 @@ export default function ProductClient({ id, initialProduct, initialVariations }:
                                     <Star key={i} className={`w-3 h-3 ${i < r.rating ? "text-shopee-yellow fill-shopee-yellow" : "text-shopee-border"}`} />
                                   ))}
                                   <span className="text-[10px] text-shopee-text-secondary ml-1">
-                                    {new Date(r.date_created).toLocaleDateString("id-ID")}
+                                    {new Date(r.date_created).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })}
                                   </span>
                                 </div>
                               </div>

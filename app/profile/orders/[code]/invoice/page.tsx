@@ -108,7 +108,7 @@ export default function InvoicePage() {
                 <div className="text-right">
                   <p className="text-sm font-medium text-shopee-text">{order.orderCode || order.id}</p>
                   <p className="text-xs text-shopee-text-secondary mt-0.5">
-                    {new Date(order.date).toLocaleDateString("id-ID", {
+                    {new Date(order.date).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta",
                       day: "numeric",
                       month: "long",
                       year: "numeric",

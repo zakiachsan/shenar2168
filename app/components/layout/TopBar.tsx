@@ -1,13 +1,14 @@
 "use client";
 
-import { Bell, HelpCircle, Globe, LogOut } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Bell, HelpCircle, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import LoginModal from "./LoginModal";
 import { useAuth } from "./AuthProvider";
 
 export default function TopBar() {
-  const { user, logout, loginOpen, openLogin, closeLogin } = useAuth();
+  const { user, logout, loginOpen, loginTitle, openLogin, closeLogin } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const isAdmin = pathname?.startsWith("/admin");
 
   return (
@@ -16,17 +17,19 @@ export default function TopBar() {
         <div className="max-w-[1200px] mx-auto px-4 h-[30px] flex items-center justify-end gap-6">
           {!isAdmin && (
             <>
-              <span className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors">
+              <span
+                onClick={() => router.push("/profile/notifications")}
+                className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors"
+              >
                 <Bell className="w-3.5 h-3.5" />
                 Notifikasi
               </span>
-              <span className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors">
+              <span
+                onClick={() => router.push("/profile/contact")}
+                className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors"
+              >
                 <HelpCircle className="w-3.5 h-3.5" />
                 Bantuan
-              </span>
-              <span className="flex items-center gap-1 hover:text-shopee-orange cursor-pointer transition-colors">
-                <Globe className="w-3.5 h-3.5" />
-                Bahasa Indonesia
               </span>
             </>
           )}
@@ -50,13 +53,16 @@ export default function TopBar() {
           ) : (
             !isAdmin && (
               <>
-                <span className="hover:text-shopee-orange cursor-pointer transition-colors">
+                <span
+                  onClick={() => openLogin("Daftar dengan Nomor")}
+                  className="hover:text-shopee-orange cursor-pointer transition-colors"
+                >
                   Daftar
                 </span>
                 <span className="text-shopee-border">|</span>
                 <span
+                  onClick={() => openLogin()}
                   className="hover:text-shopee-orange cursor-pointer transition-colors"
-                  onClick={openLogin}
                 >
                   Masuk
                 </span>
@@ -65,7 +71,7 @@ export default function TopBar() {
           )}
         </div>
       </div>
-      <LoginModal open={loginOpen} onClose={closeLogin} />
+      <LoginModal open={loginOpen} onClose={closeLogin} title={loginTitle || undefined} />
     </>
   );
 }

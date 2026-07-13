@@ -120,7 +120,7 @@ export default function VouchersPage() {
   const formatDate = (iso: string | null) => {
     if (!iso) return "Tidak ada batas waktu";
     try {
-      return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      return new Date(iso).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
     } catch {
       return iso;
     }

@@ -377,7 +377,7 @@ export default function AdminCouponsPage() {
                     <td className="px-5 py-3.5">
                       <p className="text-sm text-gray-600">
                         {coupon.date_expires
-                          ? new Date(coupon.date_expires).toLocaleDateString('id-ID')
+                          ? new Date(coupon.date_expires).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })
                           : '-'}
                       </p>
                     </td>

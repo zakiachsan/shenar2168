@@ -127,7 +127,7 @@ function formatCurrency(amount: string): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -354,7 +354,7 @@ export default function OrderDetailPage() {
                       Estimasi pengiriman: {days} hari setelah pembayaran
                     </p>
                     <p className="text-xs text-purple-500">
-                      Estimasi sampai: {estDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      Estimasi sampai: {estDate.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                 );

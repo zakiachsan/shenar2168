@@ -63,7 +63,7 @@ function formatCurrency(amount: number): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -157,16 +157,7 @@ export default function AdminDashboard() {
       bgLight: 'bg-purple-50',
       textColor: 'text-purple-600',
       href: '/admin/orders',
-      isFormatted: true,
-    },
-    {
-      label: 'Pesanan Pending',
-      value: stats.pendingOrders,
-      icon: Clock,
-      color: 'bg-orange-500',
-      bgLight: 'bg-orange-50',
-      textColor: 'text-orange-600',
-      href: '/admin/orders?status=pending',
+      isFormatted: true
     },
   ];
 

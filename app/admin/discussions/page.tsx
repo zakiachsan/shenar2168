@@ -52,7 +52,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta',
     day: 'numeric',
     month: 'short',
     year: 'numeric',

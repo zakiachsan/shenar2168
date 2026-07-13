@@ -260,11 +260,6 @@ export default function ChatWidget() {
 
   const handleCloseLoginModal = () => setShowLoginModal(false);
 
-  if (!isOpen && !showLoginModal) return null;
-  if (showLoginModal) {
-    return <LoginModal open={showLoginModal} onClose={handleCloseLoginModal} />;
-  }
-
   const formatTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
@@ -467,6 +462,12 @@ export default function ChatWidget() {
       </div>
     </div>
   ), [loading, messages, showProductCard, thread, productName, productId, productSent, productDetail, message, sending, formatTime, formatCurrency, renderProductCard, handleSend, handleKeyDown, closeChat, handleScroll]);
+
+  // All hooks declared above — safe to conditionally return now
+  if (!isOpen && !showLoginModal) return null;
+  if (showLoginModal) {
+    return <LoginModal open={showLoginModal} onClose={handleCloseLoginModal} />;
+  }
 
   return (
     <>

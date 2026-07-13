@@ -18,7 +18,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   try {
     const res = await fetch(WC_URL + "/wp-json/wc/v3/products/" + id, {
       headers: { Authorization: BASIC_AUTH, Accept: "application/json" },
-      next: { revalidate: 60 },
+      next: { revalidate: 0 },
     });
     if (res.ok) {
       const wc = await res.json();
@@ -44,7 +44,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         try {
           const varRes = await fetch(WC_URL + "/wp-json/wc/v3/products/" + id + "/variations", {
             headers: { Authorization: BASIC_AUTH, Accept: "application/json" },
-            next: { revalidate: 60 },
+            next: { revalidate: 0 },
           });
           if (varRes.ok) {
             initialVariations = await varRes.json();

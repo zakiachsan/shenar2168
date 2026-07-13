@@ -73,7 +73,7 @@ async function fetchWCOrder(orderId: number) {
     orderCode,
     status: order.status,
     total: order.total,
-    date_created: order.date_created,
+    date_created: order.date_created ? order.date_created + "Z" : order.date_created,
     line_items: lineItems,
     shipping_total: order.shipping_total,
     payment_method_title: order.payment_method_title || '',
@@ -127,7 +127,8 @@ export async function GET(req: NextRequest) {
 
     const orders = wooOrders
       .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
-      .map((r) => r.value);
+      .map((r) => r.value)
+      .filter((o: any) => o.status !== 'pending');
 
     return NextResponse.json({ orders });
   } catch (e: any) {

@@ -24,7 +24,6 @@ interface Order {
 
 const STATUS_TABS = [
   { value: '', label: 'Semua' },
-  { value: 'pending', label: 'Pending' },
   { value: 'processing', label: 'Diproses' },
   { value: 'completed', label: 'Selesai' },
   { value: 'cancelled', label: 'Dibatalkan' },
@@ -70,7 +69,7 @@ function formatCurrency(amount: string): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta',
     day: 'numeric',
     month: 'short',
     year: 'numeric',

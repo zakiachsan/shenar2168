@@ -72,7 +72,7 @@ export default function CoinsPage() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+      return new Date(iso).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
     } catch {
       return iso;
     }

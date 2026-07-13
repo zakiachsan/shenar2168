@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
     const createPayload: any = {
       payment_method: body.payment_method || 'midtrans',
       payment_method_title: body.payment_method === 'cod' ? 'Bayar di Tempat (COD)' : 'Transfer / COD',
-      set_paid: false,
+      set_paid: true,
       billing: {
         first_name: body.billing.first_name,
         last_name: body.billing.last_name || '',
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Set order to pending payment (will be updated after DOKU payment)
     const updateResult = await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-      status: 'pending',
+      status: 'processing',
       transaction_id: `ORDER-${order.id}`,
     });
 

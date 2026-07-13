@@ -233,7 +233,7 @@ function OrderConfirmedContent() {
                     <div className="flex justify-between">
                       <span className="text-gray-500">Tanggal</span>
                       <span className="text-gray-800">
-                        {new Date(order.date_created).toLocaleDateString("id-ID", {
+                        {new Date(order.date_created).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta",
                           day: "numeric",
                           month: "long",
                           year: "numeric",

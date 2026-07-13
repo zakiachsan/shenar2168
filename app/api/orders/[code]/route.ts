@@ -33,7 +33,10 @@ export async function GET(
       code,
       status: order.status,
       total: order.total,
-      date_created: order.date_created,
+      subtotal: order.total - (parseFloat(order.shipping_total) || 0) + (parseFloat(order.discount_total) || 0),
+      shipping_total: order.shipping_total,
+      discount_total: order.discount_total || '0',
+      date_created: order.date_created ? order.date_created + "Z" : order.date_created,
       billing: {
         first_name: order.billing?.first_name,
         last_name: order.billing?.last_name,
@@ -57,8 +60,21 @@ export async function GET(
       coupon_lines: order.coupon_lines,
       customer_note: order.customer_note,
       meta_data: order.meta_data?.filter((m: any) =>
-        m.key.startsWith('_biteship') || m.key === '_order_code'
+        m.key.startsWith('_biteship') || m.key === '_order_code' || m.key === '_is_preorder' || m.key === '_preorder_days'
       ),
+      line_items: (order.line_items || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        image: item.image?.src || null,
+        variation_id: item.variation_id || null,
+        sku: item.sku || null,
+        attributes: (item.meta_data || [])
+          .filter((m: any) => m.key.startsWith('attribute_'))
+          .map((m: any) => ({ key: m.key.replace('attribute_', ''), value: m.value, label: m.key.replace('attribute_', '').replace(/_/g, ' ') })),
+      })),
     });
   } catch (e: any) {
     console.error('Public order detail error:', e.message);

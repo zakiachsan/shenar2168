@@ -58,6 +58,10 @@ interface CustomerOrder {
   meta_data?: Array<{ key: string; value: string }>;
   isPreorder?: boolean;
   preorderDays?: number;
+  // Timeline
+  date_paid?: string | null;
+  date_completed?: string | null;
+  date_shipped?: string | null;
 }
 
 const statusSteps = [
@@ -268,10 +272,51 @@ export default function OrderDetailPage() {
                   Estimasi pengiriman: {order.preorderDays || 7} hari setelah pembayaran
                 </p>
                 <p className="text-xs text-blue-600">
-                  Estimasi barang sampai: {new Date(Date.now() + (order.preorderDays || 7) * 86400000).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Estimasi barang sampai: {new Date(Date.now() + (order.preorderDays || 7) * 86400000).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
             )}
+
+            {/* Timeline */}
+            <div className="bg-white lg:rounded-sm p-4">
+              <h3 className="text-sm font-medium text-shopee-text mb-3">Informasi Waktu</h3>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-shopee-text-secondary">No Pesanan</span>
+                  <span className="text-xs font-mono text-shopee-text">{order.code}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-shopee-text-secondary">Waktu Pemesanan</span>
+                  <span className="text-xs text-shopee-text">
+                    {new Date(order.date_created).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-shopee-text-secondary">Waktu Pembayaran</span>
+                  <span className="text-xs text-shopee-text">
+                    {order.date_paid
+                      ? new Date(order.date_paid).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : <span className="text-shopee-text-secondary">-</span>}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-shopee-text-secondary">Waktu Pengiriman</span>
+                  <span className="text-xs text-shopee-text">
+                    {order.date_shipped
+                      ? new Date(order.date_shipped).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : <span className="text-shopee-text-secondary">-</span>}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-shopee-text-secondary">Waktu Selesai</span>
+                  <span className="text-xs text-shopee-text">
+                    {order.date_completed
+                      ? new Date(order.date_completed).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : <span className="text-shopee-text-secondary">-</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Items */}
             <div className="bg-white lg:rounded-sm p-4 space-y-3">

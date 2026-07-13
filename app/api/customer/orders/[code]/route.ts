@@ -32,8 +32,8 @@ export async function GET(
 
     // Fetch order from WooCommerce via admin API (internal)
     const WC_URL = process.env.WC_URL || 'https://api.shenar2168.com';
-    const CK = process.env.WC_CONSUMER_KEY || '';
-    const CS = process.env.WC_CONSUMER_SECRET || '';
+    const CK = process.env.WC_CONSUMER_KEY || 'ck_8bd45ea98b4427b58766b0ebbe0f6d38d5a10be1';
+    const CS = process.env.WC_CONSUMER_SECRET || 'cs_0fd2aadf0208f9584a11ee914ed92fdf7b4a0e64';
 
     const res = await fetch(`${WC_URL}/wp-json/wc/v3/orders/${woo_order_id}?consumer_key=${CK}&consumer_secret=${CS}`);
 
@@ -52,7 +52,7 @@ export async function GET(
       subtotal: order.subtotal,
       shipping_total: order.shipping_total,
       discount_total: order.discount_total,
-      date_created: order.date_created,
+      date_created: order.date_created ? order.date_created + "Z" : order.date_created,
       billing: {
         first_name: order.billing?.first_name,
         last_name: order.billing?.last_name,
@@ -96,6 +96,10 @@ export async function GET(
       // Pre-order convenience fields
       isPreorder: !!order.meta_data?.find((m: any) => m.key === '_is_preorder' && m.value === 'yes'),
       preorderDays: parseInt(order.meta_data?.find((m: any) => m.key === '_preorder_days')?.value || '0'),
+      // Timeline dates
+      date_paid: order.date_paid ? order.date_paid + "Z" : null,
+      date_completed: order.date_completed ? order.date_completed + "Z" : null,
+      date_shipped: (order.status === 'shipped' || order.status === 'completed') && order.date_modified ? order.date_modified + "Z" : null,
     };
 
     return NextResponse.json(sanitized);

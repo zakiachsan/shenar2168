@@ -14,7 +14,8 @@ interface AuthContextType {
   updateProfile: (updates: Partial<AuthUser>) => void;
   logout: () => void;
   loginOpen: boolean;
-  openLogin: () => void;
+  loginTitle: string | null;
+  openLogin: (title?: string) => void;
   closeLogin: () => void;
 }
 
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: () => {},
   logout: () => {},
   loginOpen: false,
+  loginTitle: null,
   openLogin: () => {},
   closeLogin: () => {},
 });
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [loginTitle, setLoginTitle] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -84,11 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const openLogin = useCallback(() => setLoginOpen(true), []);
-  const closeLogin = useCallback(() => setLoginOpen(false), []);
+  const openLogin = useCallback((title?: string) => {
+    setLoginTitle(title || null);
+    setLoginOpen(true);
+  }, []);
+  const closeLogin = useCallback(() => {
+    setLoginOpen(false);
+    setLoginTitle(null);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, updateProfile, logout, loginOpen, openLogin, closeLogin }}>
+    <AuthContext.Provider value={{ user, login, updateProfile, logout, loginOpen, loginTitle, openLogin, closeLogin }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ShoppingBag,
@@ -20,7 +21,6 @@ import { useAuth } from "@/app/components/layout/AuthProvider";
 
 const tabs = [
   { key: "all", label: "Semua" },
-  { key: "unpaid", label: "Belum Bayar" },
   { key: "packed", label: "Dikemas" },
   { key: "shipped", label: "Dikirim" },
   { key: "completed", label: "Selesai" },
@@ -81,10 +81,12 @@ function formatPrice(amount: string | number): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("id-ID", {
+    return new Date(iso).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta",
       day: "numeric",
       month: "short",
       year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch {
     return iso;
@@ -111,6 +113,7 @@ function getFilteredStatus(status: string): string {
 
 export default function OrdersPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -317,22 +320,14 @@ export default function OrdersPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center justify-end gap-2 mt-2.5 pb-1">
-                        {order.status === "pending" && (
-                          <Link
-                            href={`/profile/orders/${order.orderCode || order.id}`}
-                            className="px-4 py-1.5 bg-shopee-orange text-white text-xs rounded-sm hover:opacity-90 font-medium"
-                          >
-                            Bayar Sekarang
-                          </Link>
-                        )}
+                      <div className="flex items-center justify-end gap-2 mt-2.5 pb-1" onClick={(e) => e.preventDefault()}>
                         {order.status === "completed" && (
-                          <Link
-                            href={`/profile/orders/${order.orderCode || order.id}`}
-                            className="px-4 py-1.5 border border-shopee-orange text-shopee-orange text-xs rounded-sm hover:bg-shopee-orange-light font-medium"
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/profile/orders/${order.orderCode || order.id}`); }}
+                            className="px-4 py-1.5 border border-shopee-orange text-shopee-orange text-xs rounded-sm hover:bg-shopee-orange-light font-medium cursor-pointer"
                           >
                             Beli Lagi
-                          </Link>
+                          </button>
                         )}
 
                       </div>

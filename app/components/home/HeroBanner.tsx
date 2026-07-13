@@ -45,11 +45,26 @@ export default function HeroBanner() {
               className="absolute inset-0 transition-opacity duration-500"
               style={{ opacity: idx === current ? 1 : 0, zIndex: idx === current ? 1 : 0 }}
             >
-              <img
-                src={banner.image}
-                alt={banner.alt}
-                className="w-full h-full object-cover"
-              />
+              {banner.link ? (
+                <a
+                  href={banner.link.startsWith('http') ? banner.link : `https://${banner.link}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full h-full"
+                >
+                  <img
+                    src={banner.image}
+                    alt={banner.alt}
+                    className="w-full h-full object-cover"
+                  />
+                </a>
+              ) : (
+                <img
+                  src={banner.image}
+                  alt={banner.alt}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
           ))}
 

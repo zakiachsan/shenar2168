@@ -61,7 +61,7 @@ function formatTime(dateStr: string) {
   if (diffMins < 60) return `${diffMins}m lalu`;
   if (diffHours < 24) return `${diffHours}j lalu`;
   if (diffDays < 7) return `${diffDays}h lalu`;
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short' });
 }
 
 function formatFullTime(dateStr: string) {

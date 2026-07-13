@@ -656,27 +656,10 @@ export default function CheckoutPage() {
         // ignore
       }
 
-      // Call DOKU checkout API to get payment URL BEFORE clearing cart
-      try {
-        const dokuRes = await fetch("/api/doku/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_id: data.order.id }),
-        });
-        const dokuData = await dokuRes.json();
-        // Clear cart directly in localStorage (skip React state to avoid flash)
-        try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
-        localStorage.removeItem("shenar2168-checkout-selected");
-        if (dokuData.checkout_url) {
-          window.location.href = dokuData.checkout_url;
-        } else {
-          window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
-        }
-      } catch {
-        try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
-        localStorage.removeItem("shenar2168-checkout-selected");
-        window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
-      }
+      // Skip DOKU for now — auto succeed payment
+      try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
+      localStorage.removeItem("shenar2168-checkout-selected");
+      window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {

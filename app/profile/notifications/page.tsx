@@ -34,7 +34,7 @@ function timeAgo(dateStr: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
   if (diff < 604800) return `${Math.floor(diff / 86400)} hari lalu`;
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function NotificationsPage() {

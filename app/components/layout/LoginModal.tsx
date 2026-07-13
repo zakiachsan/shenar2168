@@ -7,9 +7,10 @@ import { useAuth } from "./AuthProvider";
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
+  title?: string;
 }
 
-export default function LoginModal({ open, onClose }: LoginModalProps) {
+export default function LoginModal({ open, onClose, title }: LoginModalProps) {
   const { login } = useAuth();
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
@@ -116,7 +117,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         {/* Header */}
         <div className="bg-shopee-orange px-4 py-3 flex items-center justify-between">
           <span className="text-white font-medium text-sm">
-            {step === "phone" ? "Masuk dengan Nomor" : "Verifikasi OTP"}
+            {title || (step === "phone" ? "Masuk dengan Nomor" : "Verifikasi OTP")}
           </span>
           <button onClick={onClose} className="text-white hover:text-white/80 transition-colors">
             <X className="w-5 h-5" />

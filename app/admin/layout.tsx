@@ -51,13 +51,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
+    // Skip auth check on login page
+    if (pathname === '/admin/login') return;
+
     fetch('/api/admin/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.username) setUsername(data.username);
+      .then((res) => {
+        if (!res.ok) {
+          // Not authenticated — redirect to login
+          router.push('/admin/login');
+          return;
+        }
+        return res.json();
       })
-      .catch(() => {});
-  }, []);
+      .then((data) => {
+        if (data?.username) setUsername(data.username);
+      })
+      .catch(() => {
+        // Fetch failed — redirect to login
+        router.push('/admin/login');
+      });
+  }, [pathname]);
 
   // Fetch unread chat count
   useEffect(() => {
