@@ -9,6 +9,7 @@ import crypto from 'crypto';
 
 const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || 'BRN-0273-1782643414658';
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || 'SK-Gp5YoLZTIOYyTFDQNIVW';
+const DOKU_PUBLIC_KEY = process.env.DOKU_PUBLIC_KEY || '';
 const DOKU_BASE_URL = process.env.DOKU_ENVIRONMENT === 'production'
   ? 'https://api.doku.com'
   : 'https://api-sandbox.doku.com';
@@ -140,13 +141,16 @@ export async function POST(req: NextRequest) {
 
     const notificationUrl = `${WC_URL}/wp-json/doku/notification`;
 
+    const orderCode = (order.meta_data || []).find((m: any) => m.key === '_order_code')?.value || '';
+    const callbackBase = `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}`;
+
     const dokuPayload = {
       order: {
         invoice_number: `INV-${order.id}-${Date.now()}`,
         line_items: lineItems,
         amount,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}/order-confirmed?id=${order.id}`,
-        callback_url_cancel: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shenar2168.com'}/checkout`,
+        callback_url: `${callbackBase}/order-confirmed?id=${order.id}${orderCode ? `&code=${orderCode}` : ''}`,
+        callback_url_cancel: `${callbackBase}/checkout`,
         currency: 'IDR',
         auto_redirect: true,
         disable_retry_payment: true,

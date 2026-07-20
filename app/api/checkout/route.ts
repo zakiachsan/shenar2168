@@ -147,11 +147,11 @@ export async function POST(req: NextRequest) {
         }]
       : [];
 
-    // 1. Create order
+    // 1. Create order (pending payment — DOKU handles payment)
     const createPayload: any = {
-      payment_method: body.payment_method || 'midtrans',
-      payment_method_title: body.payment_method === 'cod' ? 'Bayar di Tempat (COD)' : 'Transfer / COD',
-      set_paid: true,
+      payment_method: 'doku_checkout',
+      payment_method_title: 'DOKU Checkout',
+      set_paid: false,
       billing: {
         first_name: body.billing.first_name,
         last_name: body.billing.last_name || '',
@@ -237,8 +237,8 @@ export async function POST(req: NextRequest) {
 
     // 2. Set order to pending payment (will be updated after DOKU payment)
     const updateResult = await wcRequest('PUT', `/wp-json/wc/v3/orders/${order.id}`, {
-      status: 'processing',
-      transaction_id: `ORDER-${order.id}`,
+      status: 'pending',
+      transaction_id: `DOKU-${order.id}`,
     });
 
     const finalOrder = updateResult.status < 300 ? updateResult.data : order;
@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
         order_key: finalOrder.order_key,
         total: finalOrder.total,
         status: finalOrder.status,
-        payment_status: finalOrder.status === 'processing' ? 'paid' : 'pending',
+        payment_status: 'pending',
       },
       shipping: biteshipData,
     });

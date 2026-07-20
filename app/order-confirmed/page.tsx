@@ -12,11 +12,13 @@ import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, ChevronLeft, Clock, CreditCard, Loader2, Package, Truck } from "lucide-react";
+import { CheckCircle, ChevronLeft, Clock, CreditCard, Loader2, Package, Truck, ShieldAlert } from "lucide-react";
 import Header from "@/app/components/layout/Header";
 import BottomNav from "@/app/components/layout/BottomNav";
 import Footer from "@/app/components/layout/Footer";
 import { formatPrice } from "@/lib/data";
+import { useAuth } from "@/app/components/layout/AuthProvider";
+import { normalizePhone } from "@/lib/phone";
 
 interface OrderData {
   id: number;
@@ -52,16 +54,37 @@ function OrderConfirmedContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const { user, openLogin } = useAuth();
+
+  // Once order data is loaded, verify the current user owns this order
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  useEffect(() => {
+    if (!order || accessChecked) return;
+    setAccessChecked(true);
+    if (!user) {
+      setAccessDenied(true);
+      openLogin("Login untuk melihat pesanan Anda");
+      return;
+    }
+    const orderPhone = normalizePhone(order.billing?.phone || '');
+    const userPhone = normalizePhone(user.phone);
+    if (orderPhone && userPhone && orderPhone !== userPhone) {
+      setAccessDenied(true);
+    }
+  }, [order, user, accessChecked, openLogin]);
 
   const handlePayNow = async () => {
-    if (!orderId) return;
+    const effectiveOrderId = orderId || order?.id;
+    if (!effectiveOrderId) return;
     setPaying(true);
     try {
       // Use DOKU checkout instead of Midtrans
       const res = await fetch('/api/doku/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: parseInt(orderId) }),
+        body: JSON.stringify({ order_id: parseInt(String(effectiveOrderId)) }),
       });
       const data = await res.json();
       if (data.checkout_url) {
@@ -127,6 +150,25 @@ function OrderConfirmedContent() {
           ) : error ? (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <p className="text-gray-500 mb-4">{error}</p>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-shopee-orange text-white rounded-sm text-sm"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Kembali ke Beranda
+              </Link>
+            </div>
+          ) : accessDenied ? (
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+              <ShieldAlert className="w-16 h-16 text-red-400 mx-auto mb-3" />
+              <p className="text-gray-700 font-medium mb-2">
+                {!user ? "Login diperlukan" : "Akses ditolak"}
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                {!user
+                  ? "Silakan login untuk melihat pesanan Anda."
+                  : "Pesanan ini bukan milik akun Anda."}
+              </p>
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-shopee-orange text-white rounded-sm text-sm"

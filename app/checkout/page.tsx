@@ -659,11 +659,30 @@ export default function CheckoutPage() {
         // ignore
       }
 
-      // Skip DOKU for now — auto succeed payment
+      // Redirect to DOKU checkout for payment
+      try {
+        const dokuRes = await fetch('/api/doku/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: data.order.id }),
+        });
+        const dokuData = await dokuRes.json();
+        if (dokuData.checkout_url) {
+          try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
+          localStorage.removeItem("shenar2168-checkout-selected");
+          localStorage.removeItem("shenar2168-cart-order-id");
+          window.location.href = dokuData.checkout_url;
+          return;
+        }
+        console.error('DOKU checkout failed:', dokuData);
+      } catch (dokuErr) {
+        console.error('DOKU checkout error:', dokuErr);
+      }
+      // Fallback: redirect to order-confirmed if DOKU fails
       try { localStorage.setItem("shenar2168-cart", "[]"); } catch {}
       localStorage.removeItem("shenar2168-checkout-selected");
       localStorage.removeItem("shenar2168-cart-order-id");
-      window.location.href = `/order-confirmed?code=${data.order.orderCode}`;
+      window.location.href = `/order-confirmed?code=${data.order.orderCode}&id=${data.order.id}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
