@@ -91,7 +91,7 @@ export async function GET(
       payment_method_title: order.payment_method_title,
       customer_note: order.customer_note,
       meta_data: order.meta_data?.filter((m: any) =>
-        m.key.startsWith('_biteship') || m.key === '_order_code' || m.key.startsWith('_is_preorder') || m.key.startsWith('_preorder_days')
+        m.key.startsWith('_biteship') || m.key === '_order_code' || m.key === '_doku_checkout_url' || m.key.startsWith('_is_preorder') || m.key.startsWith('_preorder_days')
       ),
       // Pre-order convenience fields
       isPreorder: !!order.meta_data?.find((m: any) => m.key === '_is_preorder' && m.value === 'yes'),

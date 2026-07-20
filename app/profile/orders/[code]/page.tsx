@@ -251,6 +251,29 @@ export default function OrderDetailPage() {
                 })}
               </div>
 
+              {order.status === "pending" && (
+                <button
+                  onClick={async () => {
+                    let checkoutUrl = order.meta_data?.find((m: any) => m.key === '_doku_checkout_url')?.value;
+                    if (!checkoutUrl) {
+                      try {
+                        const res = await fetch('/api/doku/checkout', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ order_id: order.id }),
+                        });
+                        const data = await res.json();
+                        checkoutUrl = data.checkout_url;
+                      } catch {}
+                    }
+                    if (checkoutUrl) window.location.href = checkoutUrl;
+                  }}
+                  className="mt-3 w-full py-2.5 bg-shopee-orange text-white text-sm font-medium rounded-sm hover:bg-[#D46A0A] transition-colors"
+                >
+                  Lengkapi Pembayaran
+                </button>
+              )}
+
               {order.status === "processing" && (
                 <button
                   onClick={() => { setCancelReason(""); setCancelOtherText(""); setShowCancelModal(true); }}
